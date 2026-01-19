@@ -15,7 +15,20 @@ services:
     ports:
       - "8000:8000"
 
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    container_name: nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
 
+      
 volumes:
   static_volume:
   media_volume:
