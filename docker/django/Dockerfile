@@ -8,6 +8,10 @@ ENV PYTHONUNBUFFERED=1
 # Set work directory
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y \
+    netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/*
+
 # System dependencies (mysqlclient needs these later)
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -30,5 +34,9 @@ RUN mkdir -p /app/staticfiles /app/media
 # Expose Gunicorn port
 EXPOSE 8000
 
+COPY docker/django/entrypoint.sh /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
+
 # Default command (overridden later by docker-compose)
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--threads", "2"]
+

@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+
+# Local database
+mariadb/
+
+
+# Virtual environments
+venv/
+src/venv/
+
+# Django
+*.log
+staticfiles/
+media/
+
+# Environment
+.env
+
+# Docker
+*.dockerignore
+
+# Editor/IDE
+*.swp
+.vscode/
+.idea/
