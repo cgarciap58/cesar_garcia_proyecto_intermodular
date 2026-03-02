@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; }
+    form { max-width: 380px; display: grid; gap: .8rem; }
+    input { padding: .5rem; }
+    button { padding: .6rem; }
+    .errorlist { color: #b00020; }
+  </style>
+</head>
+<body>
+  <h1>Login</h1>
+  <p>Any active user can login here. Admin site remains restricted to staff users.</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Sign in</button>
+  </form>
+</body>
+</html>

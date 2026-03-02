@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ticket Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; background: #f7f7fb; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .card { background: #fff; border-radius: 12px; padding: 1rem; box-shadow: 0 1px 6px rgba(0,0,0,.08); margin-bottom: 1rem; }
+    .ticket-grid { display: grid; gap: 1rem; }
+    .muted { color: #666; font-size: .9rem; }
+    .messages { list-style: none; padding: 0; }
+    .messages li { margin-bottom: .5rem; padding: .6rem; border-radius: 8px; }
+    .success { background: #e8f8ee; color: #1e6b3a; }
+    .error { background: #fdecec; color: #8d1d1d; }
+    select, button { padding: .5rem; }
+    .top-actions { display: flex; gap: .7rem; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>Ticket Dashboard</h1>
+      {% if is_lead_developer %}
+        <p class="muted">Lead developer view: all tickets + assignment controls.</p>
+      {% else %}
+        <p class="muted">Developer view: tickets currently assigned to you.</p>
+      {% endif %}
+    </div>
+    <div class="top-actions">
+      <a href="{% url 'home' %}">Home</a>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit">Logout</button>
+      </form>
+    </div>
+  </div>
+
+  {% if messages %}
+    <ul class="messages">
+      {% for message in messages %}
+        <li class="{{ message.tags|default:'' }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <div class="ticket-grid">
+    {% for ticket in tickets %}
+      <div class="card">
+        <h3>Ticket #{{ ticket.id }}</h3>
+        <p>{{ ticket.issue }}</p>
+        <p class="muted">Created: {{ ticket.created_at }}</p>
+        <p class="muted">Assigned to: {{ ticket.assigned_developer.username|default:"Unassigned" }}</p>
+
+        {% if is_lead_developer %}
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="ticket_id" value="{{ ticket.id }}" />
+            <label for="developer_user_id_{{ ticket.id }}">Assign developer:</label>
+            <select id="developer_user_id_{{ ticket.id }}" name="developer_user_id" required>
+              <option value="" disabled selected>Choose user...</option>
+              {% for dev in developers %}
+                <option value="{{ dev.id }}" {% if ticket.assigned_developer_id == dev.id %}selected{% endif %}>
+                  {{ dev.username }}
+                </option>
+              {% endfor %}
+            </select>
+            <button type="submit">Save assignment</button>
+          </form>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="card"><p>No tickets found for this view.</p></div>
+    {% endfor %}
+  </div>
+</body>
+</html>

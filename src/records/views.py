@@ -1,9 +1,11 @@
 import json
 
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.auth import get_user_model
-from django.http import JsonResponse
-from django.shortcuts import render
+from django.contrib import messages
+from django.contrib.auth import get_user_model, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm
+from django.http import HttpResponseForbidden, JsonResponse
+from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods
 
 from records.models import Tickets
@@ -35,6 +37,25 @@ def _ticket_payload(ticket):
 @require_http_methods(["GET"])
 def index_view(request):
     return render(request, "records/index.html")
+
+
+@require_http_methods(["GET", "POST"])
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect("tickets_dashboard")
+
+    form = AuthenticationForm(request, data=request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        login(request, form.get_user())
+        return redirect("tickets_dashboard")
+
+    return render(request, "records/login.html", {"form": form})
+
+
+@require_http_methods(["POST"])
+def logout_view(request):
+    logout(request)
+    return redirect("home")
 
 
 @require_http_methods(["GET"])
@@ -93,10 +114,8 @@ def submit_ticket_view(request):
     )
 
 @require_http_methods(["GET"])
-def my_assigned_tickets_view(request):
-    if not request.user.is_authenticated:
-        return JsonResponse({"error": "Authentication required."}, status=401)
-
+@login_required
+def my_assigned_tickets_view(request):    
     if not _is_developer_or_lead(request.user):
         return JsonResponse({"error": "Forbidden."}, status=403)
 
@@ -117,13 +136,27 @@ def my_assigned_tickets_view(request):
     )
 
 
-# @login_required
-# @user_passes_test(_is_lead_developer)
 @require_http_methods(["GET", "POST", "PATCH"])
+@login_required
 def lead_ticket_management_view(request):
+    if not _is_lead_developer(request.user):
+        return JsonResponse({"error": "Forbidden."}, status=403)
+
+
     if request.method == "GET":
         tickets = Tickets.objects.select_related("assigned_developer").all()
-        return JsonResponse({"tickets": [_ticket_payload(ticket) for ticket in tickets]})
+        developers = get_user_model().objects.filter(
+            groups__name__in=["developer", "lead_developer"]
+        ).distinct()
+        return JsonResponse(
+            {
+                "tickets": [_ticket_payload(ticket) for ticket in tickets],
+                "developers": [
+                    {"id": user.id, "username": user.username} for user in developers
+                ],
+            }
+        )
+
 
     payload = {}
     if request.body:
@@ -167,3 +200,55 @@ def lead_ticket_management_view(request):
 
     ticket.refresh_from_db()
     return JsonResponse({"ticket": _ticket_payload(ticket)})
+
+@require_http_methods(["GET", "POST"])
+@login_required
+def tickets_dashboard_view(request):
+    if not _is_developer_or_lead(request.user):
+        return HttpResponseForbidden("You are not allowed to view tickets.")
+
+    if request.method == "POST":
+        if not _is_lead_developer(request.user):
+            return HttpResponseForbidden("Only lead developers can assign tickets.")
+
+        ticket_id = request.POST.get("ticket_id")
+        developer_user_id = request.POST.get("developer_user_id")
+        if not ticket_id or not developer_user_id:
+            messages.error(request, "Both ticket and developer are required.")
+            return redirect("tickets_dashboard")
+
+        ticket = Tickets.objects.filter(id=ticket_id).first()
+        if ticket is None:
+            messages.error(request, "Ticket not found.")
+            return redirect("tickets_dashboard")
+
+        assignee = get_user_model().objects.filter(id=developer_user_id).first()
+        if assignee is None or not _is_developer_or_lead(assignee):
+            messages.error(request, "Please select a valid developer account.")
+            return redirect("tickets_dashboard")
+
+        ticket.assigned_developer = assignee
+        ticket.save(update_fields=["assigned_developer"])
+        messages.success(request, f"Ticket #{ticket.id} assigned to {assignee.username}.")
+        return redirect("tickets_dashboard")
+
+    if _is_lead_developer(request.user):
+        tickets = Tickets.objects.select_related("assigned_developer", "created_by").all()
+    else:
+        tickets = Tickets.objects.select_related("assigned_developer", "created_by").filter(
+            assigned_developer=request.user
+        )
+
+    developers = get_user_model().objects.filter(
+        groups__name__in=["developer", "lead_developer"]
+    ).distinct()
+
+    return render(
+        request,
+        "records/tickets_dashboard.html",
+        {
+            "tickets": tickets,
+            "developers": developers,
+            "is_lead_developer": _is_lead_developer(request.user),
+        },
+    )
