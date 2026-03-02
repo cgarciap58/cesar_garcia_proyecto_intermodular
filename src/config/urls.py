@@ -18,6 +18,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.http import HttpResponse
+from django.contrib.admin.views.decorators import staff_member_required
+
+
+@staff_member_required
+def incidents_view(request):
+    return HttpResponse("Incidents page")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -25,4 +31,5 @@ urlpatterns = [
     path("health/", lambda r: HttpResponse("ok")),
     path("dog/", lambda r: HttpResponse("ok")),
     path("sickness/", lambda r: HttpResponse("ok")),
+    path("incidents/", incidents_view, name="incidents"),
 ]
