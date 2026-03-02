@@ -20,7 +20,11 @@ from django.urls import path
 from django.http import HttpResponse
 from django.contrib.admin.views.decorators import staff_member_required
 
-from records.views import my_assigned_tickets_view, submit_ticket_view
+from records.views import (
+    lead_ticket_management_view,
+    my_assigned_tickets_view,
+    submit_ticket_view,
+)
 
 @staff_member_required
 def incidents_view(request):
@@ -36,4 +40,5 @@ urlpatterns = [
     path("tickets/submit/", submit_ticket_view, name="submit_ticket"),
     path("tickets/my/", my_assigned_tickets_view, name="my-assigned-tickets"),
     path("tickets/my_assigned/", my_assigned_tickets_view, name="my_assigned_tickets"),
+    path("tickets/manage/", lead_ticket_management_view, name="lead-ticket-manage"),
 ]
