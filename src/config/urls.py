@@ -16,13 +16,15 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path
-from django.http import HttpResponse
 from django.contrib.admin.views.decorators import staff_member_required
+from django.http import HttpResponse
+from django.urls import path
 
 from records.views import (
+    index_view,
     lead_ticket_management_view,
     my_assigned_tickets_view,
+    report_issue_form_view,
     submit_ticket_view,
 )
 
@@ -31,12 +33,15 @@ def incidents_view(request):
     return HttpResponse("Incidents page")
 
 urlpatterns = [
+    path("", index_view, name="home"),
     path('admin/', admin.site.urls),
-    path("", lambda r: HttpResponse("Welcome to the main page!")),  # Home page
+    # path("", lambda r: HttpResponse("Welcome to the main page!")),  # Home page
     path("health/", lambda r: HttpResponse("ok")),
     path("dog/", lambda r: HttpResponse("ok")),
     path("sickness/", lambda r: HttpResponse("ok")),
     path("incidents/", incidents_view, name="incidents"),
+    path("tickets/report/", report_issue_form_view, name="report_issue_form"),
+    path("tickets/report", report_issue_form_view),
     path("tickets/submit/", submit_ticket_view, name="submit_ticket"),
     path("tickets/my/", my_assigned_tickets_view, name="my-assigned-tickets"),
     path("tickets/my_assigned/", my_assigned_tickets_view, name="my_assigned_tickets"),

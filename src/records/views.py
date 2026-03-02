@@ -3,6 +3,7 @@ import json
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
+from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
 
 from records.models import Tickets
@@ -30,6 +31,16 @@ def _ticket_payload(ticket):
             else None
         ),
     }
+
+@require_http_methods(["GET"])
+def index_view(request):
+    return render(request, "records/index.html")
+
+
+@require_http_methods(["GET"])
+def report_issue_form_view(request):
+    return render(request, "records/report_issue_form.html")
+
 
 @require_http_methods(["GET", "POST"])
 def submit_ticket_view(request):
@@ -61,6 +72,17 @@ def submit_ticket_view(request):
         created_by=request.user if request.user.is_authenticated else None,
         assigned_developer=None,
     )
+
+    if request.POST.get("issue") is not None:
+        return render(
+            request,
+            "records/report_issue_form.html",
+            {
+                "success_message": "Issue submitted successfully.",
+                "ticket_id": ticket.id,
+            },
+            status=201,
+        )
 
     return JsonResponse(
         {
