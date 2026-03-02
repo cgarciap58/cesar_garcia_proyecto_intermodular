@@ -6,7 +6,7 @@ __pycache__/
 *.sqlite3
 
 # Local database
-mariadb/
+# mariadb/ # Scripts to create the database locally? TODO: Move to AWS separate machine
 
 
 # Virtual environments
@@ -18,8 +18,8 @@ src/venv/
 staticfiles/
 media/
 
-# Environment
-.env
+# Environment - ignore it when we are done bugfixing
+# .env
 
 # Docker
 *.dockerignore
