@@ -15,7 +15,7 @@ from records.views import (
     my_assigned_tickets_view,
     report_issue_form_view,
     submit_ticket_view,
-    ticket_dashboard_view,
+    tickets_dashboard_view,
 )
 
 @staff_member_required
