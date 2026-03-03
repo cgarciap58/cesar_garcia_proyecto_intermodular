@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -13,11 +13,11 @@
 </head>
 <body>
   <div class="container py-5">
-    <a href="/" class="btn btn-outline-secondary mb-4">Back to home</a>
+    <a href="/" class="btn btn-outline-secondary mb-4">Volver al inicio</a>
 
     <div class="card shadow-sm">
       <div class="card-body p-4">
-        <h1 class="h3 mb-4">Report an issue</h1>
+        <h1 class="h3 mb-4">Reportar un incidente</h1>
         {% if success_message %}
           <div class="alert alert-success" role="alert">
             {{ success_message }} Ticket #{{ ticket_id }}
@@ -26,9 +26,9 @@
 
         <form method="post" action="/tickets/submit/">
           {% csrf_token %}
-          <label for="issue" class="form-label">Issue details</label>
+          <label for="issue" class="form-label">Detalles del problema</label>
           <textarea id="issue" name="issue" class="form-control" required rows="6"></textarea>
-          <button type="submit" class="btn btn-primary mt-3">Submit ticket</button>
+          <button type="submit" class="btn btn-primary mt-3">Reportar incidente</button>
         </form>
       </div>
     </div>

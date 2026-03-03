@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -13,18 +13,18 @@
   <div class="container py-5">
     <section class="card shadow-sm">
       <div class="card-body">
-        <h1 class="card-title">Welcome to PlayBetterGG</h1>
-        <p class="card-text">Use your account to access the ticket dashboard.</p>
+        <h1 class="card-title">Bienvenido a PlayBetterGG</h1>
+        <p class="card-text">Usa tu cuenta para acceder al visor de tickets.</p>
         <div class="d-flex flex-wrap gap-2">
-          <a class="btn btn-primary" href="{% url 'report_issue_form' %}">Report an issue</a>
+          <a class="btn btn-primary" href="{% url 'report_issue_form' %}">Reporta un incidente</a>
           {% if user.is_authenticated %}
-            <a class="btn btn-outline-primary" href="{% url 'tickets_dashboard' %}">Go to ticket dashboard</a>
+            <a class="btn btn-outline-primary" href="{% url 'tickets_dashboard' %}">Ir a tu gestor de tickets</a>
             <form method="post" action="{% url 'logout' %}">
               {% csrf_token %}
-              <button class="btn btn-outline-danger" type="submit">Logout</button>
+              <button class="btn btn-outline-danger" type="submit">Cerrar sesión</button>
             </form>
           {% else %}
-            <a class="btn btn-success" href="{% url 'login' %}">Login</a>
+            <a class="btn btn-success" href="{% url 'login' %}">Iniciar sesión</a>
           {% endif %}
         </div>
       </div>
