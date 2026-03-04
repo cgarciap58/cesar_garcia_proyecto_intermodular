@@ -52,7 +52,6 @@
             <p class="text-muted small mb-1">Creado: {{ ticket.created_at }}</p>
             <p class="text-muted small">Asignado a: {{ ticket.assigned_developer.username|default:"Sin asignar" }}</p>
 
-
               {% if is_lead_developer %}
                 <form method="post">
                   {% csrf_token %}
