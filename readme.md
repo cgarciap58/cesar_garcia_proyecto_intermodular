@@ -183,8 +183,8 @@ La aplicación usa flujo HTTP clásico de Django:
 
 ## 5. Resumen del diseño
 
-- Usas el ORM de Django para encapsular acceso a DB con modelos simples y claros.
-- Separas capa HTML (templates) de capa de lógica (views).
+- Se usa el ORM de Django para encapsular acceso a DB con modelos simples y claros.
+- Se separa la capa HTML (templates) de la capa de lógica (views).
 - Tienes doble interfaz:
   - **HTML** para uso manual (dashboard/formulario).
   - **JSON** para consumo tipo API interna.
