@@ -12,20 +12,26 @@ Este documento describe **el código propio del proyecto** (models, migraciones 
 
 ---
 
-## 2. Cómo agregaste modelos a la base de datos
+## 2. Cómo se agregan los modelos a la base de datos
+
+Los modelos son objetos de Python que representan tablas en la base de datos. Para agregarlos a la base de datos, se deben crear migraciones. Las migraciones, cuando se realizan, se registran como cambios en la base de datos, y solo se ejecutan una vez.
+
+Es decir, crear los objetos en Python es como modelar las tablas con CREATE TABLE, pero sin llegar a ejecutarlas, y las migraciones son las instrucciones para crearlas en la base de datos, o para insertar datos iniciales (para debugeo, por ejemplo).
 
 ## 2.1 Modelos declarados
 
-En `models.py` hay dos modelos:
+En `models.py` creo un solo modelo por ahora:
 
-### `PatientProfile`
+
+
+### `PatientProfile` (Tabla temporal, de testeo de creacion de tablas)
 - Campos:
   - `full_name` (`CharField`, máx. 255).
   - `email` (`EmailField`, único).
   - `created_at` (`DateTimeField`, auto al crear).
 - Tabla explícita: `patient_profiles`.
 
-### `Tickets`
+### `Tickets` (Tabla para los tickets y su gestion)
 - Campos:
   - `created_at` (`DateTimeField`, auto al crear).
   - `issue` (`TextField`).
@@ -50,7 +56,7 @@ La persistencia real se hace con migraciones versionadas:
    - Guarda configuración de tabla/ordenamiento.
 
 4. `0004_create_developer_seed_users.py` y `0005_update_seed_user_credentials.py`
-   - Son migraciones de datos para usuarios semilla (seed) y actualización de credenciales.
+   - Son migraciones de datos para usuarios semilla (seed) y actualización de credenciales. (Para usuarios de prueba)
 
 En resumen: **el modelo se define en `models.py` y se “materializa” en SQL mediante migraciones**, quedando trazabilidad por versión.
 
