@@ -53,7 +53,7 @@ La persistencia real se hace con migraciones versionadas:
 
 3. `0003_ticket.py`
    - Crea la tabla de tickets con FKs al modelo de usuario (`AUTH_USER_MODEL`).
-   - Guarda configuración de tabla/ordenamiento.
+   - Guarda configuración de tabla/ordenamiento de la tabla tickets.
 
 4. `0004_create_developer_seed_users.py` y `0005_update_seed_user_credentials.py`
    - Son migraciones de datos para usuarios semilla (seed) y actualización de credenciales. (Para usuarios de prueba)
@@ -103,9 +103,9 @@ La aplicación usa flujo HTTP clásico de Django:
 - Vista: `tickets_dashboard_view`
   - Requiere login + pertenecer a grupo `developer` o `lead_developer`.
   - `GET`:
-    - Si usuario es lead: consulta todos los tickets.
-    - Si no: solo tickets asignados al usuario actual.
-    - Carga también lista de developers/lead para el selector.
+    - Si usuario es lead: consulta todos los tickets, y puede asignar desarrolladores a los tickets.
+        - Carga también lista de developers/lead para el selector.
+    - Si no: solo tickets asignados al usuario actual (porque si no es lead, es desarrollador base).
     - Renderiza `tickets_dashboard.html` con contexto.
   - `POST` (solo lead):
     - Recibe `ticket_id` + `developer_user_id` desde el formulario del template.
@@ -141,7 +141,7 @@ La aplicación usa flujo HTTP clásico de Django:
   - Devuelve `True` si pertenece a `lead_developer`.
 
 - `_ticket_payload(ticket)`
-  - Serializa una instancia de ticket a diccionario JSON estándar.
+  - Serializa una instancia de ticket a diccionario JSON estándar. (Se usa para las respuestas JSON para mostrarlas en el dashboard)
 
 ## Vistas públicas / autenticación
 
