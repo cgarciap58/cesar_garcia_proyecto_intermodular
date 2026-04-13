@@ -1,6 +1,6 @@
 -- Create database and user
-CREATE USER 'django'@'localhost' IDENTIFIED BY 'admin'; 
-GRANT ALL PRIVILEGES ON myprojectdb.* TO 'django'@'localhost';
+CREATE USER 'django'@'%' IDENTIFIED BY 'admin'; 
+GRANT ALL PRIVILEGES ON db_proyecto_final.* TO 'django'@'localhost';
 FLUSH PRIVILEGES;
 
 
