@@ -25,17 +25,7 @@ if env_path.exists():
 # # ----------------------
 # # Debug / Environment dump
 # # ----------------------
-# debug_file_path = BASE_DIR / "debug.log"
-# with open(debug_file_path, "w") as debug_file:
-#     debug_file.write("=== ENVIRONMENT VARIABLES ===\n")
-#     for var in ["DJANGO_SECRET_KEY", "DJANGO_DEBUG", "DJANGO_ALLOWED_HOSTS",
-#                 "DB_ENGINE", "DB_NAME", "DB_USER", "DB_PASSWORD", "DB_HOST", "DB_PORT"]:
-#         value = os.environ.get(var)
-#         debug_file.write(f"{var}: {value}\n")
-#     debug_file.write("=============================\n")
 
-# Load .env from repository root first (where docker-compose.yml lives),
-# then fallback to src/.env for local-only setups.
 for candidate in (PROJECT_ROOT / ".env", BASE_DIR / ".env"):
     if candidate.exists():
         environ.Env.read_env(candidate)
@@ -45,15 +35,6 @@ for candidate in (PROJECT_ROOT / ".env", BASE_DIR / ".env"):
 # ----------------------
 # SECURITY
 # ----------------------
-# SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-secret-key")
-# DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
-# ALLOWED_HOSTS = [host.strip() for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if host.strip()]
-# DB_ENGINE = os.environ.get("DB_ENGINE", "django.db.backends.sqlite3")
-# DB_NAME = os.environ.get("DB_NAME", "db.sqlite3")
-# DB_USER = os.environ.get("DB_USER", "")
-# DB_PASSWORD = os.environ.get("DB_PASSWORD", "")
-# DB_HOST = os.environ.get("DB_HOST", "")
-# DB_PORT = os.environ.get("DB_PORT", "")
 
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="dev-secret-key")
 DEBUG = env("DJANGO_DEBUG")
