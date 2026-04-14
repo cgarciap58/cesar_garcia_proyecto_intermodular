@@ -2,9 +2,9 @@
 
 - [X] Poner en funcionamiento una aplicación web Django contenerizada
 - [X] Poner en funcionamiento una aplicación web Django contenerizada, pero la base de datos es externa
-- [ ] Sistema de tickets en la aplicación web
+- [X] Sistema de tickets en la aplicación web
 - [ ] Sistema de autenticación para empleados (LDAP/Active Directory)
-    - [ ] Prueba 1: Servidor web dentro de la red local, acceso a la BBDD en la misma máquina, pero fuera del contenedor.
+    - [X] Prueba 1: Servidor web dentro de la red local, acceso a la BBDD en la misma máquina, pero fuera del contenedor.
     - [ ] Prueba 2: Servidor web (aplicación web dockerizada) dentro de la red local, con acceso servidor BBDD en la red local.
     - [ ] Prueba 3: Windows Server en red local, con acceso a la aplicación web y BBDD en AWS.
     - [ ] Prueba 4: Windows Server en red local, con comunicación con LDAP-Kerberos
