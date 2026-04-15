@@ -4,8 +4,10 @@
 
 ```
 app/
-\u251c\u2500\u2500 src/                # Código Django
-\u2514\u2500\u2500 docker/             # Dockerfiles y configuración de contenedores
+│
+├── src/                # Código Django
+│
+├── docker/             # Dockerfiles y configuración de contenedores
 
 infra/db/               # Scripts de despliegue/operación de MariaDB en EC2
 ops/windows-ad/         # Scripts PowerShell para Active Directory

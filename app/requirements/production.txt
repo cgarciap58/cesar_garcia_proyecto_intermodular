@@ -1,7 +1,0 @@
--r base.txt
-
-asgiref==3.11.0
-packaging==25.0
-setuptools==80.9.0
-sqlparse==0.5.5
-wheel==0.45.1
