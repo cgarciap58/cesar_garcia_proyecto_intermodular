@@ -40,7 +40,7 @@ Lanza un comando `mysql` manual para validar conectividad y credenciales.
 Ejecutar en PowerShell:
 
 ```powershell
-.\ops\windows-ad\creacion_OUs.ps1
+.\windows-server\creacion_OUs.ps1
 ```
 
 Crea la estructura de OUs definida para Active Directory.

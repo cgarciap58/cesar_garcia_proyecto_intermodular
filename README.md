@@ -25,7 +25,7 @@ docs/                   # Documentación general y manuales para funcionamiento
 - Probar conexión manual a MariaDB:
   - `bash database/debug_db.sh`
 - Crear OUs en Windows Server (PowerShell):
-  - `ops/windows-ad/creacion_OUs.ps1`
+  - `windows-server/creacion_OUs.ps1`
 
 Consulta también `docs/escenarios-ejecucion.md` para una guía paso a paso por escenario.
 

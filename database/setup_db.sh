@@ -11,7 +11,6 @@ sudo mysql_install_db
 
 echo "Éxito: Instalada MariaDB"
 
-sudo mysql -uroot
 sudo mysql -u root -e "DROP DATABASE IF EXISTS $db_name;"
 sudo mysql -u root -e "CREATE DATABASE $db_name;"
 
