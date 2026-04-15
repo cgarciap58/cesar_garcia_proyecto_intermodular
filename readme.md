@@ -1,3 +1,34 @@
+# Guía rápida de estructura y ejecución
+
+## Estructura base del repositorio
+
+```
+app/
+\u251c\u2500\u2500 src/                # Código Django
+\u2514\u2500\u2500 docker/             # Dockerfiles y configuración de contenedores
+
+infra/db/               # Scripts de despliegue/operación de MariaDB en EC2
+ops/windows-ad/         # Scripts PowerShell para Active Directory
+docs/                   # Guías por escenario y documentación adicional
+```
+
+## Qué ejecutar según tu objetivo
+
+- Levantar la aplicación Django en contenedores:
+  - `docker compose up --build`
+- Trabajar en modo desarrollo con autoreload:
+  - `docker compose -f docker-compose.yml -f docker-compose.override.yml up --build`
+- Preparar MariaDB en EC2:
+  - `bash infra/db/setup_db.sh`
+- Probar conexión manual a MariaDB:
+  - `bash infra/db/debug_db.sh`
+- Crear OUs en Windows Server (PowerShell):
+  - `ops/windows-ad/creacion_OUs.ps1`
+
+Consulta también `docs/escenarios-ejecucion.md` para una guía paso a paso por escenario.
+
+---
+
 # (Temporal) Lista de TODOS a nivel arquitectura:
 
 - [X] Poner en funcionamiento una aplicación web Django contenerizada
