@@ -11,19 +11,19 @@ app/
 
 infra/db/               # Scripts de despliegue/operación de MariaDB en EC2
 ops/windows-ad/         # Scripts PowerShell para Active Directory
-docs/                   # Guías por escenario y documentación adicional
+docs/                   # Documentación general y manuales para funcionamiento
 ```
 
 ## Qué ejecutar según tu objetivo
 
 - Levantar la aplicación Django en contenedores:
-  - `docker compose up --build`
+  - `cd app && docker compose up --build`
 - Trabajar en modo desarrollo con autoreload:
-  - `docker compose -f docker-compose.yml -f docker-compose.override.yml up --build`
+  - `cd app && docker compose -f docker-compose.yml -f docker-compose.override.yml up --build`
 - Preparar MariaDB en EC2:
-  - `bash infra/db/setup_db.sh`
+  - `bash database/setup_db.sh`
 - Probar conexión manual a MariaDB:
-  - `bash infra/db/debug_db.sh`
+  - `bash database/debug_db.sh`
 - Crear OUs en Windows Server (PowerShell):
   - `ops/windows-ad/creacion_OUs.ps1`
 

@@ -22,7 +22,7 @@ El `override` monta `app/src` dentro del contenedor para reflejar cambios al ins
 ## Escenario 3: Preparar MariaDB en EC2
 
 ```bash
-bash infra/db/setup_db.sh
+bash database/setup_db.sh
 ```
 
 Script pensado para aprovisionar MariaDB y crear base de datos/usuario para Django.
@@ -30,7 +30,7 @@ Script pensado para aprovisionar MariaDB y crear base de datos/usuario para Djan
 ## Escenario 4: Depurar conexión a MariaDB
 
 ```bash
-bash infra/db/debug_db.sh
+bash database/debug_db.sh
 ```
 
 Lanza un comando `mysql` manual para validar conectividad y credenciales.
