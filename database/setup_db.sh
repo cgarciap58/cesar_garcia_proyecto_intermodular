@@ -20,7 +20,7 @@ sudo mysql -u root -e "CREATE USER '$db_django_user'@'%' IDENTIFIED BY '$db_djan
 
 echo "Éxito: Creada la base de datos: [[$db_django_user]] con contraseña [[$db_django_password]]"
 
-sudo mysql -u root -e "GRANT SELECT, INSERT, UPDATE, DELETE ON $db_name.* TO '$db_django_user'@'%';"
+sudo mysql -u root -e "GRANT CREATE, SELECT, INSERT, ALTER, UPDATE, INDEX, DELETE ON $db_name.* TO '$db_django_user'@'%';"
 sudo mysql -u root -e "FLUSH PRIVILEGES;"
 
 echo "Éxito: Modificados los permisos para [[$db_django_user]] en la base de datos [[$db_name]]"
