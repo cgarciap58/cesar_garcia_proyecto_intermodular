@@ -26,7 +26,7 @@ RUN pip install --upgrade pip \
     && pip install -r requirements.txt
 
 # Copy project
-COPY app/src/ .
+COPY src/ .
 
 # Create directories for static & media
 RUN mkdir -p /app/staticfiles /app/media
@@ -34,7 +34,7 @@ RUN mkdir -p /app/staticfiles /app/media
 # Expose Gunicorn port
 EXPOSE 8000
 
-COPY app/docker/django/entrypoint.sh /entrypoint.sh
+COPY docker/django/entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 
 # Default command (overridden later by docker-compose)
