@@ -21,9 +21,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY requirements.txt .
+COPY app/requirements/ ./requirements/
 RUN pip install --upgrade pip \
-    && pip install -r requirements.txt
+    && pip install -r requirements/production.txt
 
 # Copy project
 COPY app/src/ .

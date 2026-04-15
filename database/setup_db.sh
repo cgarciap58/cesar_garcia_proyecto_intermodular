@@ -34,3 +34,4 @@ echo "Éxito: Configurada MariaDB para aceptar conexiones remotas"
 sleep 2
 
 echo "Éxito, ¡base de datos configurada correctamente!"
+
