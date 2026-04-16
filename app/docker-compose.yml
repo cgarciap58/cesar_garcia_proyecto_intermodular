@@ -30,6 +30,14 @@ services:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
 
+  redis:
+    image: redis:7
+    container_name: redis
+    volumes:
+      - redis_data:/data
+
+
 volumes:
   static_volume:
   media_volume:
+  redis_data:
