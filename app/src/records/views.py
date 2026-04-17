@@ -252,3 +252,34 @@ def tickets_dashboard_view(request):
             "is_lead_developer": _is_lead_developer(request.user),
         },
     )
+
+from django.views.decorators.cache import cache_page
+from django.http import HttpResponse
+
+from django.core.cache import cache
+from django.http import HttpResponse
+import time
+
+def test_cache(request):
+    value = cache.get("test_cache")
+
+    if value is None:
+        value = f"Hora actual: {time.time()}"
+        cache.set("test_cache", value, 60)
+
+    return HttpResponse(value)
+
+
+from django.http import JsonResponse
+
+import socket
+
+def session_test(request):
+    count = request.session.get("count", 0)
+    count += 1
+    request.session["count"] = count
+
+    return JsonResponse({
+        "server": socket.gethostname(),
+        "count": count
+    })  

@@ -6,6 +6,7 @@ from django.contrib import admin
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponse
 from django.urls import path
+# from records.views import test_cache
 
 from records.views import (
     index_view,
@@ -16,6 +17,8 @@ from records.views import (
     report_issue_form_view,
     submit_ticket_view,
     tickets_dashboard_view,
+    test_cache,
+    session_test,
 )
 
 @staff_member_required
@@ -36,4 +39,7 @@ urlpatterns = [
     path("tickets/my_assigned/", my_assigned_tickets_view, name="my_assigned_tickets"),
     path("tickets/dashboard/", tickets_dashboard_view, name="tickets_dashboard"),
     path("tickets/manage/", lead_ticket_management_view, name="lead-ticket-manage"),
+    path('test-cache/', test_cache),
+    path("session-test/", session_test),
 ]
+
