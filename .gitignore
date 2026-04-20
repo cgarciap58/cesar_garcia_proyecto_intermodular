@@ -21,6 +21,9 @@ media/
 # Environment - ignore it when we are done bugfixing
 # .env
 
+# Deployment
+*/labuser.pemm
+
 # Docker
 *.dockerignore
 
@@ -28,3 +31,4 @@ media/
 *.swp
 .vscode/
 .idea/
+
