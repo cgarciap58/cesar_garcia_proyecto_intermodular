@@ -22,7 +22,7 @@ media/
 # .env
 
 # Deployment
-*/labuser.pemm
+*/labsuser.pem
 
 # Docker
 *.dockerignore
