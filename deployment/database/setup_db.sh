@@ -5,6 +5,9 @@ db_name="db_proyecto_final"
 django_ips="10.0.20.%" # Cambiar este rango por la red donde estarán las máquinas Django
 
 sudo apt update
+
+# sudo apt install chrony -y # Para sincronizar el reloj
+
 sudo apt install -y mariadb-server
 unset TMPDIR
 sudo mysql_install_db

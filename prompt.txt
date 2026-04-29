@@ -1,0 +1,50 @@
+Estoy trabajando en scripts para facilitar mi despliegue en AWS. Esta es la estructura de mi proyecto por ahora (solo el LB está terminado, y ahora estoy con app, el resto son scripts que ahora mismo no sirven):
+
+cgarciap@pop-os:~/01.ASIR2/10.Proyecto_intermodular/proyecto_final$ tree deployment/
+deployment/
+├── app
+│   ├── app1_hop_or_setup.sh
+│   └── app_setup.sh
+├── aws_overview.sh
+├── bastion_hop.sh
+├── database
+│   ├── debug_db.sh
+│   └── setup_db.sh
+├── labsuser.pem
+├── load_balancer
+│   ├── LB_hop_or_setup.sh
+│   └── LB_setup.sh
+├── redis
+│   └── setup_redis.sh
+└── todo.md
+
+Ahora mismo, salto a un bastion SSH mediante este script:
+
+bastion_hop.sh
+
+#!/bin/bash
+if [ "$(pwd)" == "/home/cgarciap/01.ASIR2/10.Proyecto_intermodular/proyecto_final" ]; then
+    cd deployment
+elif [ "$(pwd)" == "/home/cgarciap/01.ASIR2/10.Proyecto_intermodular/proyecto_final/deployment" ]; then
+    echo "Ya estás en el directorio deployment"
+else
+    echo "Estás en el directorio incorrecto"
+    exit 1
+fi
+
+eval "$(ssh-agent -s)"
+ssh-add labsuser.pem
+
+bastion="34.226.168.164"
+
+echo "Transfiriendo los archivos de deployment al bastión..."
+
+ssh admin@$bastion "mkdir -p /home/admin/deployment"
+scp -r ../deployment/load_balancer admin@$bastion:/home/admin/deployment/
+ssh admin@$bastion "chmod -R +x /home/admin/deployment"
+
+ssh -A admin@$bastion # Esta IP cambia en cada despliegue
+
+
+
+
