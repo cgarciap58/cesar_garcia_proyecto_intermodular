@@ -132,23 +132,45 @@ MEDIA_ROOT = BASE_DIR / 'media'
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
 
-# ----------------------
-# Redis Cache (simple)
-# ----------------------
-
+# Cache local temporal
 CACHES = {
     "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"redis://{env('REDIS_HOST')}:{env('REDIS_PORT')}/1",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        }
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
     }
 }
 
-# ----------------------
-# Sessions en Redis
-# ----------------------
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
-SESSION_CACHE_ALIAS = "default"
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in env(
+        "DJANGO_CSRF_TRUSTED_ORIGINS",
+        # default="http://localhost:8080"
+    ).split(",")
+    if origin.strip()
+]
+
+USE_REDIS = env.bool("USE_REDIS", default=False)
+
+if USE_REDIS:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": f"redis://{env('REDIS_HOST', default='redis')}:{env('REDIS_PORT', default='6379')}/1",
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            }
+        }
+    }
+
+    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+    SESSION_CACHE_ALIAS = "default"
+
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        }
+    }
+
+    SESSION_ENGINE = "django.contrib.sessions.backends.db"
