@@ -13,7 +13,7 @@ services:
     networks:
       - red_docker_proyecto
     env_file:
-      - ../app/.env.local
+      - ../app/.env.aws
   nginx:
     image: nginx:alpine
     depends_on:

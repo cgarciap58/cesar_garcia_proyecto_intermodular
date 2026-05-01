@@ -13,30 +13,15 @@ PROJECT_ROOT = BASE_DIR.parent
 
 # Initialize environ
 env = environ.Env(
-    # DEBUG=(bool, False)
     DJANGO_DEBUG=(bool, False)
 )
-
-# Load .env if it exists (useful for local dev)
-env_path = BASE_DIR / ".env"
-if env_path.exists():
-    environ.Env.read_env(env_path)
-
-# # ----------------------
-# # Debug / Environment dump
-# # ----------------------
-
-for candidate in (PROJECT_ROOT / ".env", BASE_DIR / ".env"):
-    if candidate.exists():
-        environ.Env.read_env(candidate)
-        break
 
 
 # ----------------------
 # SECURITY
 # ----------------------
 
-SECRET_KEY = env("DJANGO_SECRET_KEY", default="dev-secret-key")
+SECRET_KEY = env("DJANGO_SECRET_KEY")
 DEBUG = env("DJANGO_DEBUG")
 ALLOWED_HOSTS = [
     host.strip()
@@ -93,15 +78,15 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # ----------------------
 DATABASES = {
     'default': {
-        'ENGINE': env('DB_ENGINE', default='django.db.backends.mysql'),
-        'NAME': env('DB_NAME', default='db_proyecto_final'),
-        'USER': env('DB_USER', default='django'),
-        'PASSWORD': env('DB_PASSWORD', default=''),
-        'HOST': env('DB_HOST', default='172.17.0.1'),
-        'PORT': env('DB_PORT', default='3306'),    
+        'ENGINE': env('DB_ENGINE'),
+        'NAME': env('DB_NAME'),
+        'USER': env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'),
+        'HOST': env('DB_HOST'),
+        'PORT': env('DB_PORT'),    
     }
 }
-
+# default='django.db.backends.mysql'
 # ----------------------
 # Password validation
 # ----------------------
@@ -143,20 +128,17 @@ SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()
-    for origin in env(
-        "DJANGO_CSRF_TRUSTED_ORIGINS",
-        # default="http://localhost:8080"
-    ).split(",")
+    for origin in env("DJANGO_CSRF_TRUSTED_ORIGINS").split(",")
     if origin.strip()
 ]
 
-USE_REDIS = env.bool("USE_REDIS", default=False)
+USE_REDIS = env.bool("USE_REDIS")
 
 if USE_REDIS:
     CACHES = {
         "default": {
             "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": f"redis://{env('REDIS_HOST', default='redis')}:{env('REDIS_PORT', default='6379')}/1",
+            "LOCATION": f"redis://{env('REDIS_HOST')}:{env('REDIS_PORT')}/1",
             "OPTIONS": {
                 "CLIENT_CLASS": "django_redis.client.DefaultClient",
             }
