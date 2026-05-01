@@ -2,7 +2,7 @@
 
 set -e
 
-DOMAIN="getbetter.ddns.net"
+HOST="db"
 HOSTNAME="lb.getbetter.gg"
 
 echo "===== CONFIGURANDO LOAD BALANCER ====="
@@ -14,7 +14,7 @@ sudo sed -i 's/^preserve_hostname: false/preserve_hostname: true/' /etc/cloud/cl
 
 cat <<EOF | sudo tee /etc/hosts
 127.0.0.1 localhost
-127.0.1.1 $HOSTNAME lb
+127.0.1.1 $HOSTNAME $HOST
 
 ::1 localhost ip6-localhost ip6-loopback
 ff02::1 ip6-allnodes

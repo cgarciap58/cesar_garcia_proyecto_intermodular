@@ -16,18 +16,18 @@ else
     exit 1
 fi
 
-source ./config.env
+source ./topologia-aws.env
 
 eval "$(ssh-agent -s)"
-ssh-add $KEY_PATH
+ssh-add "$KEY_PATH"
 
 echo "¿Qué instancia quieres configurar a su estado base?"
 echo "ADVERTENCIA: Esta operación puede ser destructiva y se podrían perder todos los datos."
 echo "0. bastion"
 echo "1. lb"
-echo "2. apps"
+echo "2. db"
 echo "3. redis"
-echo "4. db"
+echo "4. apps"
 
 read -p "--> " maquina
 
@@ -39,10 +39,26 @@ case $maquina in
     1)
         ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$LB_IP 'bash -s' < ./lb/lb_setup.sh
         ;;
+
     2)
+        DJANGO_APP_EC2_IPS="$APP_IP_1,$APP_IP_2"
+
+        ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$DB_IP \
+        "bash -s" \
+        -- "$DJANGO_DB_USER" "$DJANGO_DB_PASS" "$DJANGO_DB_DATABASE_NAME" "$DJANGO_APP_EC2_IPS" \
+        < ./db/db_setup.sh
+        ;;
+
+    3)
+        ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$REDIS_IP 'bash -s' < ./redis/redis_setup.sh
+        ;;
+
+    4)
         echo "¿Qué instancia EC2 quieres inicializar?"
-        echo "1. app1"
-        echo "2. app2"
+        echo "1. app1-setup"
+        echo "2. app2-setup"
+        echo "3. app1-despliegue"
+        echo "4. app2-despliegue"
 
         read -p "--> " app
 
@@ -53,6 +69,28 @@ case $maquina in
             2)
                 ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$APP_IP_2 'bash -s' < ./app/app_setup.sh 2
                 ;;
+            3)
+                ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$APP_IP_1 "bash -s" -- \
+                "$DB_IP" \
+                "$REDIS_IP" \
+                "$DJANGO_DB_USER" \
+                "$DJANGO_DB_PASS" \
+                "$DJANGO_DB_DATABASE_NAME" \
+                "$LB_IP_PUB" \
+                < ./app/app_deploy.sh
+                ;;
+
+            4)
+                ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$APP_IP_2 "bash -s" -- \
+                "$DB_IP" \
+                "$REDIS_IP" \
+                "$DJANGO_DB_USER" \
+                "$DJANGO_DB_PASS" \
+                "$DJANGO_DB_DATABASE_NAME" \
+                "$LB_IP_PUB" \
+                < ./app/app_deploy.sh
+
+                ;;
             *)
                 echo "Instancia no válida"
                 exit 1
@@ -60,12 +98,7 @@ case $maquina in
         esac
 
         ;;
-    3)
-        ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$REDIS_IP 'bash -s' < ./redis/redis_setup.sh
-        ;;
-    4)
-        ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$DB_IP 'bash -s' < ./db/db_setup.sh
-        ;;
+
     *)
         echo "Máquina no válida"
         exit 1

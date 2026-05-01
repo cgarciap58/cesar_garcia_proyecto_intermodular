@@ -12,7 +12,7 @@ else
     exit 1
 fi
 
-source ./config.env
+source ./topologia-aws.env
 
 eval "$(ssh-agent -s)"
 ssh-add $KEY_PATH
