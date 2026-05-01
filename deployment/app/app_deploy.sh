@@ -68,7 +68,7 @@ echo "[4] Arrancando contenedor Django..."
 
 sudo docker compose down --remove-orphans || true
 sudo docker rm -f app2-nginx app1-nginx || true
-sudo docker compose up -d --build
+sudo docker compose -f docker-compose.yml up -d --build
 
 
 

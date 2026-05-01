@@ -22,8 +22,8 @@ docker compose -f ./infra-local/docker-compose.yml up -d redis
 
 echo "3. Levantando Apps local"
 
-docker compose -p app1 -f ./app/docker-compose.yml -f ./app/docker-compose.override.yml up -d
-docker compose -p app2 -f ./app/docker-compose.yml -f ./app/docker-compose.override.yml up -d
+docker compose -p app1 -f ./app/docker-compose.yml -f ./app/docker-compose.dev.yml up -d
+docker compose -p app2 -f ./app/docker-compose.yml -f ./app/docker-compose.dev.yml up -d
 
 echo "4. Levantando simulación de servicios local (Load Balancer)"
 
