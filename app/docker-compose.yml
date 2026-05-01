@@ -31,7 +31,3 @@ services:
 volumes:
   static_volume:
   media_volume:
-
-networks:
-  red_docker_proyecto:
-    external: true
