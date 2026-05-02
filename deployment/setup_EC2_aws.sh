@@ -23,11 +23,11 @@ ssh-add "$KEY_PATH"
 
 echo "¿Qué instancia quieres configurar a su estado base?"
 echo "ADVERTENCIA: Esta operación puede ser destructiva y se podrían perder todos los datos."
-echo "0. bastion"
-echo "1. lb"
-echo "2. db"
-echo "3. redis"
-echo "4. apps"
+echo "0. Bastion"
+echo "1. LB"
+echo "2. DB"
+echo "3. Redis"
+echo "4. Apps"
 
 read -p "--> " maquina
 
@@ -50,7 +50,14 @@ case $maquina in
         ;;
 
     3)
-        ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$REDIS_IP 'bash -s' < ./redis/redis_setup.sh
+
+        APP_NODES="$APP_IP_1 $APP_IP_2"
+    
+        ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB \
+        $USUARIO_ROOT_EC2@$REDIS_IP \
+        "bash -s" \
+        -- "$REDIS_IP" "$APP_IP_1" "$APP_IP_2" "$REDIS_PASSWORD" \
+        < ./redis/redis_setup.sh
         ;;
 
     4)
@@ -80,6 +87,7 @@ case $maquina in
                 "$DJANGO_SUPERUSER_USERNAME" \
                 "$DJANGO_SUPERUSER_EMAIL" \
                 "$DJANGO_SUPERUSER_PASSWORD" \
+                "$DOMAIN" \
                 < ./app/app_deploy.sh
                 ;;
 
@@ -94,6 +102,7 @@ case $maquina in
                 "$DJANGO_SUPERUSER_USERNAME" \
                 "$DJANGO_SUPERUSER_EMAIL" \
                 "$DJANGO_SUPERUSER_PASSWORD" \
+                "$DOMAIN" \
                 < ./app/app_deploy.sh
 
                 ;;

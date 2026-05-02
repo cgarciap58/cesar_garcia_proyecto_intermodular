@@ -2,7 +2,7 @@
 
 set -e
 
-HOST="db"
+HOST="lb"
 HOSTNAME="lb.getbetter.gg"
 
 echo "===== CONFIGURANDO LOAD BALANCER ====="
@@ -62,8 +62,10 @@ sudo rm -f /etc/nginx/sites-enabled/default
 
 cat <<EOF | sudo tee /etc/nginx/sites-available/getbetter
 upstream backend_app {
-    server 10.0.0.69;
-    server 10.0.0.100;
+    least_conn;
+
+    server 10.0.0.69:80 max_fails=2 fail_timeout=10s;
+    server 10.0.0.100:80 max_fails=2 fail_timeout=10s;
 }
 
 server {
@@ -77,6 +79,13 @@ server {
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+
+        proxy_connect_timeout 1s;
+        proxy_send_timeout 5s;
+        proxy_read_timeout 5s;
+
+        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+        proxy_next_upstream_tries 2;        
 
     }
 
