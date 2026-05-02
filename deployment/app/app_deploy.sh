@@ -7,12 +7,22 @@ if [ $# -ne 6 ]; then
     exit 1
 fi
 
-echo $1
-echo $2
-echo $3
-echo $4
-echo $5
-echo $6
+DB_IP=$1
+REDIS_IP=$2
+LB_IP=$3
+DB_USER=$4
+DB_PASS=$5
+DB_NAME=$6
+DJANGO_SUPERUSER_USERNAME=$7
+DJANGO_SUPERUSER_EMAIL=$8
+DJANGO_SUPERUSER_PASSWORD=$9
+
+echo "DB_IP: $DB_IP"
+echo "REDIS_IP: $REDIS_IP"
+echo "LB_IP: $LB_IP"
+echo "DB_USER: $DB_USER"
+echo "DB_PASS: $DB_PASS"
+echo "DB_NAME: $DB_NAME"
 
 
 # Este script se encarga de hacer el git clone en caso de que sea necesario, actualizar el repositorio, y re-desplegar la app en producción
@@ -21,6 +31,19 @@ echo $6
 repositorio="cesar_garcia_proyecto_intermodular"
 ruta_repositorio="https://github.com/cgarciap58/$repositorio.git"
 # Verificar si el directorio ya existe, y clonar si no
+
+
+echo "[0] Forzando estado limpio del repositorio..."
+
+cd ~
+
+rm -rf "$repositorio"
+
+echo "[1] Clonando repositorio..."
+git clone "$ruta_repositorio"
+
+cd "$repositorio"
+
 
 cd ~
 
@@ -45,13 +68,13 @@ cd ./app
 
 echo "[3] Creando .env.aws"
 cat > .env.aws <<EOF
-DB_HOST=$1
+DB_HOST=$DB_IP
 DB_PORT=3306
-DB_NAME=$2
-DB_USER=$3
-DB_PASSWORD=$4
+DB_NAME=$DB_NAME
+DB_USER=$DB_USER
+DB_PASSWORD=$DB_PASS
 
-REDIS_HOST=$5
+REDIS_HOST=$REDIS_IP
 REDIS_PORT=6379
 USE_REDIS=False
 
@@ -59,8 +82,8 @@ DJANGO_SECRET_KEY=xxxxx
 DJANGO_DEBUG=True
 DB_ENGINE=django.db.backends.mysql
 
-DJANGO_ALLOWED_HOSTS=$6
-DJANGO_CSRF_TRUSTED_ORIGINS=https://$6
+DJANGO_ALLOWED_HOSTS=$LB_IP
+DJANGO_CSRF_TRUSTED_ORIGINS=https://$LB_IP
 EOF
 
 

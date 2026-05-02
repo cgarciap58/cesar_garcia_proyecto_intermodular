@@ -73,10 +73,13 @@ case $maquina in
                 ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$APP_IP_1 "bash -s" -- \
                 "$DB_IP" \
                 "$REDIS_IP" \
+                "$LB_IP_PUB" \
                 "$DJANGO_DB_USER" \
                 "$DJANGO_DB_PASS" \
                 "$DJANGO_DB_DATABASE_NAME" \
-                "$LB_IP_PUB" \
+                "$DJANGO_SUPERUSER_USERNAME" \
+                "$DJANGO_SUPERUSER_EMAIL" \
+                "$DJANGO_SUPERUSER_PASSWORD" \
                 < ./app/app_deploy.sh
                 ;;
 
@@ -84,10 +87,13 @@ case $maquina in
                 ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$APP_IP_2 "bash -s" -- \
                 "$DB_IP" \
                 "$REDIS_IP" \
+                "$LB_IP_PUB" \
                 "$DJANGO_DB_USER" \
                 "$DJANGO_DB_PASS" \
                 "$DJANGO_DB_DATABASE_NAME" \
-                "$LB_IP_PUB" \
+                "$DJANGO_SUPERUSER_USERNAME" \
+                "$DJANGO_SUPERUSER_EMAIL" \
+                "$DJANGO_SUPERUSER_PASSWORD" \
                 < ./app/app_deploy.sh
 
                 ;;
