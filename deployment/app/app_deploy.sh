@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-if [ $# -ne 6 ]; then
+if [ $# -ne 9 ]; then
     echo "Uso: $0 <DB_HOST> <DB_NAME> <DB_USER> <DB_PASSWORD> <REDIS_HOST> <LB_IP>"
     exit 1
 fi
@@ -82,7 +82,7 @@ DJANGO_SECRET_KEY=xxxxx
 DJANGO_DEBUG=True
 DB_ENGINE=django.db.backends.mysql
 
-DJANGO_ALLOWED_HOSTS=$LB_IP
+DJANGO_ALLOWED_HOSTS=$LB_IP,localhost,127.0.0.1
 DJANGO_CSRF_TRUSTED_ORIGINS=https://$LB_IP
 EOF
 
