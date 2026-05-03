@@ -3,54 +3,82 @@
 ## Estructura base del repositorio
 
 ```
-app/
+repositorio/
 │
-├── src/                # Código Django
+├── docs/               # Documentación general del proyecto en su conjunto
 │
-├── docker/             # Dockerfiles y configuración de contenedores
+├── app/                # Código Django
+│
+├──── app/docker        # Configuración adicional de los contenedores Docker de la app
+│
+├──── app/src           # Código fuente de la aplicación
+│
+├── infra-local/        # Configuración local para desarrollo y scripts útiles para desarrollo local
+│
+├── deployment/         # Scripts para instalación de todos los servicios en AWS
+│
+├── windows-server/     # Scripts para despliegue de Windows Server con Active Directory y otros servicios
 
-infra/db/               # Scripts de despliegue/operación de MariaDB en EC2
-ops/windows-ad/         # Scripts PowerShell para Active Directory
-docs/                   # Documentación general y manuales para funcionamiento
 ```
 
-## Qué ejecutar según tu objetivo
+## Qué ejecutar
 
-- Levantar la aplicación Django en contenedores:
-  - `cd app && docker compose up --build`
-- Trabajar en modo desarrollo con autoreload:
-  - `cd app && docker compose -f docker-compose.yml -f docker-compose.override.yml up --build`
-- Preparar MariaDB en EC2:
-  - `bash database/setup_db.sh`
-- Probar conexión manual a MariaDB:
-  - `bash database/debug_db.sh`
-- Crear OUs en Windows Server (PowerShell):
-  - `windows-server/creacion_OUs.ps1`
+Para levantar la aplicación en local:
+
+1. Asegúrate de que Docker y Docker Compose están instalados
+2. Crea el archivo `.env.local` utilizando la plantilla `.env.local.example`
+
+3. Desde el repositorio base, simplemente ve al repositorio base y lanza:
+
+```bash
+./infra-local/arrancar_local.sh
+```
+
+Para despliegue en nube:
+
+1. Contacta con cgarciap58@iesalbarregas.es
+
 
 Consulta también `docs/escenarios-ejecucion.md` para una guía paso a paso por escenario.
 
 ---
 
-# (Temporal) Lista de TODOS a nivel arquitectura:
+# Resumen del proyecto
 
-- [X] Poner en funcionamiento una aplicación web Django contenerizada
-- [X] Poner en funcionamiento una aplicación web Django contenerizada, pero la base de datos es externa
-- [X] Sistema de tickets en la aplicación web
-- [ ] Sistema de autenticación para empleados (LDAP/Active Directory)
-    - [X] Prueba 1: Servidor web dentro de la red local, acceso a la BBDD en la misma máquina, pero fuera del contenedor.
-    - [ ] Prueba 2: Servidor web (aplicación web dockerizada) dentro de la red local, con acceso servidor BBDD en la red local.
-    - [ ] Prueba 3: Windows Server en red local, con acceso a la aplicación web y BBDD en AWS.
-    - [ ] Prueba 4: Windows Server en red local, con comunicación con LDAP-Kerberos
-    - [ ] Prueba 5: Windows Server en red local, con comunicación con LDAP-Kerberos y just in-time provisioning.
-- [ ] Revisión de seguridad en AWS
-- [ ] Sistema de autenticación para pacientes (Django)
-- [ ] Sistema de gestión de citas
-- [ ] Revisión de seguridad
+El proyecto es una web app SaaS (Software as a Service) orientado a satisfacer las necesidades de clínicas psicológicas.
+Para ello, como prueba, se despliega la arquitectura de una empresa ficticia (una clínica) junto con su web app para atención a pacientes.
 
+## 1. Arquitectura en despliegue
 
-# Arquitectura del Proyecto Final ASIR
+La simulación de la empresa incluye:
 
-## 1. Objetivo del proyecto
+1. **Infraestructura corporativa interna (VirtualBox)**
+   - Windows Server 2022 con Active Directory
+   - Cliente Windows 1 (usuario empleado)
+
+2. **Infraestructura en red en la nube (AWS)**
+   - EC2 con LB para mayor disponibilidad, más resiliencia y escalabilidad (subred pública)
+      - También se encarga de gestionar tráfico HTTPS
+      - En subred pública, accesible desde https://getbetter.ddns.net/
+   - EC2 con aplicación web (dos o más). Cada una de ellas despliega un docker compose con dos contenedores:
+      - Nginx: Recibe el tráfico del LB
+      - Django: Aplicación web
+   - EC2 con base de datos (MariaDB). Guarda los datos persistentes para la app web.
+   - EC2 con memoria caché (Redis).
+      - Reduce la carga en la base de datos para información que no necesita de persistencia
+      - Permite que se mantenga la sesión abierta aunque se produzca un cambio en la EC2 que sirve al cliente
+   - EC2 Bastión
+      - Permite el acceso controlado a los servicios internos (ssh)
+
+3. **Infraestructura de red en la nube (AWS)**
+   - VPC
+   - Subredes públicas (una, la DMZ, para el LB y otra para la EC2 Bastión)
+   - Subredes privadas (dos, una para las EC2 con la app web y Redis, y otra para la EC2 con la base de datos)
+   - Route table
+   - Security group
+   - Internet gateway
+   - NAT gateway
+   - ELB (Elastic Load Balancer)
 
 Simular la infraestructura tecnológica de una **empresa de atención psicológica**, incluyendo:
 
@@ -68,84 +96,31 @@ El sistema debe permitir:
 
 ---
 
-# 2. Arquitectura general
 
-La arquitectura está dividida en **dos entornos principales**:
+# 4. Flujo de red
 
-## 2.1 Infraestructura corporativa interna (VirtualBox)
-
-Simula la red interna de la empresa.
-
-Componentes:
-
-```
-Red interna VirtualBox
-│
-├── Windows Server 2022
-│   └ Active Directory Domain Services
-│
-├── Cliente Windows 1
-│   └ Usuario empleado
-│
-├── Cliente Windows 2
-│   └ Usuario empleado
-│
-└── Router Linux virtual
-    ├ interfaz red interna
-    └ interfaz NAT (salida internet)
-```
-
-Funciones:
-
-* gestión de identidades
-* autenticación corporativa
-* simulación de red empresarial
-
----
-
-## 2.2 Infraestructura cloud (AWS)
-
-Aquí vive la **aplicación productiva**.
-
-Componentes principales:
-
-```
-AWS
-│
-├ EC2
-│  ├ Docker
-│  │  ├ Django container
-│  │  └ Django container (replica)
-│  │
-│  └ Redis
-│
-├ MariaDB
-│
-└ Load Balancer
-```
-
-Funciones:
-
-* servir la aplicación web
-* persistencia de datos
-* escalabilidad
-
----
-
-# 3. Flujo de red
-
-## 3.1 Usuarios internos (empleados)
+## 4.1 Usuarios internos (empleados)
 
 ```
 Cliente Windows
-      │
-      │ autenticación dominio
-      ▼
+   │
+   │ autenticación dominio (LDAP interno)
+   ▼
 Active Directory
-      │
-      │ LDAP
-      ▼
-Aplicación Django (AWS)
+   │
+   │ SSO (Single Sign-On)
+   │
+Internet
+   │
+   ▼
+Load Balancer AWS
+   │
+   ▼
+Django
+   │
+   │ SSO
+   ▼
+Login finalizado
 ```
 
 Los empleados:
@@ -156,7 +131,7 @@ Los empleados:
 
 ---
 
-## 3.2 Usuarios externos (pacientes)
+## 4.2 Usuarios externos (pacientes)
 
 ```
 Paciente
@@ -170,8 +145,9 @@ Load Balancer AWS
    ▼
 Django
    │
+   │ Auth contra Base de Datos
    ▼
-Base de datos
+Login finalizado
 ```
 
 Los pacientes:
@@ -181,297 +157,16 @@ Los pacientes:
 
 ---
 
-# 4. Modelo de autenticación
 
-## 4.1 Autenticación de empleados
-
-Tecnología elegida:
-
-```
-django-auth-ldap
-```
-
-Flujo:
-
-```
-Login usuario
-     │
-     ▼
-Django
-     │
-     ▼
-LDAP query
-     │
-     ▼
-Active Directory
-```
-
-Si el usuario pertenece a determinadas **OU**, se le permite acceso.
-
----
-
-## 4.2 Sincronización de usuarios
-
-Usuarios corporativos deben existir también en la aplicación.
-
-Estrategia:
-
-```
-Active Directory
-      │
-      ▼
-LDAP login
-      │
-      ▼
-Django crea usuario local automáticamente
-```
-
-Este patrón se denomina:
-
-**Just-In-Time User Provisioning**
-
-Reglas:
-
-* solo OU específicas
-* roles asignados según grupo AD
-
-Ejemplo conceptual:
-
-```
-OU=Psychologists → role=psicólogo
-OU=Reception → role=recepción
-OU=IT → role=administrador
-```
-
----
-
-# 5. Arquitectura de la aplicación
-
-Aplicación web desarrollada con:
-
-```
-Django
-```
-
-Funcionalidades:
-
-* gestión de citas
-* agenda de psicólogos
-* gestión de pacientes
-* autenticación
-
----
-
-## 5.1 Despliegue
-
-La aplicación se ejecuta en contenedores:
-
-```
-Docker
-```
-
-Estructura:
-
-```
-EC2
-│
-├ Django container
-├ Django container (replica)
-└ Redis
-```
-
----
-
-# 6. Balanceo de carga
-
-Se utilizará un **Load Balancer** para distribuir tráfico.
-
-Motivación:
-
-* simular arquitectura escalable
-* permitir múltiples contenedores
-
-Arquitectura:
-
-```
-Internet
-   │
-   ▼
-AWS Load Balancer
-   │
-   ├ Django container 1
-   └ Django container 2
-```
-
----
-
-# 7. Gestión de sesiones
-
-Problema:
-
-En un sistema con **varios contenedores**, las sesiones locales se pierden.
-
-Ejemplo de problema:
-
-```
-Login en container A
-↓
-Siguiente petición va a container B
-↓
-Sesión no existe
-↓
-Usuario desconectado
-```
-
-Solución:
-
-```
-Redis
-```
-
-Redis actúa como **session store compartido**.
-
-Arquitectura:
-
-```
-Django containers
-     │
-     ▼
-Redis
-     │
-     ▼
-Sesiones compartidas
-```
-
-Beneficios:
-
-* persistencia de sesiones
-* escalabilidad
-* menor latencia
-
----
-
-# 8. Base de datos
-
-Tecnología:
-
-```
-MariaDB
-```
-
-Ubicación:
-
-```
-AWS EC2
-```
-
-Separación de responsabilidades:
-
-```
-App Server
-    │
-    ▼
-Database Server
-```
-
-Motivación:
-
-* arquitectura realista
-* mayor seguridad
-* escalabilidad
-
----
-
-# 9. Automatización del Active Directory
-
-Se desarrollará un **script PowerShell** para simplificar la gestión.
-
-Funciones previstas:
-
-* creación de usuarios
-* asignación a grupos
-* gestión de OU
-
-Ejemplo conceptual:
-
-```powershell
-New-ADUser
-Add-ADGroupMember
-```
-
-Motivación:
-
-* demostrar automatización
-* facilitar administración
-
----
-
-# 10. Sistema operativo del dominio
-
-Tecnología:
-
-```
-Windows Server 2022
-```
-
-Motivación:
-
-* versión moderna
-* soporte completo
-* mismas funcionalidades AD que 2019
-
-No existen incompatibilidades relevantes para este proyecto.
-
----
-
-# 11. Diagrama simplificado final
-
-```
-             ┌────────────────────────┐
-             │   Red interna empresa  │
-             └────────────┬───────────┘
-                          │
-        ┌─────────────────▼─────────────────┐
-        │        Active Directory           │
-        │        Windows Server 2022        │
-        └───────────────┬───────────────────┘
-                        │ LDAP
-                        │
-                        ▼
-                ┌───────────────┐
-                │   Internet    │
-                └───────┬───────┘
-                        │
-                        ▼
-               ┌───────────────────┐
-               │  AWS LoadBalancer │
-               └───────┬───────────┘
-                       │
-             ┌─────────▼─────────┐
-             │    EC2 Docker     │
-             │                   │
-             │  Django 1        │
-             │  Django 2        │
-             │  Redis           │
-             └─────────┬─────────┘
-                       │
-                       ▼
-                 ┌──────────┐
-                 │ MariaDB  │
-                 └──────────┘
-```
-
----
-
-# 12. Decisiones técnicas clave
-
-| Componente       | Tecnología            | Motivo                     |
-| ---------------- | --------------------- | -------------------------- |
-| Django           | Framework web         | desarrollo rápido          |
-| Docker           | Contenerización       | despliegue reproducible    |
-| MariaDB          | Base de datos         | compatibilidad con Django  |
-| Redis            | sesiones              | necesario para balanceo    |
-| Active Directory | identidad corporativa | autenticación centralizada |
-| LDAP             | integración AD        | implementación sencilla    |
-| AWS EC2          | hosting               | simulación cloud real      |
-| Load Balancer    | escalabilidad         | arquitectura profesional   |
+# 5. Decisiones sobre tecnlogía
+
+| Componente       | Tecnología            | Motivo                                    |
+| ---------------- | --------------------- | ------------------------------------------|
+| Django           | Framework web         | desarrollo rápido                         |
+| Docker           | Contenerización       | despliegue reproducible                   |
+| MariaDB          | Base de datos         | compatibilidad con Django + Open source   |
+| Redis            | Memoria caché         | Necesario para balanceo                   |
+| Active Directory | Identidad corporativa | Autenticación centralizada para empleados |
+| LDAP             | Integración AD        | implementación sencilla                   |
+| AWS EC2          | hosting               | simulación cloud real                     |
+| Load Balancer    | escalabilidad         | arquitectura profesional                  |

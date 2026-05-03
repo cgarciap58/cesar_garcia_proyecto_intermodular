@@ -19,7 +19,8 @@ staticfiles/
 media/
 
 # Environment - ignore it when we are done bugfixing
-*.env*
+*.env.aws*
+*.env.local*
 
 # Deployment
 */labsuser.pem
