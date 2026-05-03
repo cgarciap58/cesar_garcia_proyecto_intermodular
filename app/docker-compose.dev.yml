@@ -9,6 +9,8 @@ services:
       - red_docker_proyecto
 
   nginx:
+    ports: !reset 
+      - []
     networks:
       - red_docker_proyecto
 

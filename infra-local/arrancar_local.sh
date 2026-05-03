@@ -14,11 +14,11 @@ fi
 
 echo "1. Levantando simulación de servicios local (Base de datos)"
 
-docker compose -f ./infra-local/docker-compose.yml up -d mariadb
+docker compose --env-file ./app/.env.local -f ./infra-local/docker-compose.yml up -d mariadb
 
 echo "2. Levantando simulación de servicios local (Redis)"
 
-docker compose -f ./infra-local/docker-compose.yml up -d redis
+docker compose --env-file ./app/.env.local -f ./infra-local/docker-compose.yml up -d redis
 
 echo "3. Levantando Apps local"
 
@@ -27,5 +27,5 @@ docker compose -p app2 -f ./app/docker-compose.yml -f ./app/docker-compose.dev.y
 
 echo "4. Levantando simulación de servicios local (Load Balancer)"
 
-docker compose -f ./infra-local/docker-compose.yml up -d nginx-lb
+docker compose --env-file ./app/.env.local -f ./infra-local/docker-compose.yml up  -d nginx-lb
 

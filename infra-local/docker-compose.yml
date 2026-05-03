@@ -28,6 +28,13 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
+    command: >
+      redis-server
+      --bind 0.0.0.0
+      --protected-mode yes
+      --port 6379
+      --requirepass ${REDIS_PASSWORD}
+      --appendonly yes
     networks:
       - red_docker_proyecto
 
