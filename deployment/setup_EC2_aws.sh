@@ -87,6 +87,7 @@ case $maquina in
                 "$DJANGO_SUPERUSER_USERNAME" \
                 "$DJANGO_SUPERUSER_EMAIL" \
                 "$DJANGO_SUPERUSER_PASSWORD" \
+                "$REDIS_PASSWORD" \
                 "$DOMAIN" \
                 < ./app/app_deploy.sh
                 ;;
@@ -102,6 +103,7 @@ case $maquina in
                 "$DJANGO_SUPERUSER_USERNAME" \
                 "$DJANGO_SUPERUSER_EMAIL" \
                 "$DJANGO_SUPERUSER_PASSWORD" \
+                "$REDIS_PASSWORD" \
                 "$DOMAIN" \
                 < ./app/app_deploy.sh
 

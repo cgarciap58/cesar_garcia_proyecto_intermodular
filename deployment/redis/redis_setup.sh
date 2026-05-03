@@ -56,7 +56,7 @@ sudo sed -i "s/^bind .*/bind 0.0.0.0/" /etc/redis/redis.conf
 sudo sed -i 's/^protected-mode .*/protected-mode yes/' /etc/redis/redis.conf
 sudo sed -i 's/^port .*/port 6379/' /etc/redis/redis.conf
 sudo sed -i 's/^appendonly no/appendonly yes/' /etc/redis/redis.conf
-sudo echo "requirepass $REDIS_PASSWORD" >> /etc/redis/redis.conf
+echo "requirepass $REDIS_PASSWORD" | sudo tee -a /etc/redis/redis.conf
 
 # Persistencia AOF
 sudo sed -i 's/^appendonly no/appendonly yes/' /etc/redis/redis.conf
