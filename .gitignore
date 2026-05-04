@@ -33,3 +33,7 @@ media/
 .vscode/
 .idea/
 
+# Frontend
+app/frontend/node_modules/
+app/frontend/dist/
+app/frontend/.vite/
