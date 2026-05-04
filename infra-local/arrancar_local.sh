@@ -22,6 +22,11 @@ echo "2. Levantando simulación de servicios local (Redis)"
 
 docker compose --env-file ./app/.env.local -f ./infra-local/docker-compose.yml up -d redis
 
+if [ "${FRONTEND_DEV:-0}" = "1" ]; then
+    echo "3.1 Levantando frontend con hot-reload (perfil frontend-dev)"
+    docker compose -p app1 -f ./app/docker-compose.yml -f ./app/docker-compose.dev.yml --profile frontend-dev up -d frontend
+fi
+
 echo "3. Levantando Apps local"
 
 docker compose -p app1 -f ./app/docker-compose.yml -f ./app/docker-compose.dev.yml up -d

@@ -4,7 +4,6 @@ Safe debug-ready version for Docker + local dev.
 """
 
 from pathlib import Path
-# import os
 import environ
 from django.core.exceptions import ImproperlyConfigured
 
@@ -110,6 +109,7 @@ USE_TZ = True
 # ----------------------
 STATIC_URL = '/static/'
 STATIC_ROOT = Path(env('DJANGO_STATIC_ROOT', default='/var/www/static'))
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
