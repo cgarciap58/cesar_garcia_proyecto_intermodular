@@ -1,4 +1,19 @@
-# Guía rápida de estructura y ejecución
+# GetBetter
+
+Plataforma web SaaS para clínicas psicológicas desplegada en arquitectura híbrida:
+
+- AWS (Load Balancer + App Servers + Redis + MariaDB)
+- Active Directory local integrado
+- Login corporativo LDAP
+- Alta disponibilidad
+- Despliegue automatizado
+
+---
+
+## Acceso público
+https://getbetter.ddns.net
+
+---
 
 ## Estructura base del repositorio
 
@@ -21,7 +36,9 @@ repositorio/
 
 ```
 
-## Qué ejecutar
+---
+
+## Ejecución local
 
 Para levantar la aplicación en local:
 
@@ -34,72 +51,19 @@ Para levantar la aplicación en local:
 ./infra-local/arrancar_local.sh
 ```
 
-Para despliegue en nube:
+---
 
-1. Contacta con cgarciap58@iesalbarregas.es
+## Arquitectura visual
 
+Internet <-> Load Balancer <-> App1 / App2 (Docker + Django) <-> Redis + MariaDB
 
-Consulta también `docs/escenarios-ejecucion.md` para una guía paso a paso por escenario.
+App1 / App2 (Docker + Django) <-> Red privada Tailscale <-> Windows Server AD local
 
 ---
 
-# Resumen del proyecto
+## Flujo de red
 
-El proyecto es una web app SaaS (Software as a Service) orientado a satisfacer las necesidades de clínicas psicológicas.
-Para ello, como prueba, se despliega la arquitectura de una empresa ficticia (una clínica) junto con su web app para atención a pacientes.
-
-## 1. Arquitectura en despliegue
-
-La simulación de la empresa incluye:
-
-1. **Infraestructura corporativa interna (VirtualBox)**
-   - Windows Server 2022 con Active Directory
-   - Cliente Windows 1 (usuario empleado)
-
-2. **Infraestructura en red en la nube (AWS)**
-   - EC2 con LB para mayor disponibilidad, más resiliencia y escalabilidad (subred pública)
-      - También se encarga de gestionar tráfico HTTPS
-      - En subred pública, accesible desde https://getbetter.ddns.net/
-   - EC2 con aplicación web (dos o más). Cada una de ellas despliega un docker compose con dos contenedores:
-      - Nginx: Recibe el tráfico del LB
-      - Django: Aplicación web
-   - EC2 con base de datos (MariaDB). Guarda los datos persistentes para la app web.
-   - EC2 con memoria caché (Redis).
-      - Reduce la carga en la base de datos para información que no necesita de persistencia
-      - Permite que se mantenga la sesión abierta aunque se produzca un cambio en la EC2 que sirve al cliente
-   - EC2 Bastión
-      - Permite el acceso controlado a los servicios internos (ssh)
-
-3. **Infraestructura de red en la nube (AWS)**
-   - VPC
-   - Subredes públicas (una, la DMZ, para el LB y otra para la EC2 Bastión)
-   - Subredes privadas (dos, una para las EC2 con la app web y Redis, y otra para la EC2 con la base de datos)
-   - Route table
-   - Security group
-   - Internet gateway
-   - NAT gateway
-   - ELB (Elastic Load Balancer)
-
-Simular la infraestructura tecnológica de una **empresa de atención psicológica**, incluyendo:
-
-* gestión de usuarios corporativos
-* autenticación centralizada
-* aplicación web para gestión de citas
-* despliegue híbrido (infraestructura local + cloud)
-
-El sistema debe permitir:
-
-* autenticación centralizada para empleados
-* acceso web para pacientes
-* gestión de citas entre psicólogos y pacientes
-* separación entre infraestructura interna y servicios públicos
-
----
-
-
-# 4. Flujo de red
-
-## 4.1 Usuarios internos (empleados)
+### Usuarios internos (empleados)
 
 ```
 Cliente Windows
@@ -129,9 +93,8 @@ Los empleados:
 * acceden a la aplicación web
 * Django valida sus credenciales contra Active Directory
 
----
 
-## 4.2 Usuarios externos (pacientes)
+### Usuarios externos (pacientes)
 
 ```
 Paciente
@@ -157,16 +120,54 @@ Los pacientes:
 
 ---
 
+## Despliegue AWS
 
-# 5. Decisiones sobre tecnlogía
+Los scripts de despliegue se encuentran en la carpeta `deployment/`.
 
-| Componente       | Tecnología            | Motivo                                    |
-| ---------------- | --------------------- | ------------------------------------------|
-| Django           | Framework web         | desarrollo rápido                         |
-| Docker           | Contenerización       | despliegue reproducible                   |
-| MariaDB          | Base de datos         | compatibilidad con Django + Open source   |
-| Redis            | Memoria caché         | Necesario para balanceo                   |
-| Active Directory | Identidad corporativa | Autenticación centralizada para empleados |
-| LDAP             | Integración AD        | implementación sencilla                   |
-| AWS EC2          | hosting               | simulación cloud real                     |
-| Load Balancer    | escalabilidad         | arquitectura profesional                  |
+---
+
+## Tecnologías utilizadas
+
+### Sistemas Operativos
+
+- Linux Debian
+- Linux Alpine
+- Windows Server
+- Windows 10-11
+
+### Infraestructura
+
+   - AWS
+      - EC2
+      - VPC + Subnets
+      - Grupos de seguridad (SGs)
+      - Tablas de enrutamiento
+
+   - Docker + Docker Compose
+   - Tailscale
+
+   - Windows Server Active Directory
+
+### Stack de desarrollo + servicios
+
+   - Nginx
+   - Django + Gunicorn
+   - MariaDB
+   - Redis
+   Linux
+   Windows Server
+   Active Directory
+   LDAP
+   Bash
+
+---
+
+## Estado actual
+
+✅ Infra AWS desplegada  
+✅ Balanceador funcional  
+✅ 2 nodos app  
+✅ Redis sesiones compartidas  
+✅ MariaDB productiva  
+✅ Tailscale conectado a AD  
+🔄 Integración Django LDAP en progreso
