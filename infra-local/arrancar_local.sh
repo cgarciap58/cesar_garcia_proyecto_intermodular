@@ -1,8 +1,10 @@
 #!/bin/bash
 
-if [ "$(pwd)" != "/home/cgarciap/01.ASIR2/10.Proyecto_intermodular/proyecto_final" ]; then
-    cd /home/cgarciap/01.ASIR2/10.Proyecto_intermodular/proyecto_final
-fi
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$REPO_ROOT"
 
 red_docker="red_docker_proyecto"
 

@@ -2,6 +2,7 @@ services:
   django:
     volumes:
       - ./src:/app
+      - static_volume:/var/www/static
     command: python manage.py runserver 0.0.0.0:8000
     env_file:
       - ../app/.env.local
@@ -13,6 +14,10 @@ services:
       - []
     networks:
       - red_docker_proyecto
+
+volumes:
+  static_volume:
+
 
 networks:
   red_docker_proyecto:
