@@ -20,7 +20,7 @@ env = environ.Env(
     DJANGO_DEBUG=(bool, False)
 )
 
-environ.Env.read_env(BASE_DIR / ".local.env") # Lo lee -- app/django/.local.env
+# environ.Env.read_env(BASE_DIR / ".local.env") # Lo lee -- app/django/.local.env
 
 SECRET_KEY = env("SECRET_KEY")
 

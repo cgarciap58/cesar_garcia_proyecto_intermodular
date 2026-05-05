@@ -2,7 +2,10 @@ services:
   django:
     build:
       context: ./django
-    command: gunicorn core.wsgi --bind 0.0.0.0:8000
+    volumes:
+      - static_volume:/app/staticfiles
+    env_file:
+      - ./.local.env
     ports:
       - "8000:8000"
 
@@ -12,11 +15,15 @@ services:
 
   nginx:
     image: nginx:latest
-    ports:
-      - "80:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./react/getbetter/dist:/var/www/react
+      - static_volume:/var/www/static:ro
     depends_on:
       - django
       - react
+    ports:
+      - "80:80"
+
+volumes:
+  static_volume:

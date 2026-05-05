@@ -6,6 +6,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
 RED_DOCKER="red_docker_proyecto"
+ENV_FILE="./app/.local.env"
 
 echo "0. Creando red docker si no existe..."
 if ! docker network inspect $RED_DOCKER >/dev/null 2>&1; then
@@ -14,13 +15,13 @@ fi
 
 echo "1. Levantando base de datos (MariaDB)"
 docker compose \
-  --env-file ./app/django/.local.env \
+  --env-file $ENV_FILE \
   -f ./infra-local/docker-compose.yml \
   up -d mariadb
 
 echo "2. Levantando Redis"
 docker compose \
-  --env-file ./app/django/.local.env \
+  --env-file $ENV_FILE \
   -f ./infra-local/docker-compose.yml \
   up -d redis
 
@@ -38,7 +39,7 @@ docker compose \
 
 echo "5. Levantando Load Balancer"
 docker compose \
-  --env-file ./app/django/.local.env \
+  --env-file $ENV_FILE \
   -f ./infra-local/docker-compose.yml \
   up -d nginx-lb
 
