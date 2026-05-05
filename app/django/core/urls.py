@@ -5,5 +5,5 @@ from .views import test_api, session_test
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/test/', test_api),
-    path('session-test/', session_test),
+    path('django-debug/session-test/', session_test),
 ]

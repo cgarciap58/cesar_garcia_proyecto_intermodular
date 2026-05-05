@@ -6,8 +6,8 @@ services:
       - "8000:8000"
     volumes:
       - static_volume:/app/staticfiles
-    env_file:
-      - /tmp/.env.runtime
+    # env_file:
+    #   - /tmp/.env.runtime
 
 
   nginx:
