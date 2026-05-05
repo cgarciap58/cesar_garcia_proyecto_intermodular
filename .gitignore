@@ -21,6 +21,7 @@ media/
 # Environment - ignore it when we are done bugfixing
 *.env.aws*
 *.env.local*
+*/.local.env
 
 # Deployment
 */labsuser.pem
