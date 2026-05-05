@@ -28,13 +28,13 @@ DEBUG = env("DEBUG")
 
 ALLOWED_HOSTS = [
     host.strip()
-    for host in env("ALLOWED_HOSTS").split(",")
+    for host in env("DJANGO_ALLOWED_HOSTS").split(",")
     if host.strip()
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     host.strip()
-    for host in env("CSRF_TRUSTED_ORIGINS").split(",")
+    for host in env("DJANGO_CSRF_TRUSTED_ORIGINS").split(",")
     if host.strip()
 ]
 
