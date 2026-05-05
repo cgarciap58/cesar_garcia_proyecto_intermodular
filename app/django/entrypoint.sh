@@ -2,7 +2,7 @@
 set -e
 
 echo "Waiting for DB..."
-until nc -z "$DB_HOST" "$DB_PORT"; do
+until nc -z "$DB_HOST" $DB_PORT; do
   sleep 2
 done
 
