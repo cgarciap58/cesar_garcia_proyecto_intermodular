@@ -2,7 +2,7 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-COPY app/react/getbetter/package*.json ./
+COPY ./react/getbetter/package*.json ./
 RUN npm install
 
 COPY app/react/getbetter/ .
