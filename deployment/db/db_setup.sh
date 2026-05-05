@@ -6,10 +6,10 @@ if [ $# -ne 4 ]; then
     exit 1
 fi
 
-django_db_user="$1"
-django_db_pass="$2"
-django_db_database_name="$3"
-django_EC2_IPs="$4"
+DJANGO_DB_USER="$1"
+DJANGO_DB_PASS="$2"
+DJANGO_DB_NAME="$3"
+DJANGO_EC2_IPs="$4"
 
 
 HOST="db"
@@ -46,7 +46,7 @@ sudo systemctl start mariadb
 echo "[4] Creando base de datos..."
 
 sudo mysql -u root <<EOF
-CREATE DATABASE IF NOT EXISTS ${django_db_database_name};
+CREATE DATABASE IF NOT EXISTS ${DJANGO_DB_NAME};
 EOF
 
 echo "[5] Creando usuarios para instancias Django..."

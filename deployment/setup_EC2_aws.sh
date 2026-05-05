@@ -43,9 +43,11 @@ case $maquina in
     2)
         DJANGO_APP_EC2_IPS="$APP_IP_1,$APP_IP_2"
 
+        source ../app/.app.aws.env
+
         ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$DB_IP \
         "bash -s" \
-        -- "$DJANGO_DB_USER" "$DJANGO_DB_PASS" "$DJANGO_DB_DATABASE_NAME" "$DJANGO_APP_EC2_IPS" \
+        -- "$DJANGO_DB_USER" "$DJANGO_DB_PASS" "$DJANGO_DB_NAME" "$DJANGO_APP_EC2_IPS" \
         < ./db/db_setup.sh
         ;;
 
@@ -56,7 +58,7 @@ case $maquina in
         ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB \
         $USUARIO_ROOT_EC2@$REDIS_IP \
         "bash -s" \
-        -- "$REDIS_IP" "$APP_IP_1" "$APP_IP_2" "$REDIS_PASSWORD" \
+        -- "$REDIS_IP" "$APP_IP_1" "$APP_IP_2" "$REDIS_PASS" \
         < ./redis/redis_setup.sh
         ;;
 
