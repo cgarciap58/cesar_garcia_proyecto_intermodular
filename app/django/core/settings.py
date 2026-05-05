@@ -161,3 +161,8 @@ else:
 
     SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
+
+CSRF_TRUSTED_ORIGINS = os.getenv(
+    "DJANGO_CSRF_TRUSTED_ORIGINS",
+    ""
+).split(",")
