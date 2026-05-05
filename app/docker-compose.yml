@@ -9,8 +9,8 @@ services:
 
   nginx:
     build:
-      context: ./app
-      dockerfile: nginx/Dockerfile
+      context: .
+      dockerfile: ./nginx/Dockerfile
     ports:
       - "80:80"
     volumes:
