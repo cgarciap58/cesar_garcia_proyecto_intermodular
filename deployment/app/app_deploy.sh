@@ -45,6 +45,6 @@ echo "[4] Arrancando contenedor Django..."
 sudo docker compose down --remove-orphans || true
 sudo docker compose -f docker-compose.yml --env-file $ENV_FILE up -d --build
 
-rm -f $ENV_FILE
+# rm -f $ENV_FILE
 
 echo "Docker Compose lanzado correctamente. Actualizado al repositorio actual"
