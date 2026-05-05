@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [ $# -ne 4 ]; then
-    echo "Uso: $0 <django_db_user> <django_db_pass> <django_db_database_name> <django_app_ec2_ips>"
+    echo "Uso: $0 <DJANGO_DB_USER> <DJANGO_DB_PASS> <DJANGO_DB_NAME> <DJANGO_EC2_IPs>"
     exit 1
 fi
 
@@ -51,12 +51,12 @@ EOF
 
 echo "[5] Creando usuarios para instancias Django..."
 
-IFS=',' read -ra django_IPS <<< "$django_EC2_IPs"
+IFS=',' read -ra django_IPS <<< "$DJANGO_EC2_IPs"
 
 for ip in "${django_IPS[@]}"; do
 sudo mysql <<EOF
-CREATE USER IF NOT EXISTS '${django_db_user}'@'${ip}' IDENTIFIED BY '${django_db_pass}';
-GRANT ALL PRIVILEGES ON ${django_db_database_name}.* TO '${django_db_user}'@'${ip}';
+CREATE USER IF NOT EXISTS '${DJANGO_DB_USER}'@'${ip}' IDENTIFIED BY '${DJANGO_DB_PASS}';
+GRANT ALL PRIVILEGES ON ${DJANGO_DB_NAME}.* TO '${DJANGO_DB_USER}'@'${ip}';
 FLUSH PRIVILEGES;
 EOF
 done
