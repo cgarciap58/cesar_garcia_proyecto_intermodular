@@ -32,6 +32,13 @@ ALLOWED_HOSTS = [
     if host.strip()
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    host.strip()
+    for host in env("CSRF_TRUSTED_ORIGINS").split(",")
+    if host.strip()
+]
+
+
 STATIC_URL = '/static/'
 STATIC_ROOT = '/app/staticfiles'
 
@@ -161,8 +168,3 @@ else:
 
     SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
-
-CSRF_TRUSTED_ORIGINS = os.getenv(
-    "DJANGO_CSRF_TRUSTED_ORIGINS",
-    ""
-).split(",")
