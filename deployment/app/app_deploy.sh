@@ -2,65 +2,27 @@
 
 set -euo pipefail
 
-if [ $# -ne 11 ]; then
-    echo "Uso: $0 <DB_HOST> <DB_NAME> <DB_USER> <DB_PASSWORD> <REDIS_HOST> <LB_IP> <DJANGO_SUPERUSER_USERNAME> <DJANGO_SUPERUSER_EMAIL> <DJANGO_SUPERUSER_PASSWORD> <REDIS_PASSWORD> <DOMAIN>"
+if [ $# -ne 0 ]; then
+    echo "Uso: $0"
     exit 1
 fi
 
-DB_IP=$1
-REDIS_IP=$2
-LB_IP=$3
-DB_USER=$4
-DB_PASS=$5
-DB_NAME=$6
-DJANGO_SUPERUSER_USERNAME=$7
-DJANGO_SUPERUSER_EMAIL=$8
-DJANGO_SUPERUSER_PASSWORD=$9
-REDIS_PASSWORD=${10}
-DOMAIN=${11}
-
-echo "DB_IP: $DB_IP"
-echo "REDIS_IP: $REDIS_IP"
-echo "LB_IP: $LB_IP"
-echo "DB_USER: $DB_USER"
-echo "DB_PASS: $DB_PASS"
-echo "DB_NAME: $DB_NAME"
-
-
 # Este script se encarga de hacer el git clone en caso de que sea necesario, actualizar el repositorio, y re-desplegar la app en producción
 # Se lanza después de app_setup.sh, que pone el nombre al host y solo instala las dependencias
+# Es lanzado  por setup_EC2_aws.sh, que deja el archivo .env.runtime con las variables de entorno necesarias en /tmp
 
 repositorio="cesar_garcia_proyecto_intermodular"
 ruta_repositorio="https://github.com/cgarciap58/$repositorio.git"
-# Verificar si el directorio ya existe, y clonar si no
 
+echo "[1] Gestionando repositorio..."
 
-echo "[0] Forzando estado limpio del repositorio..."
-
-cd ~
-
-rm -rf "$repositorio"
-
-echo "[1] Clonando repositorio..."
-git clone "$ruta_repositorio"
+if [ ! -d "$repositorio" ]; then
+    echo "Clonando repositorio..."
+    git clone "$ruta_repositorio"
+fi
 
 cd "$repositorio"
-
-
-cd ~
-
-if [ -d "$repositorio" ]; then
-    echo "whoami: $(whoami)"
-    echo "pwd: $(pwd)"
-    ls -la
-    echo "[1] El directorio ya existe, actualizando repositorio..."
-    cd $repositorio
-    git pull
-else
-    echo "[1] Clonando repositorio..."
-    git clone $ruta_repositorio
-    cd $repositorio
-fi
+git pull
 
 echo "[2] Limpiando directorios innecesarios..."
 ls -la
@@ -68,44 +30,21 @@ rm -rf ./deployment ./docs ./infra-local
 ls -la
 cd ./app
 
-echo "[3] Creando .env.aws"
-cat > .env.aws <<EOF
-DB_HOST=$DB_IP
-DB_PORT=3306
-DB_NAME=$DB_NAME
-DB_USER=$DB_USER
-DB_PASSWORD=$DB_PASS
 
-REDIS_HOST=$REDIS_IP
-REDIS_PORT=6379
-USE_REDIS=True
+echo "[3] Rescatando .env.runtime"
 
-DJANGO_SECRET_KEY=xxxxx
-DJANGO_DEBUG=True
-DB_ENGINE=django.db.backends.mysql
+if [ ! -f /tmp/.env.runtime ]; then
+    echo "ERROR: .env.runtime no encontrado"
+    exit 1
+fi
 
-DJANGO_SUPERUSER_USERNAME=$DJANGO_SUPERUSER_USERNAME
-DJANGO_SUPERUSER_EMAIL=$DJANGO_SUPERUSER_EMAIL
-DJANGO_SUPERUSER_PASSWORD=$DJANGO_SUPERUSER_PASSWORD
-
-DJANGO_ALLOWED_HOSTS=$LB_IP,localhost,127.0.0.1,$DOMAIN
-DJANGO_CSRF_TRUSTED_ORIGINS=https://$LB_IP,https://$DOMAIN
-
-REDIS_PASSWORD=$REDIS_PASSWORD
-
-EOF
-
+ENV_FILE="/tmp/.env.runtime"
 
 echo "[4] Arrancando contenedor Django..."
 
 sudo docker compose down --remove-orphans || true
-sudo docker rm -f app2-nginx app1-nginx || true
-sudo docker compose -f docker-compose.yml up -d --build
+sudo docker compose -f docker-compose.yml --env-file $ENV_FILE up -d --build
 
+rm -f $ENV_FILE
 
-
-# docker compose up -d --build
-
-# echo "Django arrancado correctamente"
-
-echo "Todo correcto, bro"
+echo "Docker Compose lanzado correctamente. Actualizado al repositorio actual"

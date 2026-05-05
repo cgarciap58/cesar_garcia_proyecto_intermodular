@@ -6,7 +6,18 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
 RED_DOCKER="red_docker_proyecto"
-ENV_FILE="./app/.local.env"
+ENV_FILE_BASE="./app/.app.base.env"
+ENV_FILE_LOCAL="./app/.app.local.env"
+
+ENV_FILE_COMBINED="./app/.env.runtime"
+
+# Creamos o sobreescrimos .env.runtime con el contenido de .app.base.env y .app.local.env
+echo "0. Combinando envs..."
+
+cat "$ENV_FILE_BASE" > "$ENV_FILE_COMBINED"
+echo "" >> "$ENV_FILE_COMBINED"
+cat "$ENV_FILE_LOCAL" >> "$ENV_FILE_COMBINED"
+
 
 echo "0. Creando red docker si no existe..."
 if ! docker network inspect $RED_DOCKER >/dev/null 2>&1; then
@@ -15,13 +26,13 @@ fi
 
 echo "1. Levantando base de datos (MariaDB)"
 docker compose \
-  --env-file $ENV_FILE \
+  --env-file $ENV_FILE_COMBINED \
   -f ./infra-local/docker-compose.yml \
   up -d mariadb
 
 echo "2. Levantando Redis"
 docker compose \
-  --env-file $ENV_FILE \
+  --env-file $ENV_FILE_COMBINED \
   -f ./infra-local/docker-compose.yml \
   up -d redis
 
@@ -39,7 +50,7 @@ docker compose \
 
 echo "5. Levantando Load Balancer"
 docker compose \
-  --env-file $ENV_FILE \
+  --env-file $ENV_FILE_COMBINED \
   -f ./infra-local/docker-compose.yml \
   up -d nginx-lb
 

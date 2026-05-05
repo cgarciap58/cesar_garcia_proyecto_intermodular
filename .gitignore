@@ -19,9 +19,11 @@ staticfiles/
 media/
 
 # Environment - ignore it when we are done bugfixing
-*.env.aws*
-*.env.local*
-*/.local.env
+.app.base.env
+.app.local.env
+.app.aws.env
+.topologia-aws.env
+.env.runtime
 
 # Deployment
 */labsuser.pem

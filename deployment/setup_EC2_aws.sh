@@ -21,7 +21,7 @@ source ./topologia-aws.env
 eval "$(ssh-agent -s)"
 ssh-add "$KEY_PATH"
 
-echo "¿Qué instancia quieres configurar a su estado base?"
+echo "¿Qué instancia quieres configurar a su estado base, o desplegar?"
 echo "ADVERTENCIA: Esta operación puede ser destructiva y se podrían perder todos los datos."
 echo "0. Bastion"
 echo "1. LB"
@@ -61,52 +61,19 @@ case $maquina in
         ;;
 
     4)
-        echo "¿Qué instancia EC2 quieres inicializar?"
-        echo "1. app1-setup"
-        echo "2. app2-setup"
-        echo "3. app1-despliegue"
-        echo "4. app2-despliegue"
+        echo "¿Qué instancia EC2 quieres inicializar o desplegar?"
+        echo "1. EC2-App1"
+        echo "2. EC2-App2"
 
         read -p "--> " app
 
         case $app in
             1)
-                ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$APP_IP_1 'bash -s' < ./app/app_setup.sh 1
+                IP=$APP_IP_1
+
                 ;;
             2)
-                ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$APP_IP_2 'bash -s' < ./app/app_setup.sh 2
-                ;;
-            3)
-                ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$APP_IP_1 "bash -s" -- \
-                "$DB_IP" \
-                "$REDIS_IP" \
-                "$LB_IP_PUB" \
-                "$DJANGO_DB_USER" \
-                "$DJANGO_DB_PASS" \
-                "$DJANGO_DB_DATABASE_NAME" \
-                "$DJANGO_SUPERUSER_USERNAME" \
-                "$DJANGO_SUPERUSER_EMAIL" \
-                "$DJANGO_SUPERUSER_PASSWORD" \
-                "$REDIS_PASSWORD" \
-                "$DOMAIN" \
-                < ./app/app_deploy.sh
-                ;;
-
-            4)
-                ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$APP_IP_2 "bash -s" -- \
-                "$DB_IP" \
-                "$REDIS_IP" \
-                "$LB_IP_PUB" \
-                "$DJANGO_DB_USER" \
-                "$DJANGO_DB_PASS" \
-                "$DJANGO_DB_DATABASE_NAME" \
-                "$DJANGO_SUPERUSER_USERNAME" \
-                "$DJANGO_SUPERUSER_EMAIL" \
-                "$DJANGO_SUPERUSER_PASSWORD" \
-                "$REDIS_PASSWORD" \
-                "$DOMAIN" \
-                < ./app/app_deploy.sh
-
+                IP=$APP_IP_2
                 ;;
             *)
                 echo "Instancia no válida"
@@ -114,7 +81,37 @@ case $maquina in
                 ;;
         esac
 
+
+        echo "¿Quieres inicializar o desplegar? (no hay vuelta atrás)"
+        echo "1. Inicializar/setup"
+        echo "2. Desplegar/deploy"
+
+        read -p "--> " opcion
+
+
+        case $opcion in
+            1)
+                ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$IP 'bash -s' < ./app/app_setup.sh
+                ;;
+            2)
+                cat ../app/.app.base.env > .env.runtime
+                cat ../app/.app.aws.env >> .env.runtime
+
+                # Creamos el .env
+                echo "DB_HOST=$DB_IP" >> .env.runtime
+                echo "REDIS_HOST=$REDIS_IP" >> .env.runtime
+                echo "DJANGO_ALLOWED_HOSTS=$LB_IP,$DOMAIN" >> .env.runtime
+
+                scp -o ProxyJump=$USUARIO_ROOT_EC2@$BASTION_IP_PUB .env.runtime $USUARIO_ROOT_EC2@$IP:/tmp/.env.runtime
+                ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$IP 'bash -s' < ./app/app_deploy.sh
+                ;;
+            *)
+                echo "Opción no válida"
+                exit 1
+                ;;
+        esac
         ;;
+
 
     *)
         echo "Máquina no válida"
@@ -122,35 +119,3 @@ case $maquina in
         ;;
 esac
 
-
-
-# # Path a la clave privada de AWS -- no está en el repositorio por motivos de seguridad
-# KEY_PATH=./labsuser.pem
-
-# # Usuarios
-# USUARIO_ROOT_EC2=admin # Todas las máquinas son Debian 12
-
-# # Instancias AWS con IP pública
-# LB_IP_PUB=100.27.112.104 # IP elástica "inmutable"
-# BASTION_IP_PUB=34.226.168.164 # IP elástica "inmutable"
-
-# # Subnet DMZ, instancias - IP privada
-# # 10.0.0.0/26
-
-# LB_IP=10.0.0.42
-
-# # Subnet App, instancias - IP privada
-# # 10.0.0.64/26
-
-# APP_IP_1=10.0.0.69
-# APP_IP_2=10.0.0.100
-# REDIS_IP=10.0.0.74
-
-# # Subnet DB, instancias - IP privada
-# # 10.0.0.128/26
-# DB_IP=10.0.0.150
-
-# # Subnet Bastion, instancias - IP privada
-# # 10.0.0.192/26
-
-# BASTION_IP=10.0.0.207
