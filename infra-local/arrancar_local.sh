@@ -1,38 +1,45 @@
 #!/bin/bash
-
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
-red_docker="red_docker_proyecto"
+RED_DOCKER="red_docker_proyecto"
 
-if docker network inspect $red_docker >/dev/null 2>&1; then
-    echo "Red existe"
-else
-    docker network create $red_docker
+echo "0. Creando red docker si no existe..."
+if ! docker network inspect $RED_DOCKER >/dev/null 2>&1; then
+    docker network create $RED_DOCKER
 fi
 
-echo "1. Levantando simulación de servicios local (Base de datos)"
+echo "1. Levantando base de datos (MariaDB)"
+docker compose \
+  --env-file ./app/django/.local.env \
+  -f ./infra-local/docker-compose.yml \
+  up -d mariadb
 
-docker compose --env-file ./app/.env.local -f ./infra-local/docker-compose.yml up -d mariadb
+echo "2. Levantando Redis"
+docker compose \
+  --env-file ./app/django/.local.env \
+  -f ./infra-local/docker-compose.yml \
+  up -d redis
 
-echo "2. Levantando simulación de servicios local (Redis)"
+echo "3. Levantando App 1"
+docker compose \
+  -p app1 \
+  -f ./app/docker-compose-dev.yml \
+  up -d --build
 
-docker compose --env-file ./app/.env.local -f ./infra-local/docker-compose.yml up -d redis
+echo "4. Levantando App 2"
+docker compose \
+  -p app2 \
+  -f ./app/docker-compose-dev.yml \
+  up -d --build
 
-if [ "${FRONTEND_DEV:-0}" = "1" ]; then
-    echo "3.1 Levantando frontend con hot-reload (perfil frontend-dev)"
-    docker compose -p app1 -f ./app/docker-compose.yml -f ./app/docker-compose.dev.yml --profile frontend-dev up -d frontend
-fi
+echo "5. Levantando Load Balancer"
+docker compose \
+  --env-file ./app/django/.local.env \
+  -f ./infra-local/docker-compose.yml \
+  up -d nginx-lb
 
-echo "3. Levantando Apps local"
-
-docker compose -p app1 -f ./app/docker-compose.yml -f ./app/docker-compose.dev.yml up -d
-docker compose -p app2 -f ./app/docker-compose.yml -f ./app/docker-compose.dev.yml up -d
-
-echo "4. Levantando simulación de servicios local (Load Balancer)"
-
-docker compose --env-file ./app/.env.local -f ./infra-local/docker-compose.yml up  -d nginx-lb
-
+echo "Todo levantado correctamente"

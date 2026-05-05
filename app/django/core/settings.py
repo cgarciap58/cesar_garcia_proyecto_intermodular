@@ -20,16 +20,20 @@ env = environ.Env(
     DJANGO_DEBUG=(bool, False)
 )
 
-environ.Env.read_env(BASE_DIR / "django.env")
+environ.Env.read_env(BASE_DIR / ".local.env") # Lo lee -- app/django/.local.env
 
 SECRET_KEY = env("SECRET_KEY")
 
 DEBUG = env("DEBUG")
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in env("ALLOWED_HOSTS").split(",")
+    if host.strip()
+]
 
-STATIC_URL = env("STATIC_URL")
-STATIC_ROOT = BASE_DIR / env("STATIC_ROOT")
+STATIC_URL = '/static/'
+STATIC_ROOT = '/app/staticfiles'
 
 # Application definition
 
@@ -72,17 +76,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-
-
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
@@ -112,3 +105,59 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
+
+
+# Database
+# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+
+USE_DB = env.bool("USE_DB")
+
+if USE_DB:
+    DATABASES = {
+        'default': {
+            'ENGINE': env('DB_ENGINE'),
+            'NAME': env('DB_NAME'),
+            'USER': env('DB_USER'),
+            'PASSWORD': env('DB_PASSWORD'),
+            'HOST': env('DB_HOST'),
+            'PORT': env('DB_PORT'),    
+        }
+    }
+
+
+else:
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+
+
+
+USE_REDIS = env.bool("USE_REDIS")
+
+if USE_REDIS:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": f"redis://:{env('REDIS_PASSWORD')}@{env('REDIS_HOST')}:{env('REDIS_PORT')}/1",
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            }
+        }
+    }
+
+    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+    SESSION_CACHE_ALIAS = "default"
+
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        }
+    }
+
+    SESSION_ENGINE = "django.contrib.sessions.backends.db"
+

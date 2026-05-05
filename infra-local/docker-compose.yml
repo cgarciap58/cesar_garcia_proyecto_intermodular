@@ -2,7 +2,7 @@ services:
   nginx-lb:
     image: nginx:latest
     ports:
-      - "8080:80"
+      - "80:80"
     volumes:
       - ./default.conf:/etc/nginx/conf.d/default.conf
     networks:
