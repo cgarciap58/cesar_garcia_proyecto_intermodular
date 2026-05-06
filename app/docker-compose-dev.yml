@@ -5,22 +5,17 @@ services:
     volumes:
       - static_volume:/app/staticfiles
     env_file:
-      - ./.env.runtime
-
-  react:
-    build:
-      context: ./react/getbetter
+      - .env.runtime
 
   nginx:
-    image: nginx:latest
+    build:
+      context: .
+      dockerfile: ./nginx/Dockerfile
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./react/getbetter/dist:/var/www/react
       - static_volume:/var/www/static:ro
     depends_on:
       - django
-      - react
-
 
 networks:
   default:

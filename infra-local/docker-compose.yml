@@ -12,10 +12,10 @@ services:
     image: mariadb:11
     container_name: mariadb
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-      MYSQL_DATABASE: db_proyecto_final
-      MYSQL_USER: django
-      MYSQL_PASSWORD: django123
+      MYSQL_ROOT_PASSWORD: ${DJANGO_DB_PASS}
+      MYSQL_DATABASE: ${DJANGO_DB_NAME}
+      MYSQL_USER: ${DJANGO_DB_USER}
+      MYSQL_PASSWORD: ${DJANGO_DB_PASS}
     volumes:
       - mariadb_data:/var/lib/mysql
     networks:
@@ -33,7 +33,7 @@ services:
       --bind 0.0.0.0
       --protected-mode yes
       --port 6379
-      --requirepass ${REDIS_PASSWORD}
+      --requirepass ${REDIS_PASS}
       --appendonly yes
     networks:
       - red_docker_proyecto

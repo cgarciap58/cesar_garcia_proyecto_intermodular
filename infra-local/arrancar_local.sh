@@ -38,12 +38,14 @@ docker compose \
 
 echo "3. Levantando App 1"
 docker compose \
+  --env-file $ENV_FILE_COMBINED \
   -p app1 \
   -f ./app/docker-compose-dev.yml \
   up -d --build
 
 echo "4. Levantando App 2"
 docker compose \
+  --env-file $ENV_FILE_COMBINED \
   -p app2 \
   -f ./app/docker-compose-dev.yml \
   up -d --build
