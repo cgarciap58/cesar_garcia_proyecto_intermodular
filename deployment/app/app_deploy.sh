@@ -33,18 +33,18 @@ cd ./app
 
 echo "[3] Rescatando .env.runtime"
 
+
+
 if [ ! -f /tmp/.env.runtime ]; then
     echo "ERROR: .env.runtime no encontrado"
     exit 1
 fi
 
-ENV_FILE="/tmp/.env.runtime"
+cp /tmp/.env.runtime ./.env.runtime
 
 echo "[4] Arrancando contenedor Django..."
 
-sudo docker compose down --remove-orphans || true
-sudo docker compose -f docker-compose.yml --env-file $ENV_FILE up -d --build
-
-# rm -f $ENV_FILE
+# sudo docker compose -f docker-compose.yml down --remove-orphans || true
+sudo docker compose -f docker-compose.yml up -d --build
 
 echo "Docker Compose lanzado correctamente. Actualizado al repositorio actual"

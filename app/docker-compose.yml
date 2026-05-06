@@ -7,7 +7,8 @@ services:
     volumes:
       - static_volume:/app/staticfiles
     env_file:
-      - /tmp/.env.runtime
+      - .env.runtime
+    restart: unless-stopped
 
 
   nginx:
@@ -21,6 +22,8 @@ services:
       - static_volume:/var/www/static:ro
     depends_on:
       - django
+    restart: unless-stopped
+    
 
 volumes:
   static_volume:
