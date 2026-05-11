@@ -1,0 +1,1 @@
+# Lógica para sesiones entre psicólogos y pacientes
