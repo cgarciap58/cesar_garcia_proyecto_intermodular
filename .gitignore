@@ -63,5 +63,4 @@ dist-ssr
 *.sw?
 
 # venv
-./app/venv/
-./app/django/venv/
+venv/
