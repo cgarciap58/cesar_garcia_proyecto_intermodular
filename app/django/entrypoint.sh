@@ -6,7 +6,13 @@ until nc -z "$DB_HOST" $DB_PORT; do
   sleep 2
 done
 
-echo "Running migrations..."
+# if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then
+#   echo "Running migrations..."
+#   python manage.py migrate --noinput
+# else
+#   echo "Skipping migrations (RUN_MIGRATIONS=${RUN_MIGRATIONS:-0})"
+# fi
+
 python manage.py migrate --noinput
 
 

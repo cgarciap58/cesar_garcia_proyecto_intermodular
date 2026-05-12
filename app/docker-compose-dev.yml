@@ -6,7 +6,9 @@ services:
       - static_volume:/app/staticfiles
     env_file:
       - .env.runtime
-
+    environment:
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-1}
+      
   nginx:
     build:
       context: .

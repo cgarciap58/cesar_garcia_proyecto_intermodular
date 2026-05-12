@@ -36,21 +36,21 @@ docker compose \
   -f ./infra-local/docker-compose.yml \
   up -d redis
 
-echo "3. Levantando App 1"
-docker compose \
+echo "4. Levantando App 1 (con migraciones)"
+RUN_MIGRATIONS=1 docker compose \
   --env-file $ENV_FILE_COMBINED \
   -p app1 \
   -f ./app/docker-compose-dev.yml \
-  up -d --build \
+  up -d --build
 
-echo "4. Levantando App 2"
-docker compose \
+echo "5. Levantando App 2 (sin migraciones)"
+RUN_MIGRATIONS=0 docker compose \
   --env-file $ENV_FILE_COMBINED \
   -p app2 \
   -f ./app/docker-compose-dev.yml \
   up -d --build
 
-echo "5. Levantando Load Balancer"
+echo "6. Levantando Load Balancer"
 docker compose \
   --env-file $ENV_FILE_COMBINED \
   -f ./infra-local/docker-compose.yml \
