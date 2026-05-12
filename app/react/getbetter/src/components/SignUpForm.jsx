@@ -16,6 +16,7 @@ const initialErrors = {
   fullName: [],
   email: [],
   concerns: [],
+  password: [],
 };
 
 export default function SignUpForm() {
@@ -52,6 +53,24 @@ export default function SignUpForm() {
     }
   }
 
+  function getPasswordErrors() {
+    const passwordErrors = [];
+
+    if (!formData.password || !formData.confirmPassword) {
+      passwordErrors.push("Please fill in both password fields.");
+    }
+
+    if (formData.password && formData.password.length < 8) {
+      passwordErrors.push("Password must be at least 8 characters long.");
+    }
+
+    if (formData.password && formData.password !== formData.confirmPassword) {
+      passwordErrors.push("Passwords must match.");
+    }
+
+    return passwordErrors;
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -65,12 +84,14 @@ export default function SignUpForm() {
         return;
       }
 
+      setErrors((prev) => ({ ...prev, password: [] }));
       setIsPasswordStep(true);
       return;
     }
 
-    if (!formData.password || formData.password !== formData.confirmPassword) {
-      alert("Please enter matching passwords.");
+    const passwordErrors = getPasswordErrors();
+    if (passwordErrors.length > 0) {
+      setErrors((prev) => ({ ...prev, password: passwordErrors }));
       return;
     }
 
@@ -106,8 +127,13 @@ export default function SignUpForm() {
           </p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            {!isPasswordStep ? (
-              <>
+            <div className="relative min-h-[510px] overflow-hidden">
+              <div
+                className={`absolute inset-0 transition-all duration-500 ease-out ${
+                  isPasswordStep ? "-translate-x-12 opacity-0 pointer-events-none" : "translate-x-0 opacity-100"
+                }`}
+                aria-hidden={isPasswordStep}
+              >
                 <div>
                   <label className="block text-sm mb-2" htmlFor="fullName">Full name</label>
                   <input id="fullName" name="fullName" value={formData.fullName} onChange={handleChange} required className="w-full rounded-lg bg-slate-900/70 border border-slate-700 px-3 py-2 outline-none focus:border-blue-400" />
@@ -164,9 +190,14 @@ export default function SignUpForm() {
                     )}
                   </div>
                 )}
-              </>
-            ) : (
-              <div>
+              </div>
+
+              <div
+                className={`absolute inset-0 transition-all duration-500 ease-out ${
+                  isPasswordStep ? "translate-x-0 opacity-100" : "translate-x-12 opacity-0 pointer-events-none"
+                }`}
+                aria-hidden={!isPasswordStep}
+              >
                 <label className="block text-sm mb-2" htmlFor="password">Password</label>
                 <input id="password" type="password" name="password" value={formData.password} onChange={handleChange} required className="w-full rounded-lg bg-slate-900/70 border border-slate-700 px-3 py-2 outline-none focus:border-blue-400" />
                 <div className="mt-3 h-2 w-full rounded-full bg-slate-700">
@@ -179,8 +210,27 @@ export default function SignUpForm() {
 
                 <label className="mt-4 block text-sm mb-2" htmlFor="confirmPassword">Confirm password</label>
                 <input id="confirmPassword" type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required className="w-full rounded-lg bg-slate-900/70 border border-slate-700 px-3 py-2 outline-none focus:border-blue-400" />
+
+                {errors.password.length > 0 && (
+                  <div className="mt-3 rounded-md border border-red-400/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                    {errors.password.map((error) => (
+                      <p key={error}>{error}</p>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsPasswordStep(false);
+                    setErrors((prev) => ({ ...prev, password: [] }));
+                  }}
+                  className="mt-4 w-full rounded-lg border border-slate-600 bg-slate-800/70 px-4 py-2 font-medium text-slate-100 transition-colors hover:bg-slate-700"
+                >
+                  Back to details
+                </button>
               </div>
-            )}
+            </div>
 
             <button type="submit" className="w-full rounded-lg bg-blue-500 hover:bg-blue-400 transition-colors px-4 py-2 font-medium">
               {isPasswordStep ? "Create account" : "Continue"}
