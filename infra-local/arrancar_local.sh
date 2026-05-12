@@ -41,7 +41,7 @@ docker compose \
   --env-file $ENV_FILE_COMBINED \
   -p app1 \
   -f ./app/docker-compose-dev.yml \
-  up -d --build
+  up -d --build \
 
 echo "4. Levantando App 2"
 docker compose \

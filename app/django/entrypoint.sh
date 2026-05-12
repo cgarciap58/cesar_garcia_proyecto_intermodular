@@ -9,6 +9,7 @@ done
 echo "Running migrations..."
 python manage.py migrate --noinput
 
+
 echo "Creating superuser if not exists..."
 
 python manage.py shell << EOF
@@ -26,6 +27,7 @@ if username and not User.objects.filter(username=username).exists():
 else:
     print("Superuser already exists or env missing")
 EOF
+
 
 echo "Collecting static..."
 python manage.py collectstatic --noinput
