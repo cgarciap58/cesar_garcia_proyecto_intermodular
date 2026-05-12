@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { validateSignUpForm } from "../utils/sanitize";
 
 const initialForm = {
   fullName: "",
@@ -9,8 +10,15 @@ const initialForm = {
   concerns: "",
 };
 
+const initialErrors = {
+  fullName: [],
+  email: [],
+  concerns: [],
+};
+
 export default function SignUpForm() {
   const [formData, setFormData] = useState(initialForm);
+  const [errors, setErrors] = useState(initialErrors);
 
   const isPsychologist = formData.role === "psychologist";
 
@@ -33,10 +41,23 @@ export default function SignUpForm() {
   function handleChange(event) {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    if (name in errors) {
+      setErrors((prev) => ({ ...prev, [name]: [] }));
+    }
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
+
+    const validationErrors = validateSignUpForm(formData);
+    setErrors(validationErrors);
+
+    const hasErrors = Object.values(validationErrors).some((fieldErrors) => fieldErrors.length > 0);
+
+    if (hasErrors) {
+      return;
+    }
 
     try {
       const response = await fetch("/api/auth/register/", {
@@ -53,6 +74,7 @@ export default function SignUpForm() {
 
       alert(`Account created for ${payload.email}`);
       setFormData(initialForm);
+      setErrors(initialErrors);
     } catch (error) {
       alert(error.message);
     }
@@ -71,11 +93,25 @@ export default function SignUpForm() {
             <div>
               <label className="block text-sm mb-2" htmlFor="fullName">Full name</label>
               <input id="fullName" name="fullName" value={formData.fullName} onChange={handleChange} required className="w-full rounded-lg bg-slate-900/70 border border-slate-700 px-3 py-2 outline-none focus:border-blue-400" />
+              {errors.fullName.length > 0 && (
+                <div className="mt-2 rounded-md border border-red-400/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                  {errors.fullName.map((error) => (
+                    <p key={error}>{error}</p>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>
               <label className="block text-sm mb-2" htmlFor="email">Email</label>
               <input id="email" type="email" name="email" value={formData.email} onChange={handleChange} required className="w-full rounded-lg bg-slate-900/70 border border-slate-700 px-3 py-2 outline-none focus:border-blue-400" />
+              {errors.email.length > 0 && (
+                <div className="mt-2 rounded-md border border-red-400/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                  {errors.email.map((error) => (
+                    <p key={error}>{error}</p>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>
@@ -99,8 +135,15 @@ export default function SignUpForm() {
               </>
             ) : (
               <div>
-                <label className="block text-sm mb-2" htmlFor="concerns">Main concerns (optional)</label>
+                <label className="block text-sm mb-2" htmlFor="concerns">Message (optional)</label>
                 <textarea id="concerns" name="concerns" rows="4" value={formData.concerns} onChange={handleChange} className="w-full rounded-lg bg-slate-900/70 border border-slate-700 px-3 py-2 outline-none focus:border-blue-400" />
+                {errors.concerns.length > 0 && (
+                  <div className="mt-2 rounded-md border border-red-400/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                    {errors.concerns.map((error) => (
+                      <p key={error}>{error}</p>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
