@@ -64,3 +64,6 @@ dist-ssr
 
 # venv
 venv/
+
+# utilidades
+push.sh
