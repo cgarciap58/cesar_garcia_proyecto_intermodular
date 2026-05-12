@@ -19,9 +19,27 @@ export default function SignUpForm() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
-    console.log("Signup form payload:", formData);
+
+    try {
+      const response = await fetch("/api/auth/register/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Could not create account");
+      }
+
+      alert(`Account created for ${payload.email}`);
+      setFormData(initialForm);
+    } catch (error) {
+      alert(error.message);
+    }
   }
 
   return (
@@ -30,7 +48,7 @@ export default function SignUpForm() {
         <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-6 sm:p-8">
           <h2 className="text-3xl font-semibold">Create your account</h2>
           <p className="mt-2 text-gray-300">
-            Sign up as a patient or psychologist. API integration can be added later.
+            Sign up as a patient or psychologist.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">

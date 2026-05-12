@@ -168,3 +168,9 @@ else:
 
     SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
+INSTALLED_APPS += [
+    'core.accounts',
+    'core.psychologists',
+]
+
+AUTH_USER_MODEL = 'accounts.User'
