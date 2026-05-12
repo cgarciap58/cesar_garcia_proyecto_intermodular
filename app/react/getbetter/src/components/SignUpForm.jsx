@@ -14,6 +14,22 @@ export default function SignUpForm() {
 
   const isPsychologist = formData.role === "psychologist";
 
+  async function safeParseResponse(response) {
+    const raw = await response.text();
+    const contentType = response.headers.get("content-type") || "";
+    const expectsJson = contentType.toLowerCase().includes("application/json");
+
+    if (!expectsJson || !raw) {
+      return { payload: {}, raw, expectsJson };
+    }
+
+    try {
+      return { payload: JSON.parse(raw), raw, expectsJson };
+    } catch {
+      return { payload: {}, raw, expectsJson };
+    }
+  }
+
   function handleChange(event) {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -29,10 +45,10 @@ export default function SignUpForm() {
         body: JSON.stringify(formData),
       });
 
-      const payload = await response.json();
+      const { payload } = await safeParseResponse(response);
 
       if (!response.ok) {
-        throw new Error(payload.error || "Could not create account");
+        throw new Error(payload.error || `Request failed (${response.status})`);
       }
 
       alert(`Account created for ${payload.email}`);

@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-
+from django.utils.crypto import get_random_string
 from .models import PatientProfile, PsychologistProfile
 
 
@@ -32,7 +32,7 @@ def register_user(request):
         email=email,
         name=name,
         role=role,
-        password=User.objects.make_random_password(),
+        password=get_random_string(16),
     )
 
     if role == "psychologist":
