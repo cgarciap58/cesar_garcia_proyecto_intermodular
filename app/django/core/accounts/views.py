@@ -4,7 +4,6 @@ from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from django.utils.crypto import get_random_string
 from .models import PatientProfile, PsychologistProfile
 
 
@@ -19,9 +18,17 @@ def register_user(request):
     name = (payload.get("fullName") or "").strip()
     email = (payload.get("email") or "").strip().lower()
     role = payload.get("role")
+    password = payload.get("password") or ""
+    confirm_password = payload.get("confirmPassword") or ""
 
     if not name or not email or role not in {"patient", "psychologist"}:
         return JsonResponse({"error": "fullName, email and valid role are required"}, status=400)
+
+    if len(password) < 8:
+        return JsonResponse({"error": "Password must have at least 8 characters"}, status=400)
+
+    if password != confirm_password:
+        return JsonResponse({"error": "Passwords do not match"}, status=400)
 
     User = get_user_model()
     if User.objects.filter(username=email).exists() or User.objects.filter(email=email).exists():
@@ -32,7 +39,7 @@ def register_user(request):
         email=email,
         name=name,
         role=role,
-        password=get_random_string(16),
+        password=password,
     )
 
     if role == "psychologist":
