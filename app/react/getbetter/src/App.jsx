@@ -1,21 +1,20 @@
-import Navbar from "./components/Navbar";
-import Hero from "./components/Hero";
-import Features from "./components/Features";
-import Pricing from "./components/Pricing";
-import Testimonials from "./components/Testimonials";
-import SignUpForm from "./components/SignUpForm";
-import Footer from "./components/Footer";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
+import HomePage from "./pages/HomePage";
+import SignInPage from "./pages/SignInPage";
+import SignUpPage from "./pages/SignUpPage";
 
 function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-white overflow-hidden">
-      <Navbar />
-      <Hero />
-      <Features />
-      <Pricing />
-      <Testimonials />
-      <SignUpForm />
-      <Footer />
+
+    <Router>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/signin" element={<SignInPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
+      </Routes>
+    </Router>
     </div>
   );
 }
