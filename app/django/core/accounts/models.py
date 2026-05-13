@@ -34,8 +34,8 @@ class PatientProfile(models.Model):
 
 class PsychologistProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='psychologist_profile')
-    license_number = models.CharField(max_length=100, unique=True)
-    specialty = models.CharField(max_length=255)
+    country_code = models.CharField(max_length=2)
+    license_number = models.CharField(max_length=100)
     is_verified = models.BooleanField(default=False)
 
     VERIFICATION_PENDING = 'pending'

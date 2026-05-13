@@ -1,3 +1,5 @@
+import { mapSignUpValuesToPayload, SIGN_UP_FIELD_KEYS } from '../utils/validate'
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
 const buildUrl = (path) => `${API_BASE_URL}${path}`
@@ -58,11 +60,11 @@ export const signIn = async ({ email, password }) => {
   return { ok: true, data: payload }
 }
 
-export const signUp = async ({ fullName, email, role, password, confirmPassword }) => {
+export const signUp = async (values) => {
   const response = await fetch(buildUrl('/api/auth/register/'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fullName, email, role, password, confirmPassword }),
+    body: JSON.stringify(mapSignUpValuesToPayload(values)),
   })
 
   const payload = await parseResponse(response)
@@ -70,7 +72,7 @@ export const signUp = async ({ fullName, email, role, password, confirmPassword 
   if (!response.ok) {
     return {
       ok: false,
-      errors: toFieldErrors(payload, ['fullName', 'email', 'role', 'password', 'confirmPassword']),
+      errors: toFieldErrors(payload, SIGN_UP_FIELD_KEYS),
     }
   }
 

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { signUp } from '../services/api'
+import { validateSignUpValues } from '../utils/validate'
 
 const ROLE_OPTIONS = [
   { value: 'patient', label: 'Patient' },
@@ -29,45 +30,9 @@ function SignUpPage() {
     setErrors((prev) => ({ ...prev, [name]: '', form: '' }))
   }
 
-  const validate = () => {
-    const nextErrors = {}
-
-    if (!values.first_name.trim()) {
-      nextErrors.first_name = 'First name is required.'
-    }
-
-    if (!values.last_name.trim()) {
-      nextErrors.last_name = 'Last name is required.'
-    }
-
-    if (!values.email.trim()) {
-      nextErrors.email = 'Email is required.'
-    } else if (!/^\S+@\S+\.\S+$/.test(values.email)) {
-      nextErrors.email = 'Please enter a valid email address.'
-    }
-
-    if (!values.role) {
-      nextErrors.role = 'Role is required.'
-    }
-
-    if (!values.password.trim()) {
-      nextErrors.password = 'Password is required.'
-    } else if (values.password.length < 8) {
-      nextErrors.password = 'Password must be at least 8 characters.'
-    }
-
-    if (!values.confirmPassword.trim()) {
-      nextErrors.confirmPassword = 'Please confirm your password.'
-    } else if (values.confirmPassword !== values.password) {
-      nextErrors.confirmPassword = 'Passwords do not match.'
-    }
-
-    return nextErrors
-  }
-
   const handleSubmit = async (event) => {
     event.preventDefault()
-    const validationErrors = validate()
+    const validationErrors = validateSignUpValues(values)
 
     if (Object.keys(validationErrors).length) {
       setErrors(validationErrors)
@@ -77,19 +42,10 @@ function SignUpPage() {
     setIsSubmitting(true)
     setErrors({})
 
-    const result = await signUp({
-      fullName: `${values.first_name.trim()} ${values.last_name.trim()}`,
-      email: values.email.trim().toLowerCase(),
-      role: values.role,
-      password: values.password,
-      confirmPassword: values.confirmPassword,
-    })
+    const result = await signUp(values)
 
     if (!result.ok) {
       const nextErrors = { ...result.errors }
-      if (nextErrors.fullName) {
-        nextErrors.first_name = nextErrors.fullName
-      }
       setErrors(nextErrors)
       setIsSubmitting(false)
       return
