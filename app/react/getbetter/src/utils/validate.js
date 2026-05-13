@@ -9,16 +9,19 @@ export const SIGN_UP_API_FIELD_NAMES = {
   role: 'role',
   password: 'password',
   confirmPassword: 'confirmPassword',
-  psychology_license_number: 'psychology_license_number',
-  specialty: 'specialty',
-  years_of_experience: 'years_of_experience',
-};
+  license_number: 'license_number',
+  country_code: 'country_code',
 
-export const SIGN_UP_FIELD_KEYS = Object.keys(SIGN_UP_API_FIELD_NAMES);
+};
+export const SIGN_UP_FIELD_KEYS = [
+  ...Object.values(SIGN_UP_API_FIELD_NAMES),
+  'password2',
+  'license_country',
+];
 export const SIGN_UP_PSYCHOLOGIST_FIELD_KEYS = [
-  'psychology_license_number',
-  'specialty',
-  'years_of_experience',
+  SIGN_UP_API_FIELD_NAMES.license_number,
+  SIGN_UP_API_FIELD_NAMES.country_code,
+  'license_country',
 ];
 
 export function validateSignUpValues(values = {}) {
@@ -45,9 +48,8 @@ export function validateSignUpValues(values = {}) {
   }
 
   if (values.role === 'psychologist') {
-    validateRequired(values.psychology_license_number, 'License number is required for psychologists.', errors, 'psychology_license_number');
-    validateRequired(values.specialty, 'Specialty is required for psychologists.', errors, 'specialty');
-    validateRequired(values.years_of_experience, 'Years of experience is required for psychologists.', errors, 'years_of_experience');
+    validateRequired(values.license_number, 'License number is required for psychologists.', errors, 'license_number');
+    validateRequired(values.country_code, 'Country code is required for psychologists.', errors, 'country_code');
   }
 
   return errors;
@@ -61,9 +63,8 @@ export function mapSignUpValuesToPayload(values = {}) {
     [SIGN_UP_API_FIELD_NAMES.role]: values.role || '',
     [SIGN_UP_API_FIELD_NAMES.password]: values.password || '',
     [SIGN_UP_API_FIELD_NAMES.confirmPassword]: values.confirmPassword || '',
-    [SIGN_UP_API_FIELD_NAMES.psychology_license_number]: sanitizeText(values.psychology_license_number),
-    [SIGN_UP_API_FIELD_NAMES.specialty]: sanitizeText(values.specialty),
-    [SIGN_UP_API_FIELD_NAMES.years_of_experience]: sanitizeText(values.years_of_experience),
+    [SIGN_UP_API_FIELD_NAMES.license_number]: sanitizeText(values.license_number),
+    [SIGN_UP_API_FIELD_NAMES.country_code]: sanitizeText(values.country_code),
   };
 }
 

@@ -16,6 +16,8 @@ const initialValues = {
   role: '',
   password: '',
   confirmPassword: '',
+  license_number: '',
+  country_code: '',
 }
 
 function SignUpPage() {

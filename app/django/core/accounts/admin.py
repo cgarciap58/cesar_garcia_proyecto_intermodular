@@ -59,8 +59,8 @@ class PatientProfileAdmin(admin.ModelAdmin):
 class PsychologistProfileAdmin(admin.ModelAdmin):
     list_display = (
         'user',
+        'country_code',
         'license_number',
-        'specialty',
         'is_verified',
         'verification_status',
     )
@@ -70,6 +70,6 @@ class PsychologistProfileAdmin(admin.ModelAdmin):
         'user__email',
         'user__first_name',
         'user__last_name',
+        'country_code',
         'license_number',
-        'specialty',
     )
