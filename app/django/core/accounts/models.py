@@ -1,5 +1,12 @@
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import RegexValidator
+from django.core.validators import validate_email
 from django.db import models
+
+name_validator = RegexValidator(
+    regex=r'^[a-zA-ZñÑáéíóúÁÉÍÓÚ-]+$',
+    message='This field can only contain letters and hyphens.',
+)
 
 
 class User(AbstractUser):
@@ -13,8 +20,8 @@ class User(AbstractUser):
     )
 
     email = models.EmailField(max_length=255, unique=True)
-    first_name = models.CharField(max_length=255)
-    last_name = models.CharField(max_length=255)
+    first_name = models.CharField(max_length=255, validators=[name_validator])
+    last_name = models.CharField(max_length=255, validators=[name_validator])
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     dob = models.DateField(blank=True, null=True)
     city = models.CharField(max_length=255, blank=True)
@@ -34,8 +41,8 @@ class PatientProfile(models.Model):
 
 class PsychologistProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='psychologist_profile')
-    country_code = models.CharField(max_length=2)
-    license_number = models.CharField(max_length=100)
+    country_code = models.CharField(max_length=2, blank=True)
+    license_number = models.CharField(max_length=100, blank=True)
     is_verified = models.BooleanField(default=False)
 
     VERIFICATION_PENDING = 'pending'

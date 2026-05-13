@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 import { signIn } from '../services/api'
 
@@ -14,7 +14,6 @@ function SignIn() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const location = useLocation()
-  const navigate = useNavigate()
 
   useEffect(() => {
     if (location.state?.successMessage) {
@@ -69,12 +68,9 @@ function SignIn() {
       return
     }
 
-    const authToken = result.data?.token || result.data?.authToken
-    if (authToken) {
-      localStorage.setItem('authToken', authToken)
-    }
-
-    navigate('/')
+    setSuccessMessage(result.data?.message || 'Log in was successful.')
+    setValues(initialValues)
+    setIsSubmitting(false)
   }
 
   return (

@@ -9,6 +9,12 @@ const ROLE_OPTIONS = [
   { value: 'psychologist', label: 'Psychologist' },
 ]
 
+const COUNTRY_OPTIONS = [
+  { value: 'US', label: 'United States' },
+  { value: 'FR', label: 'France' },
+  { value: 'ES', label: 'Spain' },
+]
+
 const initialValues = {
   first_name: '',
   last_name: '',
@@ -35,7 +41,10 @@ function SignUpPage() {
   }
   const handleChange = (event) => {
     const { name, value } = event.target
-    setValues((prev) => ({ ...prev, [name]: value }))
+    const nextValue = (name === 'first_name' || name === 'last_name')
+      ? value.replace(/[^a-zA-ZñÑáéíóúÁÉÍÓÚ-]/g, '')
+      : value
+    setValues((prev) => ({ ...prev, [name]: nextValue }))
     setErrors((prev) => ({ ...prev, [name]: '', form: '' }))
   }
 
@@ -100,6 +109,27 @@ function SignUpPage() {
             </select>
             {errors.role ? <p className="mt-1.5 text-sm text-rose-400">{errors.role}</p> : null}
           </div>
+
+          {values.role === 'psychologist' ? (
+            <>
+              <div>
+                <label htmlFor="country_code" className="mb-2 block text-sm font-medium text-slate-200">License country</label>
+                <select id="country_code" name="country_code" value={values.country_code} onChange={handleChange} className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30">
+                  <option value="" className="text-slate-500">Select country (optional)</option>
+                  {COUNTRY_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+                {errors.country_code ? <p className="mt-1.5 text-sm text-rose-400">{errors.country_code}</p> : null}
+              </div>
+
+              <div>
+                <label htmlFor="license_number" className="mb-2 block text-sm font-medium text-slate-200">License number</label>
+                <input id="license_number" name="license_number" type="text" value={values.license_number} onChange={handleChange} className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30" placeholder="Enter your license number (optional)" />
+                {errors.license_number ? <p className="mt-1.5 text-sm text-rose-400">{errors.license_number}</p> : null}
+              </div>
+            </>
+          ) : null}
 
           <div>
             <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-200">Password</label>

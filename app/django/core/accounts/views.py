@@ -1,11 +1,18 @@
 import json
 
+from django.contrib.auth import authenticate
+from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from .models import PatientProfile, PsychologistProfile
 
+
+name_validator = RegexValidator(
+    regex=r'^[a-zA-ZñÑáéíóúÁÉÍÓÚ-]+$',
+    message='This field can only contain letters and hyphens.',
+)
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -15,8 +22,8 @@ def register_user(request):
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON payload"}, status=400)
 
-    first_name = (payload.get("first_name")).strip()
-    last_name = (payload.get("last_name")).strip()
+    first_name = (payload.get("first_name") or "").strip()
+    last_name = (payload.get("last_name") or "").strip()
     email = (payload.get("email") or "").strip().lower()
     role = payload.get("role")
     password = payload.get("password") or ""
@@ -24,6 +31,12 @@ def register_user(request):
 
     if not first_name or not last_name or not email:
         return JsonResponse({"error": "first_name, last_name and email are required"}, status=400)
+
+    try:
+        name_validator(first_name)
+        name_validator(last_name)
+    except Exception as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
 
     if role not in {"patient", "psychologist"}:
         return JsonResponse({"error": "Invalid role"}, status=400)
@@ -60,8 +73,8 @@ def register_user(request):
     if role == "psychologist":
         PsychologistProfile.objects.create(
             user=user,
-            license_number=license_number,
-            country_code=country_code,
+            license_number=(payload.get("license_number") or "").strip(),
+            country_code=(payload.get("country_code") or "").strip(),
         )
     elif role == "patient":
         PatientProfile.objects.create(
@@ -80,10 +93,25 @@ def register_user(request):
         status=201,
     )
 
-
+@csrf_exempt
+@require_http_methods(["POST"])
 def login_user(request):
-    return JsonResponse({"error": "Not implemented"}, status=501)
+    try:
+        payload = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON payload"}, status=400)
 
+    email = (payload.get("email") or "").strip().lower()
+    password = payload.get("password") or ""
+
+    if not email or not password:
+        return JsonResponse({"error": "Email and password are required"}, status=400)
+
+    user = authenticate(request, username=email, password=password)
+    if user is None:
+        return JsonResponse({"error": "Invalid email or password"}, status=401)
+
+    return JsonResponse({"message": "Log in was successful"}, status=200)
 
 def get_user(request):
     return JsonResponse({"error": "Not implemented"}, status=501)

@@ -28,7 +28,19 @@ export function validateSignUpValues(values = {}) {
   const errors = {};
 
   validateRequired(values.first_name, 'First name is required.', errors, 'first_name');
+  if (!errors.first_name && hasDisallowedNameCharacters(values.first_name)) {
+    errors.first_name = 'First name can only contain letters and hyphens.';
+  }
+
   validateRequired(values.last_name, 'Last name is required.', errors, 'last_name');
+  if (!errors.last_name && hasDisallowedNameCharacters(values.last_name)) {
+    errors.last_name = 'Last name can only contain letters and hyphens.';
+  }
+
+  validateRequired(values.email, 'Email is required.', errors, 'email');
+  if (!errors.email && !isValidEmail(values.email)) {
+    errors.email = 'Please enter a valid email address.';
+  }
 
   validateRequired(values.email, 'Email is required.', errors, 'email');
   if (!errors.email && !isValidEmail(values.email)) {
@@ -47,11 +59,6 @@ export function validateSignUpValues(values = {}) {
     errors.confirmPassword = 'Passwords do not match.';
   }
 
-  if (values.role === 'psychologist') {
-    validateRequired(values.license_number, 'License number is required for psychologists.', errors, 'license_number');
-    validateRequired(values.country_code, 'Country code is required for psychologists.', errors, 'country_code');
-  }
-
   return errors;
 }
 
@@ -68,52 +75,8 @@ export function mapSignUpValuesToPayload(values = {}) {
   };
 }
 
-export function validateSignUpForm(formData) {
-  return {
-    fullName: validateFullName(formData.fullName),
-    email: validateEmail(formData.email),
-    concerns: validateMessage(formData.concerns),
-  };
-}
-
-export function validateFullName(fullName = '') {
-  const errors = [];
-  const min_length = 5;
-
-  if (fullName.length < min_length) {
-    errors.push(`Name must have at least ${min_length} characters`);
-  }
-
-  if (hasDisallowedNameCharacters(fullName)) {
-    errors.push('Name has disallowed characters. If this a mistake, contact the administrator.');
-  }
-
-  return errors;
-}
-
-export function validateEmail(email = '') {
-  const errors = [];
-  const min_length = 6;
-
-  if (email.length < min_length) {
-    errors.push(`E-mail must have at least ${min_length} characters`);
-  }
-
-  return errors;
-}
-
-export function validateMessage(message = '') {
-  const errors = [];
-
-  if (hasDisallowedMessageCharacters(message)) {
-    errors.push('Message has disallowed characters.');
-  }
-
-  return errors;
-}
-
 export function hasDisallowedNameCharacters(value = '') {
-  return !ALLOWED_NAME_CHARACTERS_REGEX.test(value);
+  return !ALLOWED_NAME_CHARACTERS_REGEX.test(String(value || '').trim());
 }
 
 export function hasDisallowedMessageCharacters(value = '') {
