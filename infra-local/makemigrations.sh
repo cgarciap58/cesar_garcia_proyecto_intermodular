@@ -1,8 +1,9 @@
 #!/bin/bash
 set -e
 
-docker compose \
-  --env-file ./app/.env.runtime \
-  -p app1 \
-  -f ./app/docker-compose-dev.yml \
-  run --rm django python manage.py makemigrations
+cd app/django
+
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python manage.py makemigrations
