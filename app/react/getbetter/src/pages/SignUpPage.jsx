@@ -1,9 +1,167 @@
-function SignUpPage() {
-  return (
-    <div>
-      <h1>Sign Up</h1>
-    </div>
-  );
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+
+const ROLE_OPTIONS = [
+  { value: 'patient', label: 'Patient' },
+  { value: 'psychologist', label: 'Psychologist' },
+  { value: 'developer', label: 'Developer' },
+]
+
+const initialValues = {
+  username: '',
+  email: '',
+  first_name: '',
+  last_name: '',
+  role: '',
+  password: '',
+  confirmPassword: '',
 }
 
-export default SignUpPage;
+function SignUpPage() {
+  const [values, setValues] = useState(initialValues)
+  const [errors, setErrors] = useState({})
+
+  const handleChange = (event) => {
+    const { name, value } = event.target
+    setValues((prev) => ({ ...prev, [name]: value }))
+    setErrors((prev) => ({ ...prev, [name]: '', form: '' }))
+  }
+
+  const validate = () => {
+    const nextErrors = {}
+
+    if (!values.username.trim()) {
+      nextErrors.username = 'Username is required.'
+    } else if (values.username.length > 150) {
+      nextErrors.username = 'Username must be 150 characters or fewer.'
+    }
+
+    if (!values.email.trim()) {
+      nextErrors.email = 'Email is required.'
+    } else if (values.email.length > 255) {
+      nextErrors.email = 'Email must be 255 characters or fewer.'
+    } else if (!/^\S+@\S+\.\S+$/.test(values.email)) {
+      nextErrors.email = 'Please enter a valid email address.'
+    }
+
+    if (!values.first_name.trim()) {
+      nextErrors.first_name = 'First name is required.'
+    } else if (values.first_name.length > 255) {
+      nextErrors.first_name = 'First name must be 255 characters or fewer.'
+    }
+
+    if (!values.last_name.trim()) {
+      nextErrors.last_name = 'Last name is required.'
+    } else if (values.last_name.length > 255) {
+      nextErrors.last_name = 'Last name must be 255 characters or fewer.'
+    }
+
+    if (!values.role) {
+      nextErrors.role = 'Role is required.'
+    } else if (!ROLE_OPTIONS.some((option) => option.value === values.role)) {
+      nextErrors.role = 'Please choose a valid role.'
+    }
+
+    if (!values.password.trim()) {
+      nextErrors.password = 'Password is required.'
+    } else if (values.password.length < 8) {
+      nextErrors.password = 'Password must be at least 8 characters.'
+    }
+
+    if (!values.confirmPassword.trim()) {
+      nextErrors.confirmPassword = 'Please confirm your password.'
+    } else if (values.confirmPassword !== values.password) {
+      nextErrors.confirmPassword = 'Passwords do not match.'
+    }
+
+    return nextErrors
+  }
+
+  const handleSubmit = (event) => {
+    event.preventDefault()
+    const validationErrors = validate()
+
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors)
+      return
+    }
+
+    // TODO: Wire up backend signup request.
+    setErrors({ form: 'Sign up is not connected yet. Please try again later.' })
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-950 pt-28 pb-12 px-4">
+      <div className="max-w-md mx-auto rounded-2xl border border-slate-800 bg-slate-900/60 p-6 sm:p-8 shadow-2xl shadow-black/20">
+        <h1 className="text-3xl font-semibold text-white">Sign up</h1>
+        <p className="mt-2 text-sm text-slate-300">Create your account with details that match your profile information.</p>
+
+        <form className="mt-6 space-y-5" onSubmit={handleSubmit} noValidate>
+          <div>
+            <label htmlFor="username" className="mb-2 block text-sm font-medium text-slate-200">
+              Username
+            </label>
+            <input id="username" name="username" type="text" autoComplete="username" value={values.username} onChange={handleChange} className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30" placeholder="Choose a username" />
+            <p className="mt-1.5 text-xs text-slate-400">Required by authentication. Max 150 characters.</p>
+            {errors.username ? <p className="mt-1.5 text-sm text-rose-400">{errors.username}</p> : null}
+          </div>
+
+          <div>
+            <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-200">Email</label>
+            <input id="email" name="email" type="email" autoComplete="email" value={values.email} onChange={handleChange} className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30" placeholder="name@example.com" />
+            <p className="mt-1.5 text-xs text-slate-400">Must be unique. Max 255 characters.</p>
+            {errors.email ? <p className="mt-1.5 text-sm text-rose-400">{errors.email}</p> : null}
+          </div>
+
+          <div>
+            <label htmlFor="first_name" className="mb-2 block text-sm font-medium text-slate-200">First name</label>
+            <input id="first_name" name="first_name" type="text" autoComplete="given-name" value={values.first_name} onChange={handleChange} className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30" placeholder="Enter your first name" />
+            {errors.first_name ? <p className="mt-1.5 text-sm text-rose-400">{errors.first_name}</p> : null}
+          </div>
+
+          <div>
+            <label htmlFor="last_name" className="mb-2 block text-sm font-medium text-slate-200">Last name</label>
+            <input id="last_name" name="last_name" type="text" autoComplete="family-name" value={values.last_name} onChange={handleChange} className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30" placeholder="Enter your last name" />
+            {errors.last_name ? <p className="mt-1.5 text-sm text-rose-400">{errors.last_name}</p> : null}
+          </div>
+
+          <div>
+            <label htmlFor="role" className="mb-2 block text-sm font-medium text-slate-200">Role</label>
+            <select id="role" name="role" value={values.role} onChange={handleChange} className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30">
+              <option value="" className="text-slate-500">Select your role</option>
+              {ROLE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-xs text-slate-400">Choose one of: Patient, Psychologist, or Developer.</p>
+            {errors.role ? <p className="mt-1.5 text-sm text-rose-400">{errors.role}</p> : null}
+          </div>
+
+          <div>
+            <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-200">Password</label>
+            <input id="password" name="password" type="password" autoComplete="new-password" value={values.password} onChange={handleChange} className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30" placeholder="Create a password" />
+            <p className="mt-1.5 text-xs text-slate-400">Use at least 8 characters.</p>
+            {errors.password ? <p className="mt-1.5 text-sm text-rose-400">{errors.password}</p> : null}
+          </div>
+
+          <div>
+            <label htmlFor="confirmPassword" className="mb-2 block text-sm font-medium text-slate-200">Confirm password</label>
+            <input id="confirmPassword" name="confirmPassword" type="password" autoComplete="new-password" value={values.confirmPassword} onChange={handleChange} className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30" placeholder="Re-enter your password" />
+            {errors.confirmPassword ? <p className="mt-1.5 text-sm text-rose-400">{errors.confirmPassword}</p> : null}
+          </div>
+
+          {errors.form ? <p className="text-sm text-rose-400">{errors.form}</p> : null}
+
+          <button type="submit" className="w-full rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400/40">Sign up</button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-slate-300">
+          Already have an account?{' '}
+          <Link to="/signin" className="font-medium text-blue-400 hover:text-blue-300">Sign in</Link>
+        </p>
+      </div>
+    </main>
+  )
+}
+
+export default SignUpPage
