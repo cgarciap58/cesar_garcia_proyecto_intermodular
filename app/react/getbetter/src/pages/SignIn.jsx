@@ -1,0 +1,112 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+
+const initialValues = {
+  email: '',
+  password: '',
+}
+
+function SignIn() {
+  const [values, setValues] = useState(initialValues)
+  const [errors, setErrors] = useState({})
+
+  const handleChange = (event) => {
+    const { name, value } = event.target
+    setValues((prev) => ({ ...prev, [name]: value }))
+    setErrors((prev) => ({ ...prev, [name]: '' }))
+  }
+
+  const validate = () => {
+    const nextErrors = {}
+
+    if (!values.email.trim()) {
+      nextErrors.email = 'Email is required.'
+    } else if (!/^\S+@\S+\.\S+$/.test(values.email)) {
+      nextErrors.email = 'Please enter a valid email address.'
+    }
+
+    if (!values.password.trim()) {
+      nextErrors.password = 'Password is required.'
+    } else if (values.password.length < 8) {
+      nextErrors.password = 'Password must be at least 8 characters.'
+    }
+
+    return nextErrors
+  }
+
+  const handleSubmit = (event) => {
+    event.preventDefault()
+    const validationErrors = validate()
+
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors)
+      return
+    }
+
+    // TODO: Wire up backend login request.
+    setErrors({ form: 'Sign in is not connected yet. Please try again later.' })
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-950 pt-28 pb-12 px-4">
+      <div className="max-w-md mx-auto rounded-2xl border border-slate-800 bg-slate-900/60 p-6 sm:p-8 shadow-2xl shadow-black/20">
+        <h1 className="text-3xl font-semibold text-white">Sign in</h1>
+        <p className="mt-2 text-sm text-slate-300">Welcome back. Enter your credentials to continue.</p>
+
+        <form className="mt-6 space-y-5" onSubmit={handleSubmit} noValidate>
+          <div>
+            <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-200">
+              Email
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              value={values.email}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30"
+              placeholder="name@example.com"
+            />
+            {errors.email ? <p className="mt-1.5 text-sm text-rose-400">{errors.email}</p> : null}
+          </div>
+
+          <div>
+            <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-200">
+              Password
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              value={values.password}
+              onChange={handleChange}
+              className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30"
+              placeholder="Enter your password"
+            />
+            {errors.password ? <p className="mt-1.5 text-sm text-rose-400">{errors.password}</p> : null}
+          </div>
+
+          {errors.form ? <p className="text-sm text-rose-400">{errors.form}</p> : null}
+
+          <button
+            type="submit"
+            className="w-full rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400/40"
+          >
+            Sign in
+          </button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-slate-300">
+          Don&apos;t have an account?{' '}
+          <Link to="/signup" className="font-medium text-blue-400 hover:text-blue-300">
+            Sign up
+          </Link>
+        </p>
+      </div>
+    </main>
+  )
+}
+
+export default SignIn

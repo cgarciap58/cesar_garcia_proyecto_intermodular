@@ -2,7 +2,7 @@ import { Outlet, Route, Routes } from 'react-router-dom'
 
 import Navbar from './components/Navbar'
 import HomePage from './pages/HomePage'
-import SignInPage from './pages/SignInPage'
+import SignIn from './pages/SignIn'
 import SignUpPage from './pages/SignUpPage'
 
 function AppLayout() {
@@ -19,7 +19,7 @@ function App() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<HomePage />} />
-        <Route path="/signin" element={<SignInPage />} />
+        <Route path="/signin" element={<SignIn />} />
         <Route path="/signup" element={<SignUpPage />} />
       </Route>
     </Routes>

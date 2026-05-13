@@ -1,9 +1,16 @@
-import hero from "../assets/hero.png";
+import hero from "../assets/hero2.png";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
+import { NavLink } from "react-router-dom";
 
 export default function Navbar() {
   const [mobileMenuIsOpen, setMobileMenuIsOpen] = useState(false);
+
+  const getSignInLinkClass = ({ isActive }) =>
+    `text-sm lg:text-base ${isActive ? "text-white" : "text-gray-300 hover:text-white"}`;
+
+  const getMobileSignInLinkClass = ({ isActive }) =>
+    `block text-center ${isActive ? "text-white" : "text-gray-300 hover:text-white"}`;
 
   return (
     <nav className="fixed top-0 w-full z-50 transition-all duration-300 bg-red-950/20 backdrop-blur-sm">
@@ -21,6 +28,7 @@ export default function Navbar() {
             <a href="#features" className="text-gray-300 hover:text-white text-sm lg:text-base">Features</a>
             <a href="#pricing" className="text-gray-300 hover:text-white text-sm lg:text-base">Pricing</a>
             <a href="#testimonials" className="text-gray-300 hover:text-white text-sm lg:text-base">Testimonials</a>
+            <NavLink to="/signin" className={getSignInLinkClass}>Sign In</NavLink>
             <a href="#signup" className="text-gray-300 hover:text-white text-sm lg:text-base">Sign Up</a>
           </div>
 
@@ -35,6 +43,7 @@ export default function Navbar() {
           <a href="#features" className="block text-center text-gray-300 hover:text-white" onClick={() => setMobileMenuIsOpen(false)}>Features</a>
           <a href="#pricing" className="block text-center text-gray-300 hover:text-white" onClick={() => setMobileMenuIsOpen(false)}>Pricing</a>
           <a href="#testimonials" className="block text-center text-gray-300 hover:text-white" onClick={() => setMobileMenuIsOpen(false)}>Testimonials</a>
+          <NavLink to="/signin" className={getMobileSignInLinkClass} onClick={() => setMobileMenuIsOpen(false)}>Sign In</NavLink>
           <a href="#signup" className="block text-center text-gray-300 hover:text-white" onClick={() => setMobileMenuIsOpen(false)}>Sign Up</a>
         </div>
       )}
