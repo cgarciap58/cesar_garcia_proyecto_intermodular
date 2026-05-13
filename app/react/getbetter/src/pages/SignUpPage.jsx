@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { signUp } from '../services/api'
-import { validateSignUpValues } from '../utils/validate'
+import { getPasswordStrength, validateSignUpValues } from '../utils/validate'
 
 const ROLE_OPTIONS = [
   { value: 'patient', label: 'Patient' },
@@ -25,7 +25,14 @@ function SignUpPage() {
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = useNavigate()
-
+  const passwordStrength = getPasswordStrength(values.password)
+  const strengthWidthClassByScore = {
+    0: 'w-1/4',
+    1: 'w-1/4',
+    2: 'w-2/4',
+    3: 'w-3/4',
+    4: 'w-full',
+  }
   const handleChange = (event) => {
     const { name, value } = event.target
     setValues((prev) => ({ ...prev, [name]: value }))
@@ -97,6 +104,16 @@ function SignUpPage() {
           <div>
             <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-200">Password</label>
             <input id="password" name="password" type="password" autoComplete="new-password" value={values.password} onChange={handleChange} className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30" placeholder="Create a password" />
+            {values.password ? (
+              <div className="mt-2">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-700">
+                  <div className={`h-full rounded-full transition-all duration-300 ${strengthWidthClassByScore[passwordStrength.score]} ${passwordStrength.color}`} />
+                </div>
+                <p className="mt-1.5 text-xs text-slate-300">
+                  Strength: <span className="font-medium text-slate-200">{passwordStrength.label}</span>
+                </p>
+              </div>
+            ) : null}            
             {errors.password ? <p className="mt-1.5 text-sm text-rose-400">{errors.password}</p> : null}
           </div>
 

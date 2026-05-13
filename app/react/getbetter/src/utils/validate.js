@@ -1,5 +1,5 @@
 const ALLOWED_NAME_CHARACTERS_REGEX = /^[a-zA-ZñÑáéíóúÁÉÍÓÚ-]+$/;
-const ALLOWED_MESSAGE_CHARACTERS_REGEX = /^[a-zA-ZñÑáéíóúÁÉÍÓÚ0-9\s\.,!?()\-]+$/;
+const ALLOWED_MESSAGE_CHARACTERS_REGEX = /^[a-zA-ZñÑáéíóúÁÉÍÓÚ0-9\s.,!?()-]+$/;
 const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
 
 export const SIGN_UP_API_FIELD_NAMES = {
