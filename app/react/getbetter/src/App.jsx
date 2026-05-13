@@ -1,4 +1,4 @@
-import { Outlet, Route, Routes } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 
 import Navbar from './components/Navbar'
 import HomePage from './pages/HomePage'
@@ -14,13 +14,38 @@ function AppLayout() {
   )
 }
 
+function isAuthenticated() {
+  return Boolean(localStorage.getItem('authToken'))
+}
+
+function RequireAuth() {
+  if (!isAuthenticated()) {
+    return <Navigate to="/signin" replace />
+  }
+
+  return <Outlet />
+}
+
+function RequireGuest() {
+  if (isAuthenticated()) {
+    return <Navigate to="/" replace />
+  }
+
+  return <Outlet />
+}
+
 function App() {
   return (
     <Routes>
       <Route element={<AppLayout />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/signin" element={<SignIn />} />
-        <Route path="/signup" element={<SignUpPage />} />
+        <Route element={<RequireAuth />}>
+          <Route path="/" element={<HomePage />} />
+        </Route>
+        <Route element={<RequireGuest />}>
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUpPage />} />
+        </Route>
+        <Route path="*" element={<Navigate to={isAuthenticated() ? '/' : '/signin'} replace />} />
       </Route>
     </Routes>
   )

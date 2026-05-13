@@ -1,16 +1,24 @@
 import hero from "../assets/hero2.png";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 export default function Navbar() {
   const [mobileMenuIsOpen, setMobileMenuIsOpen] = useState(false);
+  const navigate = useNavigate();
+  const isAuthenticated = Boolean(localStorage.getItem("authToken"));
 
   const getSignInLinkClass = ({ isActive }) =>
     `text-sm lg:text-base ${isActive ? "text-white" : "text-gray-300 hover:text-white"}`;
 
   const getMobileSignInLinkClass = ({ isActive }) =>
     `block text-center ${isActive ? "text-white" : "text-gray-300 hover:text-white"}`;
+
+  const handleSignOut = () => {
+    localStorage.removeItem("authToken");
+    setMobileMenuIsOpen(false);
+    navigate("/signin");
+  };
 
   return (
     <nav className="fixed top-0 w-full z-50 transition-all duration-300 bg-red-950/20 backdrop-blur-sm">
@@ -28,7 +36,16 @@ export default function Navbar() {
             <a href="#features" className="text-gray-300 hover:text-white text-sm lg:text-base">Features</a>
             <a href="#pricing" className="text-gray-300 hover:text-white text-sm lg:text-base">Pricing</a>
             <a href="#testimonials" className="text-gray-300 hover:text-white text-sm lg:text-base">Testimonials</a>
-            <NavLink to="/signin" className={getSignInLinkClass}>Sign In</NavLink>
+            {isAuthenticated ? (
+              <button type="button" onClick={handleSignOut} className="text-sm lg:text-base text-gray-300 hover:text-white">
+                Sign Out
+              </button>
+            ) : (
+              <>
+                <NavLink to="/signin" className={getSignInLinkClass}>Sign In</NavLink>
+                <NavLink to="/signup" className={getSignInLinkClass}>Sign Up</NavLink>
+              </>
+            )}
           </div>
 
           <button className="md:hidden items-center p-2 text-gray-300 hover:text-white" onClick={() => setMobileMenuIsOpen((prev) => !prev)}>
@@ -42,7 +59,16 @@ export default function Navbar() {
           <a href="#features" className="block text-center text-gray-300 hover:text-white" onClick={() => setMobileMenuIsOpen(false)}>Features</a>
           <a href="#pricing" className="block text-center text-gray-300 hover:text-white" onClick={() => setMobileMenuIsOpen(false)}>Pricing</a>
           <a href="#testimonials" className="block text-center text-gray-300 hover:text-white" onClick={() => setMobileMenuIsOpen(false)}>Testimonials</a>
-          <NavLink to="/signin" className={getMobileSignInLinkClass} onClick={() => setMobileMenuIsOpen(false)}>Sign In</NavLink>
+          {isAuthenticated ? (
+            <button type="button" className="block w-full text-center text-gray-300 hover:text-white" onClick={handleSignOut}>
+              Sign Out
+            </button>
+          ) : (
+            <>
+              <NavLink to="/signin" className={getMobileSignInLinkClass} onClick={() => setMobileMenuIsOpen(false)}>Sign In</NavLink>
+              <NavLink to="/signup" className={getMobileSignInLinkClass} onClick={() => setMobileMenuIsOpen(false)}>Sign Up</NavLink>
+            </>
+          )}
         </div>
       )}
     </nav>
