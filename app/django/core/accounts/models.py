@@ -5,20 +5,24 @@ from django.db import models
 class User(AbstractUser):
     ROLE_PATIENT = 'patient'
     ROLE_PSYCHOLOGIST = 'psychologist'
+    ROLE_DEV = 'developer'
     ROLE_CHOICES = (
         (ROLE_PATIENT, 'Patient'),
         (ROLE_PSYCHOLOGIST, 'Psychologist'),
+        (ROLE_DEV, 'Developer')
     )
 
-    name = models.CharField(max_length=255)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_PATIENT)
+    id = models.AutoField(primary_key=True)
+    email = models.EmailField(max_length=255, unique=True)
+    first_name = models.CharField(max_length=255)
+    last_name = models.CharField(max_length=255)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     dob = models.DateField(blank=True, null=True)
     city = models.CharField(max_length=255, blank=True)
     phone_number = models.CharField(max_length=30, blank=True)
-    email = models.EmailField(max_length=255, unique=True)
     profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True)
 
-    REQUIRED_FIELDS = ['email', 'name']
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'email', 'role', 'dob']
 
 
 class PatientProfile(models.Model):
