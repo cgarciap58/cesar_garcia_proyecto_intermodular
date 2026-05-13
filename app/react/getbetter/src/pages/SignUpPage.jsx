@@ -1,17 +1,17 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+
+import { signUp } from '../services/api'
 
 const ROLE_OPTIONS = [
   { value: 'patient', label: 'Patient' },
   { value: 'psychologist', label: 'Psychologist' },
-  { value: 'developer', label: 'Developer' },
 ]
 
 const initialValues = {
-  username: '',
-  email: '',
   first_name: '',
   last_name: '',
+  email: '',
   role: '',
   password: '',
   confirmPassword: '',
@@ -20,6 +20,8 @@ const initialValues = {
 function SignUpPage() {
   const [values, setValues] = useState(initialValues)
   const [errors, setErrors] = useState({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const navigate = useNavigate()
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -30,36 +32,22 @@ function SignUpPage() {
   const validate = () => {
     const nextErrors = {}
 
-    if (!values.username.trim()) {
-      nextErrors.username = 'Username is required.'
-    } else if (values.username.length > 150) {
-      nextErrors.username = 'Username must be 150 characters or fewer.'
-    }
-
-    if (!values.email.trim()) {
-      nextErrors.email = 'Email is required.'
-    } else if (values.email.length > 255) {
-      nextErrors.email = 'Email must be 255 characters or fewer.'
-    } else if (!/^\S+@\S+\.\S+$/.test(values.email)) {
-      nextErrors.email = 'Please enter a valid email address.'
-    }
-
     if (!values.first_name.trim()) {
       nextErrors.first_name = 'First name is required.'
-    } else if (values.first_name.length > 255) {
-      nextErrors.first_name = 'First name must be 255 characters or fewer.'
     }
 
     if (!values.last_name.trim()) {
       nextErrors.last_name = 'Last name is required.'
-    } else if (values.last_name.length > 255) {
-      nextErrors.last_name = 'Last name must be 255 characters or fewer.'
+    }
+
+    if (!values.email.trim()) {
+      nextErrors.email = 'Email is required.'
+    } else if (!/^\S+@\S+\.\S+$/.test(values.email)) {
+      nextErrors.email = 'Please enter a valid email address.'
     }
 
     if (!values.role) {
       nextErrors.role = 'Role is required.'
-    } else if (!ROLE_OPTIONS.some((option) => option.value === values.role)) {
-      nextErrors.role = 'Please choose a valid role.'
     }
 
     if (!values.password.trim()) {
@@ -77,7 +65,7 @@ function SignUpPage() {
     return nextErrors
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
     const validationErrors = validate()
 
@@ -86,8 +74,30 @@ function SignUpPage() {
       return
     }
 
-    // TODO: Wire up backend signup request.
-    setErrors({ form: 'Sign up is not connected yet. Please try again later.' })
+    setIsSubmitting(true)
+    setErrors({})
+
+    const result = await signUp({
+      fullName: `${values.first_name.trim()} ${values.last_name.trim()}`,
+      email: values.email.trim().toLowerCase(),
+      role: values.role,
+      password: values.password,
+      confirmPassword: values.confirmPassword,
+    })
+
+    if (!result.ok) {
+      const nextErrors = { ...result.errors }
+      if (nextErrors.fullName) {
+        nextErrors.first_name = nextErrors.fullName
+      }
+      setErrors(nextErrors)
+      setIsSubmitting(false)
+      return
+    }
+
+    navigate('/signin', {
+      state: { successMessage: 'Account created successfully. Please sign in.' },
+    })
   }
 
   return (
@@ -97,22 +107,6 @@ function SignUpPage() {
         <p className="mt-2 text-sm text-slate-300">Create your account with details that match your profile information.</p>
 
         <form className="mt-6 space-y-5" onSubmit={handleSubmit} noValidate>
-          <div>
-            <label htmlFor="username" className="mb-2 block text-sm font-medium text-slate-200">
-              Username
-            </label>
-            <input id="username" name="username" type="text" autoComplete="username" value={values.username} onChange={handleChange} className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30" placeholder="Choose a username" />
-            <p className="mt-1.5 text-xs text-slate-400">Required by authentication. Max 150 characters.</p>
-            {errors.username ? <p className="mt-1.5 text-sm text-rose-400">{errors.username}</p> : null}
-          </div>
-
-          <div>
-            <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-200">Email</label>
-            <input id="email" name="email" type="email" autoComplete="email" value={values.email} onChange={handleChange} className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30" placeholder="name@example.com" />
-            <p className="mt-1.5 text-xs text-slate-400">Must be unique. Max 255 characters.</p>
-            {errors.email ? <p className="mt-1.5 text-sm text-rose-400">{errors.email}</p> : null}
-          </div>
-
           <div>
             <label htmlFor="first_name" className="mb-2 block text-sm font-medium text-slate-200">First name</label>
             <input id="first_name" name="first_name" type="text" autoComplete="given-name" value={values.first_name} onChange={handleChange} className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30" placeholder="Enter your first name" />
@@ -126,6 +120,12 @@ function SignUpPage() {
           </div>
 
           <div>
+            <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-200">Email</label>
+            <input id="email" name="email" type="email" autoComplete="email" value={values.email} onChange={handleChange} className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30" placeholder="name@example.com" />
+            {errors.email ? <p className="mt-1.5 text-sm text-rose-400">{errors.email}</p> : null}
+          </div>
+
+          <div>
             <label htmlFor="role" className="mb-2 block text-sm font-medium text-slate-200">Role</label>
             <select id="role" name="role" value={values.role} onChange={handleChange} className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30">
               <option value="" className="text-slate-500">Select your role</option>
@@ -133,14 +133,12 @@ function SignUpPage() {
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </select>
-            <p className="mt-1.5 text-xs text-slate-400">Choose one of: Patient, Psychologist, or Developer.</p>
             {errors.role ? <p className="mt-1.5 text-sm text-rose-400">{errors.role}</p> : null}
           </div>
 
           <div>
             <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-200">Password</label>
             <input id="password" name="password" type="password" autoComplete="new-password" value={values.password} onChange={handleChange} className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30" placeholder="Create a password" />
-            <p className="mt-1.5 text-xs text-slate-400">Use at least 8 characters.</p>
             {errors.password ? <p className="mt-1.5 text-sm text-rose-400">{errors.password}</p> : null}
           </div>
 
@@ -152,7 +150,7 @@ function SignUpPage() {
 
           {errors.form ? <p className="text-sm text-rose-400">{errors.form}</p> : null}
 
-          <button type="submit" className="w-full rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400/40">Sign up</button>
+          <button type="submit" disabled={isSubmitting} className="w-full rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400/40 disabled:cursor-not-allowed disabled:bg-blue-400/60">{isSubmitting ? 'Creating account...' : 'Sign up'}</button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-300">

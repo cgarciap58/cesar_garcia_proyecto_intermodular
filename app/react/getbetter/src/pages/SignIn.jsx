@@ -1,5 +1,7 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+
+import { signIn } from '../services/api'
 
 const initialValues = {
   email: '',
@@ -9,11 +11,21 @@ const initialValues = {
 function SignIn() {
   const [values, setValues] = useState(initialValues)
   const [errors, setErrors] = useState({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (location.state?.successMessage) {
+      setSuccessMessage(location.state.successMessage)
+    }
+  }, [location.state])
 
   const handleChange = (event) => {
     const { name, value } = event.target
     setValues((prev) => ({ ...prev, [name]: value }))
-    setErrors((prev) => ({ ...prev, [name]: '' }))
+    setErrors((prev) => ({ ...prev, [name]: '', form: '' }))
   }
 
   const validate = () => {
@@ -34,7 +46,7 @@ function SignIn() {
     return nextErrors
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
     const validationErrors = validate()
 
@@ -43,8 +55,26 @@ function SignIn() {
       return
     }
 
-    // TODO: Wire up backend login request.
-    setErrors({ form: 'Sign in is not connected yet. Please try again later.' })
+    setIsSubmitting(true)
+    setErrors({})
+
+    const result = await signIn({
+      email: values.email.trim().toLowerCase(),
+      password: values.password,
+    })
+
+    if (!result.ok) {
+      setErrors(result.errors)
+      setIsSubmitting(false)
+      return
+    }
+
+    const authToken = result.data?.token || result.data?.authToken
+    if (authToken) {
+      localStorage.setItem('authToken', authToken)
+    }
+
+    navigate('/')
   }
 
   return (
@@ -54,6 +84,8 @@ function SignIn() {
         <p className="mt-2 text-sm text-slate-300">Welcome back. Enter your credentials to continue.</p>
 
         <form className="mt-6 space-y-5" onSubmit={handleSubmit} noValidate>
+          {successMessage ? <p className="text-sm text-emerald-400">{successMessage}</p> : null}
+
           <div>
             <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-200">
               Email
@@ -92,9 +124,10 @@ function SignIn() {
 
           <button
             type="submit"
-            className="w-full rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400/40"
+            disabled={isSubmitting}
+            className="w-full rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400/40 disabled:cursor-not-allowed disabled:bg-blue-400/60"
           >
-            Sign in
+            {isSubmitting ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
 

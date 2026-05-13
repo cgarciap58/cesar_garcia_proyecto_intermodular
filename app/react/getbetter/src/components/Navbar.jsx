@@ -29,7 +29,6 @@ export default function Navbar() {
             <a href="#pricing" className="text-gray-300 hover:text-white text-sm lg:text-base">Pricing</a>
             <a href="#testimonials" className="text-gray-300 hover:text-white text-sm lg:text-base">Testimonials</a>
             <NavLink to="/signin" className={getSignInLinkClass}>Sign In</NavLink>
-            <a href="#signup" className="text-gray-300 hover:text-white text-sm lg:text-base">Sign Up</a>
           </div>
 
           <button className="md:hidden items-center p-2 text-gray-300 hover:text-white" onClick={() => setMobileMenuIsOpen((prev) => !prev)}>
@@ -44,7 +43,6 @@ export default function Navbar() {
           <a href="#pricing" className="block text-center text-gray-300 hover:text-white" onClick={() => setMobileMenuIsOpen(false)}>Pricing</a>
           <a href="#testimonials" className="block text-center text-gray-300 hover:text-white" onClick={() => setMobileMenuIsOpen(false)}>Testimonials</a>
           <NavLink to="/signin" className={getMobileSignInLinkClass} onClick={() => setMobileMenuIsOpen(false)}>Sign In</NavLink>
-          <a href="#signup" className="block text-center text-gray-300 hover:text-white" onClick={() => setMobileMenuIsOpen(false)}>Sign Up</a>
         </div>
       )}
     </nav>
