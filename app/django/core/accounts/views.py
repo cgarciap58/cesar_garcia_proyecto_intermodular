@@ -85,6 +85,8 @@ def register_user(request):
             concerns=(payload.get("concerns") or "").strip(),
         )
 
+    login(request, user)
+
     return JsonResponse(
         {
             "id": user.id,

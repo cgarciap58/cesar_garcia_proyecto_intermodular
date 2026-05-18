@@ -69,7 +69,7 @@ function SignUpPage() {
       return
     }
 
-    navigate('/dasboard', {
+    navigate('/dashboard', {
       state: { successMessage: 'Account created successfully. Please sign in.' },
     })
   }
