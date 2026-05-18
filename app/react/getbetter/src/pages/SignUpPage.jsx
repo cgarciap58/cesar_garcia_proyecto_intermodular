@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
-import { signUp } from '../services/api'
+import { signUp } from '../services'
 import { getPasswordStrength, validateSignUpValues } from '../utils/validate'
 import { useAuth } from '../context/AuthContext'
 
