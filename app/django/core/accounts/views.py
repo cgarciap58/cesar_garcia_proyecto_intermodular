@@ -2,8 +2,7 @@ import json
 
 from django.core.validators import RegexValidator
 
-from django.contrib.auth import authenticate, login
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate, login, logout
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
@@ -136,3 +135,10 @@ def get_user(request):
         "last_name": user.last_name,
         "role": user.role,
     })
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def logout_user(request):
+    logout(request)
+    return JsonResponse({"message": "Logged out"}, status=200)

@@ -26,6 +26,8 @@ const initialValues = {
   country_code: '',
 }
 
+const { setUser } = useAuth()
+
 function SignUpPage() {
   const [values, setValues] = useState(initialValues)
   const [errors, setErrors] = useState({})
@@ -69,9 +71,9 @@ function SignUpPage() {
       return
     }
 
-    navigate('/dashboard', {
-      state: { successMessage: 'Account created successfully. Please sign in.' },
-    })
+    const me = await fetch('/api/auth/me/', { credentials: 'include' }).then(r => r.json())
+    setUser(me)
+    navigate('/dashboard')
   }
 
   return (

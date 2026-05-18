@@ -7,6 +7,8 @@ const initialValues = {
   password: '',
 }
 
+const { setUser } = useAuth()
+
 function SignIn() {
   const [values, setValues] = useState(initialValues)
   const [errors, setErrors] = useState({})
@@ -52,7 +54,10 @@ function SignIn() {
       setIsSubmitting(false)
       return
     }
+    const me = await fetch('/api/auth/me/', { credentials: 'include' }).then(r => r.json())
+    setUser(me)
     navigate('/dashboard')
+
   }
 
   return (
