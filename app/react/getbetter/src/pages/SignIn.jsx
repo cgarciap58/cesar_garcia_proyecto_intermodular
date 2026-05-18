@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { signIn } from '../services/api'
 
 const initialValues = {
@@ -12,14 +11,7 @@ function SignIn() {
   const [values, setValues] = useState(initialValues)
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [successMessage, setSuccessMessage] = useState('')
-  const location = useLocation()
-
-  useEffect(() => {
-    if (location.state?.successMessage) {
-      setSuccessMessage(location.state.successMessage)
-    }
-  }, [location.state])
+  const navigate = useNavigate()
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -29,48 +21,38 @@ function SignIn() {
 
   const validate = () => {
     const nextErrors = {}
-
     if (!values.email.trim()) {
       nextErrors.email = 'Email is required.'
     } else if (!/^\S+@\S+\.\S+$/.test(values.email)) {
       nextErrors.email = 'Please enter a valid email address.'
     }
-
     if (!values.password.trim()) {
       nextErrors.password = 'Password is required.'
     } else if (values.password.length < 8) {
       nextErrors.password = 'Password must be at least 8 characters.'
     }
-
     return nextErrors
   }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
     const validationErrors = validate()
-
     if (Object.keys(validationErrors).length) {
       setErrors(validationErrors)
       return
     }
-
     setIsSubmitting(true)
     setErrors({})
-
     const result = await signIn({
       email: values.email.trim().toLowerCase(),
       password: values.password,
     })
-
     if (!result.ok) {
       setErrors(result.errors)
       setIsSubmitting(false)
       return
     }
-
-    setSuccessMessage(result.data?.message || 'Log in was successful.')
-    setValues(initialValues)
-    setIsSubmitting(false)
+    navigate('/dashboard')
   }
 
   return (
@@ -80,19 +62,11 @@ function SignIn() {
         <p className="mt-2 text-sm text-slate-300">Welcome back. Enter your credentials to continue.</p>
 
         <form className="mt-6 space-y-5" onSubmit={handleSubmit} noValidate>
-          {successMessage ? <p className="text-sm text-emerald-400">{successMessage}</p> : null}
-
           <div>
-            <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-200">
-              Email
-            </label>
+            <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-200">Email</label>
             <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              value={values.email}
-              onChange={handleChange}
+              id="email" name="email" type="email" autoComplete="email"
+              value={values.email} onChange={handleChange}
               className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30"
               placeholder="name@example.com"
             />
@@ -100,16 +74,10 @@ function SignIn() {
           </div>
 
           <div>
-            <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-200">
-              Password
-            </label>
+            <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-200">Password</label>
             <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              value={values.password}
-              onChange={handleChange}
+              id="password" name="password" type="password" autoComplete="current-password"
+              value={values.password} onChange={handleChange}
               className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30"
               placeholder="Enter your password"
             />
@@ -119,8 +87,7 @@ function SignIn() {
           {errors.form ? <p className="text-sm text-rose-400">{errors.form}</p> : null}
 
           <button
-            type="submit"
-            disabled={isSubmitting}
+            type="submit" disabled={isSubmitting}
             className="w-full rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400/40 disabled:cursor-not-allowed disabled:bg-blue-400/60"
           >
             {isSubmitting ? 'Signing in...' : 'Sign in'}
@@ -129,9 +96,7 @@ function SignIn() {
 
         <p className="mt-6 text-center text-sm text-slate-300">
           Don&apos;t have an account?{' '}
-          <Link to="/signup" className="font-medium text-blue-400 hover:text-blue-300">
-            Sign up
-          </Link>
+          <Link to="/signup" className="font-medium text-blue-400 hover:text-blue-300">Sign up</Link>
         </p>
       </div>
     </main>

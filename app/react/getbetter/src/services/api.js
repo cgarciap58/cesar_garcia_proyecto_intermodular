@@ -45,6 +45,7 @@ export const signIn = async ({ email, password }) => {
   const response = await fetch(buildUrl('/api/auth/login/'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify({ email, password }),
   })
 
@@ -64,6 +65,7 @@ export const signUp = async (values) => {
   const response = await fetch(buildUrl('/api/auth/register/'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(mapSignUpValuesToPayload(values)),
   })
 
