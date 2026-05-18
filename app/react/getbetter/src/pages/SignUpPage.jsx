@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 
 import { signUp } from '../services/api'
 import { getPasswordStrength, validateSignUpValues } from '../utils/validate'
+import { useAuth } from '../context/AuthContext'
 
 const ROLE_OPTIONS = [
   { value: 'patient', label: 'Patient' },
@@ -26,9 +27,9 @@ const initialValues = {
   country_code: '',
 }
 
-const { setUser } = useAuth()
 
 function SignUpPage() {
+  const { setUser } = useAuth()
   const [values, setValues] = useState(initialValues)
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -75,6 +76,7 @@ function SignUpPage() {
     setUser(me)
     navigate('/dashboard')
   }
+
 
   return (
     <main className="min-h-screen bg-slate-950 pt-28 pb-12 px-4">

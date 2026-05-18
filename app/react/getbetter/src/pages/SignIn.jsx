@@ -1,20 +1,20 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { signIn } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
 const initialValues = {
   email: '',
   password: '',
 }
 
-const { setUser } = useAuth()
 
 function SignIn() {
+  const { setUser } = useAuth()
   const [values, setValues] = useState(initialValues)
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = useNavigate()
-
   const handleChange = (event) => {
     const { name, value } = event.target
     setValues((prev) => ({ ...prev, [name]: value }))

@@ -6,8 +6,9 @@ if [ "${USE_DB:-false}" = "true" ]; then
   until nc -z "$DB_HOST" $DB_PORT; do sleep 2; done
 fi
 
-python manage.py migrate --noinput
-
+if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then
+  python manage.py migrate --noinput
+fi
 
 echo "Creating superuser if not exists..."
 

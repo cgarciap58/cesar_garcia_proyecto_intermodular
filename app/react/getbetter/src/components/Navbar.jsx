@@ -17,7 +17,6 @@ export default function Navbar() {
     navigate('/')
   }
 
-  // still loading — render nothing to avoid flash
   if (user === undefined) return null
 
   return (
