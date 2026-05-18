@@ -44,6 +44,7 @@ class PsychologistProfile(models.Model):
     country_code = models.CharField(max_length=2, blank=True)
     license_number = models.CharField(max_length=100, blank=True)
     is_verified = models.BooleanField(default=False)
+    session_duration_minutes = models.PositiveIntegerField(default=55)
 
     VERIFICATION_PENDING = 'pending'
     VERIFICATION_APPROVED = 'approved'

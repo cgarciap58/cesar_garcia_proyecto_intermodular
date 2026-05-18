@@ -42,9 +42,10 @@ fi
 
 cp /tmp/.env.runtime ./.env.runtime
 
-echo "[4] Arrancando contenedor Django..."
 
-# sudo docker compose -f docker-compose.yml down --remove-orphans || true
+echo "[4] Arrancando contenedor Django..."
+sudo docker compose -f docker-compose.yml down --remove-orphans || true
+sudo docker image prune -f
 sudo docker compose -f docker-compose.yml up -d --build
 
 echo "Docker Compose lanzado correctamente. Actualizado al repositorio actual"

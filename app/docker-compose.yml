@@ -3,7 +3,7 @@ services:
     build:
       context: ./django
     ports:
-      - "8000:8000"
+      - 8000
     volumes:
       - static_volume:/app/staticfiles
     env_file:
