@@ -171,6 +171,7 @@ else:
 INSTALLED_APPS += [
     'core.accounts',
     'core.psychologists',
+    'core.appointments'
 ]
 
 AUTH_USER_MODEL = 'accounts.User'

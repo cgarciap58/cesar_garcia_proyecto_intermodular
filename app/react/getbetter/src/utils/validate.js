@@ -42,11 +42,6 @@ export function validateSignUpValues(values = {}) {
     errors.email = 'Please enter a valid email address.';
   }
 
-  validateRequired(values.email, 'Email is required.', errors, 'email');
-  if (!errors.email && !isValidEmail(values.email)) {
-    errors.email = 'Please enter a valid email address.';
-  }
-
   validateRequired(values.role, 'Role is required.', errors, 'role');
 
   validateRequired(values.password, 'Password is required.', errors, 'password');

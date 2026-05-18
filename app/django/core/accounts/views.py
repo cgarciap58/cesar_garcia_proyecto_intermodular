@@ -1,11 +1,14 @@
 import json
 
-from django.contrib.auth import authenticate
 from django.core.validators import RegexValidator
+
+from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
-from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+
+from django.http import JsonResponse
+
 from .models import PatientProfile, PsychologistProfile
 
 
@@ -111,7 +114,23 @@ def login_user(request):
     if user is None:
         return JsonResponse({"error": "Invalid email or password"}, status=401)
 
+    login(request, user)
+
     return JsonResponse({"message": "Log in was successful"}, status=200)
 
+
+
+
+
+@require_http_methods(["GET"])
 def get_user(request):
-    return JsonResponse({"error": "Not implemented"}, status=501)
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Not authenticated"}, status=401)
+    user = request.user
+    return JsonResponse({
+        "id": user.id,
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "role": user.role,
+    })
