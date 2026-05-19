@@ -17,7 +17,8 @@ from .appointments.views import (
     slot_detail, 
     appointments_list, 
     appointment_confirm, 
-    appointment_cancel
+    appointment_cancel,
+    appointment_history
 )
 
 urlpatterns = [
@@ -33,4 +34,5 @@ urlpatterns = [
     path('api/appointments/<int:appointment_id>/cancel/', appointment_cancel),
     path('api/appointments/slots/', slots_list),
     path('api/appointments/slots/<int:slot_id>/', slot_detail),
+    path('api/appointments/history/', appointment_history),
 ]

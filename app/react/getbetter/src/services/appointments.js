@@ -88,3 +88,13 @@ export const cancelAppointment = async (appointmentId) => {
   if (!response.ok) return { ok: false, error: payload.error || 'Failed to cancel appointment' }
   return { ok: true, data: payload }
 }
+
+export const getAppointmentHistory = async (withUserId) => {
+  const response = await fetch(
+    buildUrl(`/api/appointments/history/?with=${withUserId}`),
+    { credentials: 'include' }
+  )
+  const payload = await parseResponse(response)
+  if (!response.ok) return { ok: false, error: payload.error || 'Failed to fetch history' }
+  return { ok: true, data: payload }
+}

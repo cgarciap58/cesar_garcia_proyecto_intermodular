@@ -4,6 +4,7 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from .models import AvailableSlot, Appointment
@@ -291,3 +292,75 @@ def appointment_cancel(request, appointment_id):
 
     role = user.role
     return JsonResponse(appointment_to_dict(appointment, role))
+
+
+@require_http_methods(['GET'])
+def appointment_history(request):
+    user = require_auth(request)
+    if not user:
+        return JsonResponse({'error': 'Not authenticated'}, status=401)
+
+    with_user_id = request.GET.get('with')
+    if not with_user_id:
+        return JsonResponse({'error': 'Missing ?with=<user_id> parameter'}, status=400)
+
+    now = timezone.now()
+
+    if user.role == 'patient':
+        try:
+            patient_profile = user.patient_profile
+        except PatientProfile.DoesNotExist:
+            return JsonResponse({'error': 'Patient profile not found'}, status=404)
+
+        # The "with" user must be a psychologist
+        try:
+            psych_user = get_user_model().objects.get(id=with_user_id, role='psychologist')
+            psych_profile = psych_user.psychologist_profile
+        except (get_user_model().DoesNotExist, PsychologistProfile.DoesNotExist):
+            return JsonResponse({'error': 'Psychologist not found'}, status=404)
+
+        appointments = (
+            Appointment.objects
+            .filter(
+                patient=patient_profile,
+                slot__psychologist=psych_profile,
+                status=Appointment.STATUS_CONFIRMED,
+                slot__start_time__lt=now,
+            )
+            .select_related('slot__psychologist__user', 'patient__user')
+            .order_by('-slot__start_time')[:3]
+        )
+        role = 'patient'
+
+    elif user.role == 'psychologist':
+        try:
+            psych_profile = user.psychologist_profile
+        except PsychologistProfile.DoesNotExist:
+            return JsonResponse({'error': 'Psychologist profile not found'}, status=404)
+
+        # The "with" user must be a patient
+        try:
+            patient_user = get_user_model().objects.get(id=with_user_id, role='patient')
+            patient_profile = patient_user.patient_profile
+        except (get_user_model().DoesNotExist, PatientProfile.DoesNotExist):
+            return JsonResponse({'error': 'Patient not found'}, status=404)
+
+        appointments = (
+            Appointment.objects
+            .filter(
+                patient=patient_profile,
+                slot__psychologist=psych_profile,
+                status=Appointment.STATUS_CONFIRMED,
+                slot__start_time__lt=now,
+            )
+            .select_related('slot__psychologist__user', 'patient__user')
+            .order_by('-slot__start_time')[:3]
+        )
+        role = 'psychologist'
+
+    else:
+        return JsonResponse({'error': 'Invalid role'}, status=403)
+
+    return JsonResponse({
+        'history': [appointment_to_dict(a, role) for a in appointments]
+    })
