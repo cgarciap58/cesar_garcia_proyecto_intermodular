@@ -385,76 +385,6 @@ export default function SlotsPage() {
         </div>
 
         {/* ══════════════════════════════════════════════════════════════
-            SECTION 1 — Profile settings
-            Duration and timezone are stored on the server. Changing them
-            here only affects NEW slots created after saving.
-        ══════════════════════════════════════════════════════════════ */}
-        <SectionCard
-          title="Session settings"
-          subtitle="Changes apply to new slots only — existing bookings are unaffected."
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-
-            {/* Session duration */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Session duration (minutes)
-              </label>
-              {/*
-                LEARNER NOTE: type="number" with min/max/step gives a native
-                spinner. We parse the value as an integer with parseInt because
-                HTML inputs always return strings even for type="number".
-              */}
-              <input
-                type="number"
-                min={15}
-                max={180}
-                step={5}
-                value={duration}
-                onChange={(e) => setDuration(parseInt(e.target.value, 10) || 55)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30"
-              />
-              <p className="text-xs text-slate-500 mt-1.5">Between 15 and 180 minutes.</p>
-            </div>
-
-            {/* Timezone */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Your timezone
-              </label>
-              {/*
-                LEARNER NOTE: <select> works just like <input> for controlled
-                components — value + onChange is all you need.
-              */}
-              <select
-                value={timezone}
-                onChange={(e) => setTimezone(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30"
-              >
-                {TIMEZONES.map((tz) => (
-                  <option key={tz.value} value={tz.value}>{tz.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="mt-5 flex items-center gap-4">
-            <button
-              onClick={handleSaveProfile}
-              disabled={savingProfile}
-              className="rounded-lg bg-blue-500 hover:bg-blue-400 disabled:bg-blue-400/50 px-5 py-2.5 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed"
-            >
-              {savingProfile ? 'Saving…' : 'Save settings'}
-            </button>
-            {profileStatus && (
-              <span className={`text-sm ${profileStatus.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                {profileStatus.message}
-              </span>
-            )}
-          </div>
-        </SectionCard>
-
-        {/* ══════════════════════════════════════════════════════════════
             SECTION 2 — Recurring rule
             The psych picks days of week + a time window + a date range.
             We generate a preview client-side (useMemo) before sending
@@ -657,6 +587,76 @@ export default function SlotsPage() {
               }
             </button>
             <StatusBadge type={ruleStatus?.type} message={ruleStatus?.message} />
+          </div>
+        </SectionCard>
+
+        {/* ══════════════════════════════════════════════════════════════
+            SECTION 1 — Profile settings
+            Duration and timezone are stored on the server. Changing them
+            here only affects NEW slots created after saving.
+        ══════════════════════════════════════════════════════════════ */}
+        <SectionCard
+          title="Session settings"
+          subtitle="Changes apply to new slots only — existing bookings are unaffected."
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+            {/* Session duration */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Session duration (minutes)
+              </label>
+              {/*
+                LEARNER NOTE: type="number" with min/max/step gives a native
+                spinner. We parse the value as an integer with parseInt because
+                HTML inputs always return strings even for type="number".
+              */}
+              <input
+                type="number"
+                min={15}
+                max={180}
+                step={5}
+                value={duration}
+                onChange={(e) => setDuration(parseInt(e.target.value, 10) || 55)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30"
+              />
+              <p className="text-xs text-slate-500 mt-1.5">Between 15 and 180 minutes.</p>
+            </div>
+
+            {/* Timezone */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Your timezone
+              </label>
+              {/*
+                LEARNER NOTE: <select> works just like <input> for controlled
+                components — value + onChange is all you need.
+              */}
+              <select
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30"
+              >
+                {TIMEZONES.map((tz) => (
+                  <option key={tz.value} value={tz.value}>{tz.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-5 flex items-center gap-4">
+            <button
+              onClick={handleSaveProfile}
+              disabled={savingProfile}
+              className="rounded-lg bg-blue-500 hover:bg-blue-400 disabled:bg-blue-400/50 px-5 py-2.5 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed"
+            >
+              {savingProfile ? 'Saving…' : 'Save settings'}
+            </button>
+            {profileStatus && (
+              <span className={`text-sm ${profileStatus.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                {profileStatus.message}
+              </span>
+            )}
           </div>
         </SectionCard>
 

@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage'
 import SignIn from './pages/SignIn'
 import SignUpPage from './pages/SignUpPage'
 import DashboardPage from './pages/DashboardPage'
+import SlotsPage from './pages/SlotsPage'
 
 function AppLayout() {
   return (

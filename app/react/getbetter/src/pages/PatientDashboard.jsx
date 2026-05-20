@@ -31,6 +31,8 @@ export default function PatientDashboard() {
   const [cancelling, setCancelling] = useState(false)
   const [cancelError, setCancelError] = useState(null)
 
+
+  
   useEffect(() => {
     getAppointments().then((result) => {
       if (result.ok) {
