@@ -9,7 +9,8 @@ from .views import (
 from .accounts.views import (
     register_user, 
     login_user, 
-    get_user, 
+    get_user,
+    update_profile,
     logout_user
 )
 from .appointments.views import (
@@ -29,6 +30,7 @@ urlpatterns = [
     path('api/auth/register/', register_user),
     path('api/auth/login/', login_user),
     path('api/auth/logout/', logout_user),
+    path('api/auth/profile/', update_profile),   # NEW
     path('api/appointments/', appointments_list),
     path('api/appointments/<int:appointment_id>/confirm/', appointment_confirm),
     path('api/appointments/<int:appointment_id>/cancel/', appointment_cancel),

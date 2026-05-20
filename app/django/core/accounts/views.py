@@ -142,3 +142,77 @@ def get_user(request):
 def logout_user(request):
     logout(request)
     return JsonResponse({"message": "Logged out"}, status=200)
+
+
+# ---------------------------------------------------------------------------
+# Profile update — psychologists only (session duration + timezone)
+# ---------------------------------------------------------------------------
+ 
+# Valid IANA timezones we expose to the UI.
+# Keeping this explicit avoids accepting arbitrary strings.
+ALLOWED_TIMEZONES = {
+    "UTC",
+    "Europe/Madrid", "Europe/London", "Europe/Paris", "Europe/Berlin",
+    "Europe/Rome", "Europe/Amsterdam", "Europe/Lisbon", "Europe/Warsaw",
+    "America/New_York", "America/Chicago", "America/Denver",
+    "America/Los_Angeles", "America/Toronto", "America/Vancouver",
+    "America/Sao_Paulo", "America/Argentina/Buenos_Aires", "America/Mexico_City",
+    "Asia/Tokyo", "Asia/Seoul", "Asia/Shanghai", "Asia/Kolkata",
+    "Asia/Dubai", "Asia/Singapore",
+    "Australia/Sydney", "Australia/Melbourne",
+    "Pacific/Auckland",
+    "Africa/Cairo", "Africa/Johannesburg",
+}
+ 
+ 
+@csrf_exempt
+@require_http_methods(["PATCH"])
+def update_profile(request):
+    """
+    PATCH /api/auth/profile/
+    Any authenticated user can update their timezone.
+    Psychologists can also update session_duration_minutes.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Not authenticated"}, status=401)
+ 
+    try:
+        payload = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON payload"}, status=400)
+ 
+    user = request.user
+    user_changed = False
+ 
+    # --- timezone (all roles) ---
+    if "timezone" in payload:
+        tz = (payload["timezone"] or "").strip()
+        if tz not in ALLOWED_TIMEZONES:
+            return JsonResponse({"error": f"Unsupported timezone: {tz}"}, status=400)
+        user.timezone = tz
+        user_changed = True
+ 
+    if user_changed:
+        user.save()
+ 
+    # --- session_duration_minutes (psychologists only) ---
+    if "session_duration_minutes" in payload:
+        if user.role != 'psychologist':
+            return JsonResponse(
+                {"error": "Only psychologists can set session_duration_minutes"},
+                status=403,
+            )
+        duration = payload["session_duration_minutes"]
+        if not isinstance(duration, int) or duration < 15 or duration > 180:
+            return JsonResponse(
+                {"error": "session_duration_minutes must be an integer between 15 and 180"},
+                status=400,
+            )
+        try:
+            profile = user.psychologist_profile
+        except PsychologistProfile.DoesNotExist:
+            return JsonResponse({"error": "Psychologist profile not found"}, status=404)
+        profile.session_duration_minutes = duration
+        profile.save()
+ 
+    return JsonResponse(_user_payload(user))

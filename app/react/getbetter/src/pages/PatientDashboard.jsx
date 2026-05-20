@@ -34,10 +34,11 @@ export default function PatientDashboard() {
   useEffect(() => {
     getAppointments().then((result) => {
       if (result.ok) {
-        const sorted = [...result.data.appointments].sort(
-          (a, b) => new Date(a.slot.start_time) - new Date(b.slot.start_time)
-        )
-        setAppointments(sorted)
+        const now = new Date()
+        const filtered = result.data.appointments
+          .filter((a) => new Date(a.slot.start_time) >= now)
+          .sort((a, b) => new Date(a.slot.start_time) - new Date(b.slot.start_time))
+        setAppointments(filtered)
       } else {
         setError(result.error)
       }

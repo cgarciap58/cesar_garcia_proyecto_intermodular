@@ -108,47 +108,118 @@ class Command(BaseCommand):
 
         self.stdout.write('Creating appointments...')
 
-        # Appointment 1: Mario books Ana's first slot \u2192 confirmed
-        slot_1 = all_slots[0][0]
-        slot_1.is_booked = True
-        slot_1.save()
+        # Helper for creating historical slots
+        def create_past_slot(psychologist, days_ago, hour):
+            return AvailableSlot.objects.create(
+                psychologist=psychologist,
+                start_time=now - timedelta(days=days_ago) + timedelta(hours=hour),
+                duration_minutes=psychologist.session_duration_minutes,
+                is_booked=True,
+            )
+
+        # ---------------------------------------------------------
+        # HISTORICAL SERIES: Mario + Dr. Ana (3 completed sessions)
+        # ---------------------------------------------------------
+
+        mario = patient_profiles[0]
+        laura = patient_profiles[1]
+        carlos = patient_profiles[2]
+
+        ana = psych_profiles[0]
+        james = psych_profiles[1]
+        claire = psych_profiles[2]
+
+        historical_slots = [
+            create_past_slot(ana, 28, 10),
+            create_past_slot(ana, 14, 10),
+            create_past_slot(ana, 7, 10),
+        ]
+
+        historical_notes = [
+            'Initial anxiety assessment completed. Introduced grounding exercises.',
+            'Reported reduced work-related rumination. Breathing exercises helping.',
+            'Strong progress. Discussed resilience strategies for upcoming workload.',
+        ]
+
+        for i, slot in enumerate(historical_slots):
+            Appointment.objects.create(
+                slot=slot,
+                patient=mario,
+                status=Appointment.STATUS_CONFIRMED,
+                patient_notes='',
+                private_notes=historical_notes[i],
+            )
+            self.stdout.write(
+                f'  Historical session {i+1}: {mario.user.first_name} → {ana.user.last_name} [confirmed]'
+            )
+
+        # ---------------------------------------------------------
+        # Past completed session: Laura + James
+        # ---------------------------------------------------------
+
+        past_slot_laura = create_past_slot(james, 10, 14)
+
         Appointment.objects.create(
-            slot=slot_1,
-            patient=patient_profiles[0],
+            slot=past_slot_laura,
+            patient=laura,
             status=Appointment.STATUS_CONFIRMED,
-            patient_notes='Please keep a mood journal this week.',
-            private_notes='Patient showing progress. Increase session frequency?',
-        )
-        self.stdout.write(f'  Appointment 1: {patient_profiles[0].user.first_name} \u2192 {slot_1.psychologist.user.last_name} [confirmed]')
-
-        # Appointment 2: Laura books James's first slot \u2192 pending
-        slot_2 = all_slots[1][0]
-        slot_2.is_booked = True
-        slot_2.save()
-        Appointment.objects.create(
-            slot=slot_2,
-            patient=patient_profiles[1],
-            status=Appointment.STATUS_PENDING,
             patient_notes='',
-            private_notes='First session. Intake assessment needed.',
+            private_notes='Initial intake completed. Sleep hygiene intervention assigned.',
         )
-        self.stdout.write(f'  Appointment 2: {patient_profiles[1].user.first_name} \u2192 {slot_2.psychologist.user.last_name} [pending]')
 
-        # Appointment 3: Carlos books Ana's second slot \u2192 cancelled
-        slot_3 = all_slots[0][1]
-        slot_3.is_booked = True
-        slot_3.save()
-        appt_3 = Appointment.objects.create(
-            slot=slot_3,
-            patient=patient_profiles[2],
+        self.stdout.write(
+            f'  Historical session: {laura.user.first_name} → {james.user.last_name} [confirmed]'
+        )
+
+        # ---------------------------------------------------------
+        # Past cancelled session: Carlos + Claire
+        # ---------------------------------------------------------
+
+        cancelled_slot = create_past_slot(claire, 5, 11)
+
+        Appointment.objects.create(
+            slot=cancelled_slot,
+            patient=carlos,
             status=Appointment.STATUS_CANCELLED,
             patient_notes='',
             private_notes='',
         )
-        # On cancellation the slot should be free again
-        slot_3.is_booked = False
-        slot_3.save()
-        self.stdout.write(f'  Appointment 3: {patient_profiles[2].user.first_name} \u2192 {slot_3.psychologist.user.last_name} [cancelled]')
+
+        cancelled_slot.is_booked = False
+        cancelled_slot.save()
+
+        self.stdout.write(
+            f'  Historical session: {carlos.user.first_name} → {claire.user.last_name} [cancelled]'
+        )
+
+        # ---------------------------------------------------------
+        # FUTURE APPOINTMENTS (must have no notes)
+        # ---------------------------------------------------------
+
+        future_appointments = [
+            (all_slots[0][0], mario, Appointment.STATUS_CONFIRMED),
+            (all_slots[1][0], laura, Appointment.STATUS_PENDING),
+            (all_slots[2][0], carlos, Appointment.STATUS_CONFIRMED),
+            (all_slots[0][2], mario, Appointment.STATUS_PENDING),
+            (all_slots[1][1], laura, Appointment.STATUS_CONFIRMED),
+        ]
+
+        for idx, (slot, patient, status) in enumerate(future_appointments, start=1):
+            slot.is_booked = True
+            slot.save()
+
+            Appointment.objects.create(
+                slot=slot,
+                patient=patient,
+                status=status,
+                patient_notes='',
+                private_notes='',
+            )
+
+            self.stdout.write(
+                f'  Future appointment {idx}: {patient.user.first_name} → '
+                f'{slot.psychologist.user.last_name} [{status}]'
+            )
 
         self.stdout.write(self.style.SUCCESS('\nDemo data seeded successfully!'))
         self.stdout.write('\nDemo credentials (all passwords: demopass123):')
@@ -164,8 +235,35 @@ class Command(BaseCommand):
             [p['email'] for p in PSYCHOLOGISTS] +
             [p['email'] for p in PATIENTS]
         )
-        # Deleting users cascades to profiles, slots, and appointments
+
+        psychologists = PsychologistProfile.objects.filter(
+            user__email__in=demo_emails
+        )
+        patients = PatientProfile.objects.filter(
+            user__email__in=demo_emails
+        )
+
+        # Delete appointments first
+        Appointment.objects.filter(
+            slot__psychologist__in=psychologists
+        ).delete()
+
+        Appointment.objects.filter(
+            patient__in=patients
+        ).delete()
+
+        # Then slots
+        AvailableSlot.objects.filter(
+            psychologist__in=psychologists
+        ).delete()
+
+        # Then profiles
+        psychologists.delete()
+        patients.delete()
+
+        # Finally users
         User.objects.filter(email__in=demo_emails).delete()
+
 
     def _create_psychologist(self, data):
         user = User.objects.create_user(

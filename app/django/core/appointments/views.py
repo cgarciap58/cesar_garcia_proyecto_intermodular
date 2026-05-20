@@ -6,10 +6,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from django.contrib.auth import get_user_model
 
 from .models import AvailableSlot, Appointment
 from core.accounts.models import PatientProfile, PsychologistProfile
-
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
 
