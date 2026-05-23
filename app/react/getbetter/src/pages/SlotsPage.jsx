@@ -623,25 +623,7 @@ export default function SlotsPage() {
               <p className="text-xs text-slate-500 mt-1.5">Between 15 and 180 minutes.</p>
             </div>
 
-            {/* Timezone */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Your timezone
-              </label>
-              {/*
-                LEARNER NOTE: <select> works just like <input> for controlled
-                components — value + onChange is all you need.
-              */}
-              <select
-                value={timezone}
-                onChange={(e) => setTimezone(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30"
-              >
-                {TIMEZONES.map((tz) => (
-                  <option key={tz.value} value={tz.value}>{tz.label}</option>
-                ))}
-              </select>
-            </div>
+
           </div>
 
           <div className="mt-5 flex items-center gap-4">

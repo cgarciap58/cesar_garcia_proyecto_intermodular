@@ -1,11 +1,9 @@
 import json
 
 from django.core.validators import RegexValidator
-
 from django.contrib.auth import get_user_model, authenticate, login, logout
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-
 from django.http import JsonResponse
 
 from .models import PatientProfile, PsychologistProfile
@@ -15,6 +13,34 @@ name_validator = RegexValidator(
     regex=r'^[a-zA-ZñÑáéíóúÁÉÍÓÚ-]+$',
     message='This field can only contain letters and hyphens.',
 )
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _user_payload(user):
+    """Shared dict returned by /api/auth/me/ and after login/register."""
+    data = {
+        'id': user.id,
+        'email': user.email,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'role': user.role,
+        # timezone lives on User so every role gets it
+        'timezone': user.timezone,
+    }
+    if user.role == 'psychologist':
+        try:
+            p = user.psychologist_profile
+            data['session_duration_minutes'] = p.session_duration_minutes
+        except PsychologistProfile.DoesNotExist:
+            pass
+    return data
+
+
+# ---------------------------------------------------------------------------
+# Auth views
+# ---------------------------------------------------------------------------
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -56,7 +82,6 @@ def register_user(request):
     if role == "psychologist":
         license_number = (payload.get("license_number") or "").strip()
         country_code = (payload.get("country_code") or "").strip()
-
         if not license_number or not country_code:
             return JsonResponse(
                 {"error": "License number and country are required for psychologists"},
@@ -85,17 +110,8 @@ def register_user(request):
         )
 
     login(request, user)
+    return JsonResponse(_user_payload(user), status=201)
 
-    return JsonResponse(
-        {
-            "id": user.id,
-            "email": user.email,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "role": user.role,
-        },
-        status=201,
-    )
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -116,25 +132,14 @@ def login_user(request):
         return JsonResponse({"error": "Invalid email or password"}, status=401)
 
     login(request, user)
-
     return JsonResponse({"message": "Log in was successful"}, status=200)
-
-
-
 
 
 @require_http_methods(["GET"])
 def get_user(request):
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Not authenticated"}, status=401)
-    user = request.user
-    return JsonResponse({
-        "id": user.id,
-        "email": user.email,
-        "first_name": user.first_name,
-        "last_name": user.last_name,
-        "role": user.role,
-    })
+    return JsonResponse(_user_payload(request.user))
 
 
 @csrf_exempt
@@ -147,7 +152,7 @@ def logout_user(request):
 # ---------------------------------------------------------------------------
 # Profile update — psychologists only (session duration + timezone)
 # ---------------------------------------------------------------------------
- 
+
 # Valid IANA timezones we expose to the UI.
 # Keeping this explicit avoids accepting arbitrary strings.
 ALLOWED_TIMEZONES = {
@@ -163,8 +168,8 @@ ALLOWED_TIMEZONES = {
     "Pacific/Auckland",
     "Africa/Cairo", "Africa/Johannesburg",
 }
- 
- 
+
+
 @csrf_exempt
 @require_http_methods(["PATCH"])
 def update_profile(request):
@@ -175,15 +180,15 @@ def update_profile(request):
     """
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Not authenticated"}, status=401)
- 
+
     try:
         payload = json.loads(request.body or "{}")
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON payload"}, status=400)
- 
+
     user = request.user
     user_changed = False
- 
+
     # --- timezone (all roles) ---
     if "timezone" in payload:
         tz = (payload["timezone"] or "").strip()
@@ -191,10 +196,10 @@ def update_profile(request):
             return JsonResponse({"error": f"Unsupported timezone: {tz}"}, status=400)
         user.timezone = tz
         user_changed = True
- 
+
     if user_changed:
         user.save()
- 
+
     # --- session_duration_minutes (psychologists only) ---
     if "session_duration_minutes" in payload:
         if user.role != 'psychologist':
@@ -214,5 +219,5 @@ def update_profile(request):
             return JsonResponse({"error": "Psychologist profile not found"}, status=404)
         profile.session_duration_minutes = duration
         profile.save()
- 
+
     return JsonResponse(_user_payload(user))

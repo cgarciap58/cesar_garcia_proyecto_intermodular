@@ -1,17 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
-const buildUrl = (path) => `${API_BASE_URL}${path}`
+import { buildUrl, parseResponse } from './http'
 
-const parseResponse = async (response) => {
-  const contentType = response.headers.get('content-type') || ''
-  if (!contentType.includes('application/json')) return {}
-  try {
-    return await response.json()
-  } catch {
-    return {}
-  }
-}
-
-// \u2500\u2500\u2500 Slots \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// ─── Slots ────────────────────────────────────────────────────────────────────
 
 export const getSlots = async () => {
   const response = await fetch(buildUrl('/api/appointments/slots/'), {
@@ -23,8 +12,6 @@ export const getSlots = async () => {
 }
 
 export const createSlots = async (startTimes) => {
-  // startTimes: string[] of ISO datetime strings
-  // e.g. ['2026-05-21T10:00:00Z', '2026-05-22T14:00:00Z']
   const response = await fetch(buildUrl('/api/appointments/slots/'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -46,7 +33,7 @@ export const deleteSlot = async (slotId) => {
   return { ok: true }
 }
 
-// \u2500\u2500\u2500 Appointments \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// ─── Appointments ─────────────────────────────────────────────────────────────
 
 export const getAppointments = async () => {
   const response = await fetch(buildUrl('/api/appointments/'), {

@@ -1,17 +1,5 @@
+import { buildUrl, parseResponse } from './http'
 import { mapSignUpValuesToPayload, SIGN_UP_FIELD_KEYS } from '../utils/validate'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
-const buildUrl = (path) => `${API_BASE_URL}${path}`
-
-const parseResponse = async (response) => {
-  const contentType = response.headers.get('content-type') || ''
-  if (!contentType.includes('application/json')) return {}
-  try {
-    return await response.json()
-  } catch {
-    return {}
-  }
-}
 
 const toFieldErrors = (payload, knownFields = []) => {
   const errors = {}
