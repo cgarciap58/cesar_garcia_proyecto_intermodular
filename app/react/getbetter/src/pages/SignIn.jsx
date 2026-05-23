@@ -2,12 +2,9 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { signIn } from '../services'
 import { useAuth } from '../context/AuthContext'
+import FormField from '../components/FormField'
 
-const initialValues = {
-  email: '',
-  password: '',
-}
-
+const initialValues = { email: '', password: '' }
 
 function SignIn() {
   const { setUser } = useAuth()
@@ -15,6 +12,7 @@ function SignIn() {
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = useNavigate()
+
   const handleChange = (event) => {
     const { name, value } = event.target
     setValues((prev) => ({ ...prev, [name]: value }))
@@ -54,10 +52,9 @@ function SignIn() {
       setIsSubmitting(false)
       return
     }
-    const me = await fetch('/api/auth/me/', { credentials: 'include' }).then(r => r.json())
+    const me = await fetch('/api/auth/me/', { credentials: 'include' }).then((r) => r.json())
     setUser(me)
     navigate('/dashboard')
-
   }
 
   return (
@@ -67,27 +64,18 @@ function SignIn() {
         <p className="mt-2 text-sm text-slate-300">Welcome back. Enter your credentials to continue.</p>
 
         <form className="mt-6 space-y-5" onSubmit={handleSubmit} noValidate>
-          <div>
-            <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-200">Email</label>
-            <input
-              id="email" name="email" type="email" autoComplete="email"
-              value={values.email} onChange={handleChange}
-              className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30"
-              placeholder="name@example.com"
-            />
-            {errors.email ? <p className="mt-1.5 text-sm text-rose-400">{errors.email}</p> : null}
-          </div>
-
-          <div>
-            <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-200">Password</label>
-            <input
-              id="password" name="password" type="password" autoComplete="current-password"
-              value={values.password} onChange={handleChange}
-              className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30"
-              placeholder="Enter your password"
-            />
-            {errors.password ? <p className="mt-1.5 text-sm text-rose-400">{errors.password}</p> : null}
-          </div>
+          <FormField
+            id="email" name="email" label="Email" type="email"
+            value={values.email} onChange={handleChange}
+            error={errors.email} autoComplete="email"
+            placeholder="name@example.com"
+          />
+          <FormField
+            id="password" name="password" label="Password" type="password"
+            value={values.password} onChange={handleChange}
+            error={errors.password} autoComplete="current-password"
+            placeholder="Enter your password"
+          />
 
           {errors.form ? <p className="text-sm text-rose-400">{errors.form}</p> : null}
 

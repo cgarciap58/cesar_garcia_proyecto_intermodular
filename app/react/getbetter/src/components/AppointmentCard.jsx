@@ -1,4 +1,4 @@
-import { formatShortDate, formatTime, STATUS_STYLES } from '../utils/appointments'
+import { formatShortDate, formatTime, STATUS_STYLES } from '../utils/appointmentFormatters'
 
 // The person shown on the card is always the OTHER party
 function getCounterpart(appointment, role) {
