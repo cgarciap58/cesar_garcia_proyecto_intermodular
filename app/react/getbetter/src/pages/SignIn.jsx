@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { signIn } from '../services'
 import { useAuth } from '../context/AuthContext'
 import FormField from '../components/FormField'
@@ -12,6 +13,7 @@ function SignIn() {
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = useNavigate()
+  const { t } = useTranslation('auth')
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -22,14 +24,14 @@ function SignIn() {
   const validate = () => {
     const nextErrors = {}
     if (!values.email.trim()) {
-      nextErrors.email = 'Email is required.'
+      nextErrors.email = t('validation.emailRequired')
     } else if (!/^\S+@\S+\.\S+$/.test(values.email)) {
-      nextErrors.email = 'Please enter a valid email address.'
+      nextErrors.email = t('validation.emailInvalid')
     }
     if (!values.password.trim()) {
-      nextErrors.password = 'Password is required.'
+      nextErrors.password = t('validation.passwordRequired')
     } else if (values.password.length < 8) {
-      nextErrors.password = 'Password must be at least 8 characters.'
+      nextErrors.password = t('validation.passwordTooShort')
     }
     return nextErrors
   }
@@ -60,21 +62,23 @@ function SignIn() {
   return (
     <main className="min-h-screen bg-slate-950 pt-28 pb-12 px-4">
       <div className="max-w-md mx-auto rounded-2xl border border-slate-800 bg-slate-900/60 p-6 sm:p-8 shadow-2xl shadow-black/20">
-        <h1 className="text-3xl font-semibold text-white">Sign in</h1>
-        <p className="mt-2 text-sm text-slate-300">Welcome back. Enter your credentials to continue.</p>
+        <h1 className="text-3xl font-semibold text-white">{t('signIn.title')}</h1>
+        <p className="mt-2 text-sm text-slate-300">{t('signIn.subtitle')}</p>
 
         <form className="mt-6 space-y-5" onSubmit={handleSubmit} noValidate>
           <FormField
-            id="email" name="email" label="Email" type="email"
+            id="email" name="email" type="email"
+            label={t('signIn.emailLabel')}
+            placeholder={t('signIn.emailPlaceholder')}
             value={values.email} onChange={handleChange}
             error={errors.email} autoComplete="email"
-            placeholder="name@example.com"
           />
           <FormField
-            id="password" name="password" label="Password" type="password"
+            id="password" name="password" type="password"
+            label={t('signIn.passwordLabel')}
+            placeholder={t('signIn.passwordPlaceholder')}
             value={values.password} onChange={handleChange}
             error={errors.password} autoComplete="current-password"
-            placeholder="Enter your password"
           />
 
           {errors.form ? <p className="text-sm text-rose-400">{errors.form}</p> : null}
@@ -83,13 +87,13 @@ function SignIn() {
             type="submit" disabled={isSubmitting}
             className="w-full rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400/40 disabled:cursor-not-allowed disabled:bg-blue-400/60"
           >
-            {isSubmitting ? 'Signing in...' : 'Sign in'}
+            {isSubmitting ? t('signIn.submittingButton') : t('signIn.submitButton')}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-300">
-          Don&apos;t have an account?{' '}
-          <Link to="/signup" className="font-medium text-blue-400 hover:text-blue-300">Sign up</Link>
+          {t('signIn.noAccount')}{' '}
+          <Link to="/signup" className="font-medium text-blue-400 hover:text-blue-300">{t('signIn.signUpLink')}</Link>
         </p>
       </div>
     </main>

@@ -1,0 +1,28 @@
+{
+  "appName": "GetBetter",
+  "nav": {
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "logOut": "Log out",
+    "features": "Features",
+    "testimonials": "Testimonials",
+    "signIn": "Sign in"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "close": "Close"
+  },
+  "status": {
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "confirmed": "Confirmed",
+    "pending": "Pending",
+    "cancelled": "Cancelled"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again."
+  }
+}

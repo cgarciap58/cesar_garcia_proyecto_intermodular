@@ -1,0 +1,28 @@
+{
+  "appName": "GetBetter",
+  "nav": {
+    "dashboard": "Inicio",
+    "profile": "Perfil",
+    "logOut": "Cerrar sesión",
+    "features": "Funciones",
+    "testimonials": "Testimonios",
+    "signIn": "Iniciar sesión"
+  },
+  "actions": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "delete": "Eliminar",
+    "close": "Cerrar"
+  },
+  "status": {
+    "loading": "Cargando...",
+    "saving": "Guardando...",
+    "confirmed": "Confirmada",
+    "pending": "Pendiente",
+    "cancelled": "Cancelada"
+  },
+  "errors": {
+    "generic": "Algo salió mal. Por favor, inténtalo de nuevo."
+  }
+}

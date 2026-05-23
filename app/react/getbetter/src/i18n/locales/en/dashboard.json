@@ -1,0 +1,30 @@
+{
+  "patient": {
+    "roleLabel": "Patient",
+    "appointmentsTitle": "Your appointments",
+    "emptyAppointments": "No appointment",
+    "bookAppointment": "Book appointment",
+    "addCredits": "Add credits",
+    "notesFromPsychologist": "Notes from your psychologist",
+    "joinSession": "Join session",
+    "cancelAppointment": "Cancel appointment",
+    "cancellingAppointment": "Cancelling…",
+    "previousSessionsWith": "Previous sessions with Dr. {{lastName}}"
+  },
+  "psychologist": {
+    "roleLabel": "Psychologist",
+    "appointmentsTitle": "Upcoming appointments",
+    "emptyAppointments": "No patients yet",
+    "manageSlots": "Manage slots",
+    "sessionNotes": "Session notes",
+    "noSessionNotes": "No notes written",
+    "privateNotes": "Private notes",
+    "noPrivateNotes": "No private notes",
+    "startSession": "Start session",
+    "confirmAppointment": "Confirm appointment",
+    "confirmingAppointment": "Confirming…",
+    "cancelAppointment": "Cancel appointment",
+    "cancellingAppointment": "Cancelling…",
+    "previousSessionsWith": "Previous sessions with {{firstName}} {{lastName}}"
+  }
+}

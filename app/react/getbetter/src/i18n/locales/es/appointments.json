@@ -1,0 +1,35 @@
+{
+  "panel": {
+    "total": "{{count}} en total"
+  },
+  "previousSessions": {
+    "noPreviousPsychologist": "Sin sesiones anteriores con este psicólogo/a.",
+    "noPreviousPatient": "Sin sesiones anteriores con este paciente.",
+    "sessionNotes": "Notas de sesión",
+    "noSessionNotes": "Sin notas para esta sesión",
+    "privateNotes": "Notas privadas",
+    "noPrivateNotes": "Sin notas privadas"
+  },
+  "slots": {
+    "pageTitle": "Gestiona tus horarios",
+    "profileTitle": "Configuración de sesiones",
+    "profileSubtitle": "Se aplica a todos los horarios que crees a partir de ahora.",
+    "durationLabel": "Duración de sesión",
+    "timezoneLabel": "Tu zona horaria",
+    "saveSettings": "Guardar ajustes",
+    "savingSettings": "Guardando...",
+    "createTitle": "Crear franjas de disponibilidad",
+    "createSubtitle": "Elige los días y el horario. Las franjas se espacian según la duración de sesión.",
+    "existingTitle": "Tus próximas franjas",
+    "existingSubtitle": "Haz clic en la papelera para eliminar. Las franjas reservadas no se pueden borrar.",
+    "fromTime": "Desde",
+    "untilTime": "Hasta",
+    "startingDate": "Fecha de inicio",
+    "endDate": "Fecha de fin",
+    "createButton": "Crear franjas",
+    "creatingButton": "Creando...",
+    "noSlots": "Sin franjas próximas. Crea algunas arriba.",
+    "booked": "Reservada",
+    "slotDeleteError": "No se pudo eliminar la franja."
+  }
+}

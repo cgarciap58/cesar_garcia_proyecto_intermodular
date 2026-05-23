@@ -1,22 +1,24 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { getAppointments, confirmAppointment, cancelAppointment } from '../services'
 import ProfileSidebar from '../components/ProfileSidebar'
 import AppointmentsPanel from '../components/AppointmentsPanel'
 import AppointmentDetail from '../components/AppointmentDetail'
 
-const PSYCHOLOGIST_ACTIONS = [
-  { label: 'Manage slots', href: '/slots', variant: 'primary' },
-]
-
 export default function PsychologistDashboard() {
   const { user } = useAuth()
+  const { t } = useTranslation('dashboard')
   const [appointments, setAppointments] = useState([])
   const [selected, setSelected] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [actionLoading, setActionLoading] = useState(false)
   const [actionError, setActionError] = useState(null)
+
+  const psychologistActions = [
+    { label: t('psychologist.manageSlots'), href: '/slots', variant: 'primary' },
+  ]
 
   useEffect(() => {
     getAppointments().then((result) => {
@@ -76,15 +78,15 @@ export default function PsychologistDashboard() {
           <ProfileSidebar
             user={user}
             namePrefix="Dr."
-            roleLabel="Psychologist"
-            actions={PSYCHOLOGIST_ACTIONS}
+            roleLabel={t('psychologist.roleLabel')}
+            actions={psychologistActions}
           />
           <AppointmentsPanel
-            title="Upcoming appointments"
+            title={t('psychologist.appointmentsTitle')}
             appointments={appointments}
             loading={loading}
             error={error}
-            emptyMessage="No patients yet"
+            emptyMessage={t('psychologist.emptyAppointments')}
             role="psychologist"
             selectedId={selectedAppointment?.id}
             onSelect={handleSelect}
@@ -99,8 +101,11 @@ export default function PsychologistDashboard() {
               lastName: selectedAppointment.patient.last_name,
               profilePicture: selectedAppointment.patient.profile_picture,
             }}
-            meetLinkLabel="Start session"
-            previousLabel={`Previous sessions with ${selectedAppointment.patient.first_name} ${selectedAppointment.patient.last_name}`}
+            meetLinkLabel={t('psychologist.startSession')}
+            previousLabel={t('psychologist.previousSessionsWith', {
+              firstName: selectedAppointment.patient.first_name,
+              lastName: selectedAppointment.patient.last_name,
+            })}
             previousUserId={selectedAppointment.patient.id}
             role="psychologist"
             notes={
@@ -108,21 +113,21 @@ export default function PsychologistDashboard() {
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-4">
                     <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
-                      Session notes
+                      {t('psychologist.sessionNotes')}
                     </p>
                     <p className="text-slate-200 text-sm leading-relaxed">
                       {selectedAppointment.patient_notes || (
-                        <span className="italic text-slate-600">No notes written</span>
+                        <span className="italic text-slate-600">{t('psychologist.noSessionNotes')}</span>
                       )}
                     </p>
                   </div>
                   <div className="rounded-xl bg-slate-800/60 border border-amber-500/20 p-4">
                     <p className="text-xs font-medium text-amber-500/70 uppercase tracking-wider mb-2">
-                      Private notes
+                      {t('psychologist.privateNotes')}
                     </p>
                     <p className="text-slate-200 text-sm leading-relaxed">
                       {selectedAppointment.private_notes || (
-                        <span className="italic text-slate-600">No private notes</span>
+                        <span className="italic text-slate-600">{t('psychologist.noPrivateNotes')}</span>
                       )}
                     </p>
                   </div>
@@ -138,7 +143,7 @@ export default function PsychologistDashboard() {
                       disabled={actionLoading}
                       className="rounded-lg bg-emerald-500/15 border border-emerald-500/40 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/25 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {actionLoading ? 'Confirming…' : 'Confirm appointment'}
+                      {actionLoading ? t('psychologist.confirmingAppointment') : t('psychologist.confirmAppointment')}
                     </button>
                   )}
                   <button
@@ -146,7 +151,7 @@ export default function PsychologistDashboard() {
                     disabled={actionLoading}
                     className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-400 hover:bg-rose-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {actionLoading ? 'Cancelling…' : 'Cancel appointment'}
+                    {actionLoading ? t('psychologist.cancellingAppointment') : t('psychologist.cancelAppointment')}
                   </button>
                   {actionError && <p className="text-rose-400 text-sm">{actionError}</p>}
                 </div>

@@ -1,0 +1,35 @@
+{
+  "panel": {
+    "total": "{{count}} total"
+  },
+  "previousSessions": {
+    "noPreviousPsychologist": "No previous sessions with this psychologist.",
+    "noPreviousPatient": "No previous sessions with this patient.",
+    "sessionNotes": "Session notes",
+    "noSessionNotes": "No notes for this session",
+    "privateNotes": "Private notes",
+    "noPrivateNotes": "No private notes"
+  },
+  "slots": {
+    "pageTitle": "Manage your slots",
+    "profileTitle": "Session settings",
+    "profileSubtitle": "These apply to all future slots you create.",
+    "durationLabel": "Session duration",
+    "timezoneLabel": "Your timezone",
+    "saveSettings": "Save settings",
+    "savingSettings": "Saving...",
+    "createTitle": "Create availability slots",
+    "createSubtitle": "Pick the days and time window. Slots are spaced by your session duration.",
+    "existingTitle": "Your upcoming slots",
+    "existingSubtitle": "Click the bin to delete a slot. Booked slots cannot be removed.",
+    "fromTime": "From time",
+    "untilTime": "Until time",
+    "startingDate": "Starting date",
+    "endDate": "End date",
+    "createButton": "Create slots",
+    "creatingButton": "Creating...",
+    "noSlots": "No upcoming slots. Create some above.",
+    "booked": "Booked",
+    "slotDeleteError": "Could not delete slot."
+  }
+}

@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-
+import { useTranslation } from 'react-i18next'
 import { signUp } from '../services'
 import { getPasswordStrength, validateSignUpValues } from '../utils/validate'
 import { useAuth } from '../context/AuthContext'
 import FormField from '../components/FormField'
 
-const ROLE_OPTIONS = [
-  { value: 'patient', label: 'Patient' },
-  { value: 'psychologist', label: 'Psychologist' },
+const ROLE_OPTIONS = (t) => [
+  { value: 'patient', label: t('signUp.rolePatient') },
+  { value: 'psychologist', label: t('signUp.rolePsychologist') },
 ]
 
 const COUNTRY_OPTIONS = [
@@ -18,14 +18,8 @@ const COUNTRY_OPTIONS = [
 ]
 
 const initialValues = {
-  first_name: '',
-  last_name: '',
-  email: '',
-  role: '',
-  password: '',
-  confirmPassword: '',
-  license_number: '',
-  country_code: '',
+  first_name: '', last_name: '', email: '', role: '',
+  password: '', confirmPassword: '', license_number: '', country_code: '',
 }
 
 const SELECT_CLASS =
@@ -40,6 +34,7 @@ function SignUpPage() {
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = useNavigate()
+  const { t } = useTranslation('auth')
   const passwordStrength = getPasswordStrength(values.password)
 
   const handleChange = (event) => {
@@ -74,52 +69,46 @@ function SignUpPage() {
   return (
     <main className="min-h-screen bg-slate-950 pt-28 pb-12 px-4">
       <div className="max-w-md mx-auto rounded-2xl border border-slate-800 bg-slate-900/60 p-6 sm:p-8 shadow-2xl shadow-black/20">
-        <h1 className="text-3xl font-semibold text-white">Sign up</h1>
-        <p className="mt-2 text-sm text-slate-300">
-          Create your account with details that match your profile information.
-        </p>
+        <h1 className="text-3xl font-semibold text-white">{t('signUp.title')}</h1>
+        <p className="mt-2 text-sm text-slate-300">{t('signUp.subtitle')}</p>
 
         <form className="mt-6 space-y-5" onSubmit={handleSubmit} noValidate>
           <FormField
-            id="first_name" name="first_name" label="First name"
+            id="first_name" name="first_name"
+            label={t('signUp.firstNameLabel')} placeholder={t('signUp.firstNamePlaceholder')}
             value={values.first_name} onChange={handleChange}
             error={errors.first_name} autoComplete="given-name"
-            placeholder="Enter your first name"
           />
           <FormField
-            id="last_name" name="last_name" label="Last name"
+            id="last_name" name="last_name"
+            label={t('signUp.lastNameLabel')} placeholder={t('signUp.lastNamePlaceholder')}
             value={values.last_name} onChange={handleChange}
             error={errors.last_name} autoComplete="family-name"
-            placeholder="Enter your last name"
           />
           <FormField
-            id="email" name="email" label="Email" type="email"
+            id="email" name="email" type="email"
+            label={t('signUp.emailLabel')} placeholder={t('signUp.emailPlaceholder')}
             value={values.email} onChange={handleChange}
             error={errors.email} autoComplete="email"
-            placeholder="name@example.com"
           />
 
-          {/* Role — select, not an input, so FormField doesn't apply */}
           <div>
-            <label htmlFor="role" className="mb-2 block text-sm font-medium text-slate-200">Role</label>
+            <label htmlFor="role" className="mb-2 block text-sm font-medium text-slate-200">{t('signUp.roleLabel')}</label>
             <select id="role" name="role" value={values.role} onChange={handleChange} className={SELECT_CLASS}>
-              <option value="" className="text-slate-500">Select your role</option>
-              {ROLE_OPTIONS.map((o) => (
+              <option value="">{t('signUp.rolePlaceholder')}</option>
+              {ROLE_OPTIONS(t).map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
             {errors.role ? <p className="mt-1.5 text-sm text-rose-400">{errors.role}</p> : null}
           </div>
 
-          {/* Psychologist-only fields */}
           {values.role === 'psychologist' ? (
             <>
               <div>
-                <label htmlFor="country_code" className="mb-2 block text-sm font-medium text-slate-200">
-                  License country
-                </label>
+                <label htmlFor="country_code" className="mb-2 block text-sm font-medium text-slate-200">{t('signUp.licenseCountryLabel')}</label>
                 <select id="country_code" name="country_code" value={values.country_code} onChange={handleChange} className={SELECT_CLASS}>
-                  <option value="" className="text-slate-500">Select country (optional)</option>
+                  <option value="">{t('signUp.licenseCountryPlaceholder')}</option>
                   {COUNTRY_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
@@ -127,20 +116,19 @@ function SignUpPage() {
                 {errors.country_code ? <p className="mt-1.5 text-sm text-rose-400">{errors.country_code}</p> : null}
               </div>
               <FormField
-                id="license_number" name="license_number" label="License number"
+                id="license_number" name="license_number"
+                label={t('signUp.licenseNumberLabel')} placeholder={t('signUp.licenseNumberPlaceholder')}
                 value={values.license_number} onChange={handleChange}
                 error={errors.license_number}
-                placeholder="Enter your license number (optional)"
               />
             </>
           ) : null}
 
-          {/* Password — uses children slot for the strength bar */}
           <FormField
-            id="password" name="password" label="Password" type="password"
+            id="password" name="password" type="password"
+            label={t('signUp.passwordLabel')} placeholder={t('signUp.passwordPlaceholder')}
             value={values.password} onChange={handleChange}
             error={errors.password} autoComplete="new-password"
-            placeholder="Create a password"
           >
             {values.password ? (
               <div className="mt-2">
@@ -148,17 +136,17 @@ function SignUpPage() {
                   <div className={`h-full rounded-full transition-all duration-300 ${strengthWidthByScore[passwordStrength.score]} ${passwordStrength.color}`} />
                 </div>
                 <p className="mt-1.5 text-xs text-slate-300">
-                  Strength: <span className="font-medium text-slate-200">{passwordStrength.label}</span>
+                  {t('signUp.passwordStrength')} <span className="font-medium text-slate-200">{passwordStrength.label}</span>
                 </p>
               </div>
             ) : null}
           </FormField>
 
           <FormField
-            id="confirmPassword" name="confirmPassword" label="Confirm password" type="password"
+            id="confirmPassword" name="confirmPassword" type="password"
+            label={t('signUp.confirmPasswordLabel')} placeholder={t('signUp.confirmPasswordPlaceholder')}
             value={values.confirmPassword} onChange={handleChange}
             error={errors.confirmPassword} autoComplete="new-password"
-            placeholder="Re-enter your password"
           />
 
           {errors.form ? <p className="text-sm text-rose-400">{errors.form}</p> : null}
@@ -167,13 +155,13 @@ function SignUpPage() {
             type="submit" disabled={isSubmitting}
             className="w-full rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400/40 disabled:cursor-not-allowed disabled:bg-blue-400/60"
           >
-            {isSubmitting ? 'Creating account...' : 'Sign up'}
+            {isSubmitting ? t('signUp.submittingButton') : t('signUp.submitButton')}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-300">
-          Already have an account?{' '}
-          <Link to="/signin" className="font-medium text-blue-400 hover:text-blue-300">Sign in</Link>
+          {t('signUp.hasAccount')}{' '}
+          <Link to="/signin" className="font-medium text-blue-400 hover:text-blue-300">{t('signUp.signInLink')}</Link>
         </p>
       </div>
     </main>
