@@ -1,50 +1,87 @@
-// ─── Date formatting ──────────────────────────────────────────────────────────
+import { buildUrl, parseResponse } from './http'
 
-export function formatFullDate(isoString) {
-  const date = new Date(isoString)
-  return date.toLocaleDateString('en-GB', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+// ─── Slots ────────────────────────────────────────────────────────────────────
+
+export const getSlots = async () => {
+  const response = await fetch(buildUrl('/api/appointments/slots/'), {
+    credentials: 'include',
   })
+  const payload = await parseResponse(response)
+  if (!response.ok) return { ok: false, error: payload.error || 'Failed to fetch slots' }
+  return { ok: true, data: payload }
 }
 
-export function formatShortDate(isoString) {
-  const date = new Date(isoString)
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+export const createSlots = async (startTimes) => {
+  const response = await fetch(buildUrl('/api/appointments/slots/'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ start_times: startTimes }),
+  })
+  const payload = await parseResponse(response)
+  if (!response.ok) return { ok: false, error: payload.error || 'Failed to create slots' }
+  return { ok: true, data: payload }
 }
 
-export function formatTime(isoString) {
-  const date = new Date(isoString)
-  return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+export const deleteSlot = async (slotId) => {
+  const response = await fetch(buildUrl(`/api/appointments/slots/${slotId}/`), {
+    method: 'DELETE',
+    credentials: 'include',
+  })
+  const payload = await parseResponse(response)
+  if (!response.ok) return { ok: false, error: payload.error || 'Failed to delete slot' }
+  return { ok: true }
 }
 
-// ─── Status styles ────────────────────────────────────────────────────────────
+// ─── Appointments ─────────────────────────────────────────────────────────────
 
-export const STATUS_BADGE = {
-  confirmed: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
-  pending:   'bg-amber-500/20 text-amber-400 border border-amber-500/30',
-  cancelled: 'bg-slate-500/20 text-slate-400 border border-slate-500/30',
+export const getAppointments = async () => {
+  const response = await fetch(buildUrl('/api/appointments/'), {
+    credentials: 'include',
+  })
+  const payload = await parseResponse(response)
+  if (!response.ok) return { ok: false, error: payload.error || 'Failed to fetch appointments' }
+  return { ok: true, data: payload }
 }
 
-export const STATUS_STYLES = {
-  confirmed: {
-    bg: 'bg-emerald-500/15',
-    border: 'border-emerald-500/40',
-    text: 'text-emerald-400',
-    dot: 'bg-emerald-400',
-    label: 'Confirmed',
-  },
-  pending: {
-    bg: 'bg-amber-500/15',
-    border: 'border-amber-500/40',
-    text: 'text-amber-400',
-    dot: 'bg-amber-400',
-    label: 'Pending',
-  },
-  cancelled: {
-    bg: 'bg-slate-500/15',
-    border: 'border-slate-500/30',
-    text: 'text-slate-500',
-    dot: 'bg-slate-500',
-    label: 'Cancelled',
-  },
+export const bookAppointment = async (slotId) => {
+  const response = await fetch(buildUrl('/api/appointments/'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ slot_id: slotId }),
+  })
+  const payload = await parseResponse(response)
+  if (!response.ok) return { ok: false, error: payload.error || 'Failed to book appointment' }
+  return { ok: true, data: payload }
+}
+
+export const confirmAppointment = async (appointmentId) => {
+  const response = await fetch(buildUrl(`/api/appointments/${appointmentId}/confirm/`), {
+    method: 'PATCH',
+    credentials: 'include',
+  })
+  const payload = await parseResponse(response)
+  if (!response.ok) return { ok: false, error: payload.error || 'Failed to confirm appointment' }
+  return { ok: true, data: payload }
+}
+
+export const cancelAppointment = async (appointmentId) => {
+  const response = await fetch(buildUrl(`/api/appointments/${appointmentId}/cancel/`), {
+    method: 'PATCH',
+    credentials: 'include',
+  })
+  const payload = await parseResponse(response)
+  if (!response.ok) return { ok: false, error: payload.error || 'Failed to cancel appointment' }
+  return { ok: true, data: payload }
+}
+
+export const getAppointmentHistory = async (withUserId) => {
+  const response = await fetch(
+    buildUrl(`/api/appointments/history/?with=${withUserId}`),
+    { credentials: 'include' }
+  )
+  const payload = await parseResponse(response)
+  if (!response.ok) return { ok: false, error: payload.error || 'Failed to fetch history' }
+  return { ok: true, data: payload }
 }
