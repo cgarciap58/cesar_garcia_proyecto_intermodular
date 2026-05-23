@@ -1,60 +1,34 @@
 // pages/SlotsPage.jsx
 //
-// This page lets a psychologist manage their available appointment slots.
+// Lets a psychologist manage their available appointment slots.
 //
 // KEY CONCEPTS FOR THE LEARNER:
 // ─────────────────────────────
-// • We keep ALL local state in React (useState). Nothing is persisted until
-//   the user clicks a save/apply button, which fires a fetch() call to the API.
+// • All local state lives in React (useState). Nothing is sent to the server
+//   until the user clicks Apply.
 // • "Controlled inputs" — every <input>/<select> has value={...} and
 //   onChange={...} so React is always the source of truth, not the DOM.
-// • We derive display values (e.g. slots grouped by week) with useMemo so
-//   they re-compute automatically whenever the raw slot list changes.
-// • Timezone handling: we store slot start_time in UTC on the server (Django
-//   always works in UTC when USE_TZ=True). On the client we convert to/from
-//   the psychologist's IANA timezone using the browser-native Intl API.
+// • We derive display values with useMemo so they re-compute only when their
+//   dependencies change, not on every render.
+// • Timezone is read-only here (from the user profile). The psychologist
+//   changes it in /profile. We use it only for display and slot generation.
+// • Duration is local-only: it starts from the profile default but is NOT
+//   saved here. Changes affect only the slots created this session.
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { getSlots, createSlots, deleteSlot } from '../services'
-import { updateProfile } from '../services/profile'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-// JS Date.getDay() returns 0=Sun … 6=Sat; we remap to Mon=0 … Sun=6
+// JS Date.getDay() returns 0=Sun…6=Sat; remap to Mon=0…Sun=6
 const JS_DAY_TO_IDX = [6, 0, 1, 2, 3, 4, 5]
 
-const TIMEZONES = [
-  { value: 'UTC', label: 'UTC' },
-  { value: 'Europe/Madrid', label: 'Europe / Madrid' },
-  { value: 'Europe/London', label: 'Europe / London' },
-  { value: 'Europe/Paris', label: 'Europe / Paris' },
-  { value: 'Europe/Berlin', label: 'Europe / Berlin' },
-  { value: 'Europe/Rome', label: 'Europe / Rome' },
-  { value: 'Europe/Amsterdam', label: 'Europe / Amsterdam' },
-  { value: 'Europe/Lisbon', label: 'Europe / Lisbon' },
-  { value: 'Europe/Warsaw', label: 'Europe / Warsaw' },
-  { value: 'America/New_York', label: 'America / New York' },
-  { value: 'America/Chicago', label: 'America / Chicago' },
-  { value: 'America/Denver', label: 'America / Denver' },
-  { value: 'America/Los_Angeles', label: 'America / Los Angeles' },
-  { value: 'America/Toronto', label: 'America / Toronto' },
-  { value: 'America/Sao_Paulo', label: 'America / São Paulo' },
-  { value: 'America/Mexico_City', label: 'America / Mexico City' },
-  { value: 'Asia/Tokyo', label: 'Asia / Tokyo' },
-  { value: 'Asia/Seoul', label: 'Asia / Seoul' },
-  { value: 'Asia/Shanghai', label: 'Asia / Shanghai' },
-  { value: 'Asia/Kolkata', label: 'Asia / Kolkata' },
-  { value: 'Asia/Dubai', label: 'Asia / Dubai' },
-  { value: 'Asia/Singapore', label: 'Asia / Singapore' },
-  { value: 'Australia/Sydney', label: 'Australia / Sydney' },
-  { value: 'Pacific/Auckland', label: 'Pacific / Auckland' },
-  { value: 'Africa/Cairo', label: 'Africa / Cairo' },
-  { value: 'Africa/Johannesburg', label: 'Africa / Johannesburg' },
-]
+const DURATION_MIN = 15
+const DURATION_MAX = 180
 
 // ─── Timezone helpers ─────────────────────────────────────────────────────────
 
@@ -75,9 +49,8 @@ function localToUtcIso(dateStr, timeStr, tz) {
   const parts = formatter.formatToParts(naive)
   const p = Object.fromEntries(parts.map(({ type, value }) => [type, value]))
   const localMs = new Date(`${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}`).getTime()
-  const naiveMs = naive.getTime()
-  const offsetMs = naiveMs - localMs
-  return new Date(naiveMs + offsetMs).toISOString()
+  const offsetMs = naive.getTime() - localMs
+  return new Date(naive.getTime() + offsetMs).toISOString()
 }
 
 function utcToLocalDate(isoUtc, tz) {
@@ -86,15 +59,13 @@ function utcToLocalDate(isoUtc, tz) {
   }).format(new Date(isoUtc))
 }
 
-// ─── Generate time options (00:00 … 23:30 every 30 min) ──────────────────────
+// ─── Time / date option helpers ───────────────────────────────────────────────
 
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   const h = String(Math.floor(i / 2)).padStart(2, '0')
   const m = i % 2 === 0 ? '00' : '30'
   return `${h}:${m}`
 })
-
-// ─── Date helpers ─────────────────────────────────────────────────────────────
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
@@ -113,9 +84,8 @@ function datesForRecurringRule(fromStr, toStr, dayMask, tz) {
   while (cursor <= end) {
     const localDate = utcToLocalDate(cursor.toISOString(), tz)
     const jsDow = new Date(`${localDate}T12:00:00Z`).getDay()
-    const idx = JS_DAY_TO_IDX[jsDow]
-    if (dayMask[idx]) results.push(localDate)
-    cursor = new Date(cursor.getTime() + 86400000)
+    if (dayMask[JS_DAY_TO_IDX[jsDow]]) results.push(localDate)
+    cursor = new Date(cursor.getTime() + 86_400_000)
   }
   return results
 }
@@ -138,11 +108,11 @@ function StatusBadge({ type, message }) {
   if (!message) return null
   const styles = {
     success: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400',
-    error: 'bg-rose-500/15 border-rose-500/30 text-rose-400',
-    info: 'bg-blue-500/15 border-blue-500/30 text-blue-400',
+    error:   'bg-rose-500/15 border-rose-500/30 text-rose-400',
+    info:    'bg-blue-500/15 border-blue-500/30 text-blue-400',
   }
   return (
-    <div className={`mt-3 rounded-lg border px-4 py-2.5 text-sm ${styles[type] || styles.info}`}>
+    <div className={`mt-3 rounded-lg border px-4 py-2.5 text-sm ${styles[type] ?? styles.info}`}>
       {message}
     </div>
   )
@@ -151,19 +121,28 @@ function StatusBadge({ type, message }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function SlotsPage() {
-  const { user, setUser } = useAuth()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const { t } = useTranslation('appointments')
 
-  useEffect(() => {
-    if (user && user.role !== 'psychologist') navigate('/dashboard')
-  }, [user, navigate])
+  // Timezone is read-only — set in /profile
+  const timezone = user?.timezone ?? 'UTC'
 
-  const [duration, setDuration] = useState(user?.session_duration_minutes ?? 55)
-  const [timezone, setTimezone] = useState(user?.timezone ?? 'UTC')
-  const [savingProfile, setSavingProfile] = useState(false)
-  const [profileStatus, setProfileStatus] = useState(null)
+  // Duration starts from the profile default but is local to this page visit.
+  // It is NOT saved to the server here — that happens in /profile.
+  const profileDefault = user?.session_duration_minutes ?? 55
+  const [duration, setDuration] = useState(profileDefault)
 
+  // True whenever duration is outside the allowed range
+  const durationInvalid = duration < DURATION_MIN || duration > DURATION_MAX
+
+  // ── Slots state ───────────────────────────────────────────────────────────
+  const [slots, setSlots] = useState([])
+  const [loadingSlots, setLoadingSlots] = useState(true)
+  const [slotsError, setSlotsError] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
+
+  // ── Recurring rule state ──────────────────────────────────────────────────
   const [ruleMode, setRuleMode] = useState('add')
   const [dayMask, setDayMask] = useState(Array(7).fill(false))
   const [startTime, setStartTime] = useState('09:00')
@@ -173,11 +152,6 @@ export default function SlotsPage() {
   const [applyingRule, setApplyingRule] = useState(false)
   const [ruleStatus, setRuleStatus] = useState(null)
 
-  const [slots, setSlots] = useState([])
-  const [loadingSlots, setLoadingSlots] = useState(true)
-  const [slotsError, setSlotsError] = useState(null)
-  const [deletingId, setDeletingId] = useState(null)
-
   useEffect(() => {
     getSlots().then((result) => {
       if (result.ok) setSlots(result.data.slots)
@@ -186,42 +160,34 @@ export default function SlotsPage() {
     })
   }, [])
 
-  const handleSaveProfile = async () => {
-    setSavingProfile(true)
-    setProfileStatus(null)
-    const result = await updateProfile({ session_duration_minutes: duration, timezone })
-    if (result.ok) {
-      setUser((prev) => ({ ...prev, session_duration_minutes: duration, timezone }))
-      setProfileStatus({ type: 'success', message: 'Saved.' })
-    } else {
-      setProfileStatus({ type: 'error', message: result.error })
-    }
-    setSavingProfile(false)
-  }
-
+  // ── Slot preview (derived, never sent anywhere on its own) ────────────────
   const previewSlots = useMemo(() => {
+    if (durationInvalid) return []
     if (!dayMask.some(Boolean)) return []
     if (!fromDate || !toDate || fromDate > toDate) return []
-    const sessionMin = duration
+
     const dates = datesForRecurringRule(fromDate, toDate, dayMask, timezone)
-    const slots = []
+    const result = []
+
     for (const dateStr of dates) {
       let [h, m] = startTime.split(':').map(Number)
       const [eh, em] = endTime.split(':').map(Number)
       const endMinutes = eh * 60 + em
-      while (h * 60 + m + sessionMin <= endMinutes) {
+
+      while (h * 60 + m + duration <= endMinutes) {
         const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-        slots.push({ dateStr, timeStr, isoUtc: localToUtcIso(dateStr, timeStr, timezone) })
-        const total = h * 60 + m + sessionMin
+        result.push({ dateStr, timeStr, isoUtc: localToUtcIso(dateStr, timeStr, timezone) })
+        const total = h * 60 + m + duration
         h = Math.floor(total / 60)
         m = total % 60
       }
     }
-    return slots
-  }, [dayMask, fromDate, toDate, startTime, endTime, duration, timezone])
+    return result
+  }, [durationInvalid, dayMask, fromDate, toDate, startTime, endTime, duration, timezone])
 
+  // ── Apply recurring rule ──────────────────────────────────────────────────
   const handleApplyRule = async () => {
-    if (previewSlots.length === 0) return
+    if (previewSlots.length === 0 || durationInvalid) return
     setApplyingRule(true)
     setRuleStatus(null)
 
@@ -257,6 +223,7 @@ export default function SlotsPage() {
     setApplyingRule(false)
   }
 
+  // ── Delete single slot ────────────────────────────────────────────────────
   const handleDeleteSlot = useCallback(async (slotId) => {
     setDeletingId(slotId)
     const result = await deleteSlot(slotId)
@@ -264,12 +231,12 @@ export default function SlotsPage() {
     setDeletingId(null)
   }, [])
 
+  // ── Group slots by local date ─────────────────────────────────────────────
   const slotsByDate = useMemo(() => {
     const map = new Map()
-    const tz = timezone
-    const todayLocal = utcToLocalDate(new Date().toISOString(), tz)
+    const todayLocal = utcToLocalDate(new Date().toISOString(), timezone)
     for (const slot of slots) {
-      const dateLocal = utcToLocalDate(slot.start_time, tz)
+      const dateLocal = utcToLocalDate(slot.start_time, timezone)
       if (dateLocal < todayLocal) continue
       if (!map.has(dateLocal)) map.set(dateLocal, [])
       map.get(dateLocal).push(slot)
@@ -285,11 +252,15 @@ export default function SlotsPage() {
       ? t('slots.applyCreate', { count: previewSlots.length })
       : t('slots.applyRemove', { count: previewSlots.length })
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────────────────────────────────
+
   return (
     <main className="min-h-screen bg-slate-950 pt-20 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-6">
 
-        {/* Page header */}
+        {/* ── Page header ── */}
         <div className="flex items-center gap-4 pt-4">
           <button
             onClick={() => navigate('/dashboard')}
@@ -306,9 +277,47 @@ export default function SlotsPage() {
           </div>
         </div>
 
-        {/* Section 2 — Recurring schedule */}
-        <SectionCard title={t('slots.scheduleTitle')} subtitle={t('slots.scheduleSubtitle')}>
+        {/* ── Duration card ── */}
+        <SectionCard
+          title={t('slots.durationTitle')}
+          subtitle={t('slots.durationSubtitle')}
+        >
+          <div className="max-w-xs">
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              {t('slots.durationLabel')}
+            </label>
+            <input
+              type="number"
+              value={duration}
+              onChange={(e) => setDuration(parseInt(e.target.value, 10) || 0)}
+              className={`w-full rounded-lg border bg-slate-950/80 px-3 py-2.5 text-sm text-white
+                focus:outline-none focus:ring-2 transition-colors
+                ${durationInvalid
+                  ? 'border-amber-500/60 focus:border-amber-400 focus:ring-amber-400/30'
+                  : 'border-slate-700 focus:border-blue-400 focus:ring-blue-400/30'
+                }`}
+            />
+            {/* Hint: shows profile default when duration has been changed */}
+            {duration !== profileDefault && (
+              <p className="text-xs text-slate-500 mt-1.5">
+                {t('slots.durationHint', { default: profileDefault })}
+              </p>
+            )}
+            {/* Warning: shown (in amber) when outside valid range */}
+            {durationInvalid && (
+              <p className="text-xs text-amber-400 mt-1.5">
+                {t('slots.durationWarning')}
+              </p>
+            )}
+          </div>
+        </SectionCard>
 
+        {/* ── Recurring schedule card ── */}
+        <SectionCard
+          title={t('slots.scheduleTitle')}
+          subtitle={t('slots.scheduleSubtitle')}
+        >
+          {/* Add / Remove toggle */}
           <div className="flex gap-2 mb-5">
             {['add', 'remove'].map((mode) => (
               <button
@@ -327,6 +336,7 @@ export default function SlotsPage() {
             ))}
           </div>
 
+          {/* Days of week */}
           <div>
             <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">
               {t('slots.daysOfWeek')}
@@ -348,90 +358,101 @@ export default function SlotsPage() {
             </div>
           </div>
 
+          {/* Time window + date range */}
           <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
-                {t('slots.fromTime')}
-              </label>
-              <select value={startTime} onChange={(e) => setStartTime(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none">
-                {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
-                {t('slots.untilTime')}
-              </label>
-              <select value={endTime} onChange={(e) => setEndTime(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none">
-                {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
+            {[
+              { label: t('slots.fromTime'), value: startTime, set: setStartTime },
+              { label: t('slots.untilTime'), value: endTime, set: setEndTime },
+            ].map(({ label, value, set }) => (
+              <div key={label}>
+                <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
+                  {label}
+                </label>
+                <select
+                  value={value}
+                  onChange={(e) => set(e.target.value)}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
+                >
+                  {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+            ))}
             <div>
               <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
                 {t('slots.startingDate')}
               </label>
-              <input type="date" value={fromDate} min={todayStr()} max={maxDateStr()}
+              <input
+                type="date" value={fromDate} min={todayStr()} max={maxDateStr()}
                 onChange={(e) => setFromDate(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none" />
+                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
                 {t('slots.endDate')}
               </label>
-              <input type="date" value={toDate} min={fromDate} max={maxDateStr()}
+              <input
+                type="date" value={toDate} min={fromDate} max={maxDateStr()}
                 onChange={(e) => setToDate(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none" />
+                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
+              />
             </div>
           </div>
 
-          {/* Preview */}
+          {/* Slot preview */}
           {previewSlots.length > 0 && (
             <div className="mt-5 rounded-xl border border-slate-700/50 bg-slate-800/30 p-4">
-              {Object.entries(
-                previewSlots.slice(0, previewSlots.findIndex((s, i) => {
-                  const dates = [...new Set(previewSlots.slice(0, i + 1).map(x => x.dateStr))]
-                  return dates.length > 5
-                }) || previewSlots.length).reduce((acc, s) => {
-                  if (!acc[s.dateStr]) acc[s.dateStr] = []
-                  acc[s.dateStr].push(s)
-                  return acc
-                }, {})
-              ).map(([dateStr, daySlots]) => (
-                <div key={dateStr} className="mb-3">
-                  <p className="text-xs font-medium text-slate-400 mb-1.5">{dateStr}</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {daySlots.map((s) => (
-                      <span key={s.timeStr} className={`rounded px-2 py-0.5 text-xs ${
-                        ruleMode === 'add' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'
-                      }`}>
-                        {s.timeStr}
-                      </span>
+              {(() => {
+                // Group preview by date, show max 5 dates
+                const byDate = {}
+                for (const s of previewSlots) {
+                  if (!byDate[s.dateStr]) byDate[s.dateStr] = []
+                  byDate[s.dateStr].push(s)
+                }
+                const dates = Object.keys(byDate)
+                const visible = dates.slice(0, 5)
+                const hiddenSlots = previewSlots.length - visible.flatMap((d) => byDate[d]).length
+                return (
+                  <>
+                    {visible.map((dateStr) => (
+                      <div key={dateStr} className="mb-3">
+                        <p className="text-xs font-medium text-slate-400 mb-1.5">{dateStr}</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {byDate[dateStr].map((s) => (
+                            <span key={s.timeStr} className={`rounded px-2 py-0.5 text-xs ${
+                              ruleMode === 'add' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'
+                            }`}>
+                              {s.timeStr}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     ))}
-                  </div>
-                </div>
-              ))}
-              {[...new Set(previewSlots.map(s => s.dateStr))].length > 5 && (
-                <p className="text-xs text-slate-500 mt-2">
-                  {t('slots.moreSlots', { count: previewSlots.length - previewSlots.filter(s =>
-                    [...new Set(previewSlots.slice(0, previewSlots.indexOf(s)).map(x => x.dateStr))].length < 5
-                  ).length })}
-                </p>
-              )}
+                    {hiddenSlots > 0 && (
+                      <p className="text-xs text-slate-500 mt-2">
+                        {t('slots.moreSlots', { count: hiddenSlots })}
+                      </p>
+                    )}
+                  </>
+                )
+              })()}
             </div>
           )}
 
-          {previewSlots.length === 0 && dayMask.some(Boolean) && (
+          {/* Empty preview hint — only shown when days are selected but nothing fits */}
+          {previewSlots.length === 0 && dayMask.some(Boolean) && !durationInvalid && (
             <p className="mt-4 text-sm text-slate-500 italic">
               {t('slots.noSlotsPreview', { duration })}
             </p>
           )}
 
+          {/* Apply button */}
           <div className="mt-5 flex items-center gap-4 flex-wrap">
             <button
               onClick={handleApplyRule}
-              disabled={applyingRule || previewSlots.length === 0}
-              className={`rounded-lg px-5 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+              disabled={applyingRule || previewSlots.length === 0 || durationInvalid}
+              className={`rounded-lg px-5 py-2.5 text-sm font-semibold transition-colors
+                disabled:cursor-not-allowed disabled:opacity-50 ${
                 ruleMode === 'add'
                   ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30'
                   : 'bg-rose-500/20 border border-rose-500/40 text-rose-300 hover:bg-rose-500/30'
@@ -443,47 +464,11 @@ export default function SlotsPage() {
           </div>
         </SectionCard>
 
-        {/* Section 1 — Session settings */}
-        <SectionCard title={t('slots.profileTitle')} subtitle={t('slots.profileSubtitle')}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                {t('slots.durationLabel')}
-              </label>
-              <input
-                type="number" min={15} max={180} step={5} value={duration}
-                onChange={(e) => setDuration(parseInt(e.target.value, 10) || 55)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30"
-              />
-              <p className="text-xs text-slate-500 mt-1.5">{t('slots.durationHint')}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                {t('slots.timezoneLabel')}
-              </label>
-              <select value={timezone} onChange={(e) => setTimezone(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30">
-                {TIMEZONES.map((tz) => <option key={tz.value} value={tz.value}>{tz.label}</option>)}
-              </select>
-            </div>
-          </div>
-          <div className="mt-5 flex items-center gap-4">
-            <button
-              onClick={handleSaveProfile} disabled={savingProfile}
-              className="rounded-lg bg-blue-500 hover:bg-blue-400 disabled:bg-blue-400/50 px-5 py-2.5 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed"
-            >
-              {savingProfile ? t('slots.savingSettings') : t('slots.saveSettings')}
-            </button>
-            {profileStatus && (
-              <span className={`text-sm ${profileStatus.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                {profileStatus.message}
-              </span>
-            )}
-          </div>
-        </SectionCard>
-
-        {/* Section 3 — Upcoming slots */}
-        <SectionCard title={t('slots.upcomingTitle')} subtitle={t('slots.upcomingSubtitle')}>
+        {/* ── Upcoming slots card ── */}
+        <SectionCard
+          title={t('slots.upcomingTitle')}
+          subtitle={t('slots.upcomingSubtitle')}
+        >
           {loadingSlots && (
             <div className="space-y-3">
               {Array.from({ length: 3 }, (_, i) => (
@@ -492,7 +477,9 @@ export default function SlotsPage() {
             </div>
           )}
 
-          {slotsError && <p className="text-rose-400 text-sm">{slotsError}</p>}
+          {!loadingSlots && slotsError && (
+            <p className="text-rose-400 text-sm">{slotsError}</p>
+          )}
 
           {!loadingSlots && !slotsError && slotsByDate.size === 0 && (
             <p className="text-slate-500 text-sm italic">{t('slots.noUpcoming')}</p>

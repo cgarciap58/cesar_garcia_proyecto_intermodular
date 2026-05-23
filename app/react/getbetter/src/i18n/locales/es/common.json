@@ -4,7 +4,6 @@
     "dashboard": "Inicio",
     "profile": "Perfil",
     "logOut": "Cerrar sesión",
-    "features": "Funciones",
     "testimonials": "Testimonios",
     "signIn": "Iniciar sesión"
   },
@@ -28,26 +27,9 @@
   "landing": {
     "hero": {
       "headline": "Apoyo en salud mental para ayudarte a",
-      "headlineAccent": "ponerte bien",
+      "headlineAccent": "mejorar",
       "subtitle": "Conecta con psicólogos colegiados y toma el control de tu bienestar emocional.",
       "cta": "Comenzar"
-    },
-    "features": {
-      "heading": "Diseñado para una mejor atención en salud mental",
-      "items": [
-        {
-          "title": "Terapeutas a tu medida",
-          "description": "Encuentra psicólogos por especialidad, idioma y estilo de atención."
-        },
-        {
-          "title": "Sesiones seguras",
-          "description": "Sesiones online privadas y seguimiento adaptado a tu horario."
-        },
-        {
-          "title": "Seguimiento del progreso",
-          "description": "Registros sencillos para medir tu estado de ánimo, hábitos y recuperación."
-        }
-      ]
     },
     "testimonials": {
       "heading": "Lo que dicen nuestros usuarios",

@@ -15,7 +15,7 @@ function LanguageSwitcher() {
 
   const handleChange = (code) => {
     i18n.changeLanguage(code)
-    localStorage.setItem('lang', code)  // persist across page reloads
+    localStorage.setItem('lang', code)
   }
 
   return (

@@ -4,7 +4,6 @@
     "dashboard": "Dashboard",
     "profile": "Profile",
     "logOut": "Log out",
-    "features": "Features",
     "testimonials": "Testimonials",
     "signIn": "Sign in"
   },
@@ -31,23 +30,6 @@
       "headlineAccent": "get better",
       "subtitle": "Connect with licensed psychologists and take control of your emotional wellbeing.",
       "cta": "Get started"
-    },
-    "features": {
-      "heading": "Built for better mental health care",
-      "items": [
-        {
-          "title": "Matched therapists",
-          "description": "Find psychologists by specialty, language, and care style."
-        },
-        {
-          "title": "Secure sessions",
-          "description": "Private online sessions and follow-ups that fit your schedule."
-        },
-        {
-          "title": "Progress tracking",
-          "description": "Simple check-ins to measure mood, habits, and recovery over time."
-        }
-      ]
     },
     "testimonials": {
       "heading": "What users say",

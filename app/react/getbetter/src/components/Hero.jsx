@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
 export default function Hero() {
@@ -16,9 +17,12 @@ export default function Hero() {
         <p className="mt-6 text-lg text-gray-300">
           {t('landing.hero.subtitle')}
         </p>
-        <a href="#signup" className="inline-block mt-8 rounded-lg bg-blue-500 hover:bg-blue-400 px-6 py-3 font-medium transition-colors">
+        <Link
+          to="/signin"
+          className="inline-block mt-8 rounded-lg bg-blue-500 hover:bg-blue-400 px-6 py-3 font-medium transition-colors"
+        >
           {t('landing.hero.cta')}
-        </a>
+        </Link>
       </div>
     </section>
   )
