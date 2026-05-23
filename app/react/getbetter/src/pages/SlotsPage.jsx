@@ -1,19 +1,16 @@
 // pages/SlotsPage.jsx
 //
-// Lets a psychologist manage their available appointment slots.
+// Psychologist slot management. Shows upcoming slots grouped by date with
+// their status (open / pending requests / confirmed) and allows deletion.
 //
-// KEY CONCEPTS FOR THE LEARNER:
-// ─────────────────────────────
-// • All local state lives in React (useState). Nothing is sent to the server
-//   until the user clicks Apply.
-// • "Controlled inputs" — every <input>/<select> has value={...} and
-//   onChange={...} so React is always the source of truth, not the DOM.
-// • We derive display values with useMemo so they re-compute only when their
-//   dependencies change, not on every render.
-// • Timezone is read-only here (from the user profile). The psychologist
-//   changes it in /profile. We use it only for display and slot generation.
-// • Duration is local-only: it starts from the profile default but is NOT
-//   saved here. Changes affect only the slots created this session.
+// Slot status rules (from the model):
+//   open      — deletable; shown with delete button
+//   confirmed — NOT deletable; shown with locked indicator
+//   deleted   — never returned by the API (excluded server-side)
+//
+// A slot with pending_request_count > 0 is still 'open' and CAN be deleted
+// (pending requests are auto-rejected on delete). We show the count as a
+// warning so the psych is aware before acting.
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -23,23 +20,19 @@ import { getSlots, createSlots, deleteSlot } from '../services'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// JS Date.getDay() returns 0=Sun…6=Sat; remap to Mon=0…Sun=6
-const JS_DAY_TO_IDX = [6, 0, 1, 2, 3, 4, 5]
+const JS_DAY_TO_IDX = [6, 0, 1, 2, 3, 4, 5]   // JS Sun=0 → Mon=0 index
+const DURATION_MIN  = 15
+const DURATION_MAX  = 180
 
-// Generate localised day names (Mon→Sun) for the active locale using Intl.
-// We format a known reference week: 2 June 2025 was a Monday.
-// This keeps the LOGIC (dayMask index 0=Mon…6=Sun) language-independent
-// while the DISPLAY labels follow the active locale automatically.
+// ─── Locale helpers ───────────────────────────────────────────────────────────
+
 function getLocaleDays(locale) {
   return Array.from({ length: 7 }, (_, i) => {
-    const date = new Date(`2025-06-0${i + 2}T12:00:00Z`) // Mon 2 Jun … Sun 8 Jun 2025
+    const date = new Date(`2025-06-0${i + 2}T12:00:00Z`)
     const full = new Intl.DateTimeFormat(locale, { weekday: 'long' }).format(date)
     return full.charAt(0).toUpperCase() + full.slice(1)
   })
 }
-
-const DURATION_MIN = 15
-const DURATION_MAX = 180
 
 // ─── Timezone helpers ─────────────────────────────────────────────────────────
 
@@ -84,7 +77,7 @@ function utcToLocalDate(isoUtc, tz) {
   }).format(new Date(isoUtc))
 }
 
-// ─── Time / date option helpers ───────────────────────────────────────────────
+// ─── Time option helpers ──────────────────────────────────────────────────────
 
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   const h = String(Math.floor(i / 2)).padStart(2, '0')
@@ -92,23 +85,18 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   return `${h}:${m}`
 })
 
-function todayStr() {
-  return new Date().toISOString().slice(0, 10)
-}
-
+function todayStr()  { return new Date().toISOString().slice(0, 10) }
 function maxDateStr() {
-  const d = new Date()
-  d.setMonth(d.getMonth() + 3)
-  return d.toISOString().slice(0, 10)
+  const d = new Date(); d.setMonth(d.getMonth() + 3); return d.toISOString().slice(0, 10)
 }
 
 function datesForRecurringRule(fromStr, toStr, dayMask, tz) {
   const results = []
   let cursor = new Date(`${fromStr}T12:00:00Z`)
-  const end = new Date(`${toStr}T12:00:00Z`)
+  const end  = new Date(`${toStr}T12:00:00Z`)
   while (cursor <= end) {
     const localDate = utcToLocalDate(cursor.toISOString(), tz)
-    const jsDow = new Date(`${localDate}T12:00:00Z`).getDay()
+    const jsDow     = new Date(`${localDate}T12:00:00Z`).getDay()
     if (dayMask[JS_DAY_TO_IDX[jsDow]]) results.push(localDate)
     cursor = new Date(cursor.getTime() + 86_400_000)
   }
@@ -133,8 +121,8 @@ function StatusBadge({ type, message }) {
   if (!message) return null
   const styles = {
     success: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400',
-    error:   'bg-rose-500/15 border-rose-500/30 text-rose-400',
-    info:    'bg-blue-500/15 border-blue-500/30 text-blue-400',
+    error:   'bg-rose-500/15    border-rose-500/30    text-rose-400',
+    info:    'bg-blue-500/15    border-blue-500/30    text-blue-400',
   }
   return (
     <div className={`mt-3 rounded-lg border px-4 py-2.5 text-sm ${styles[type] ?? styles.info}`}>
@@ -143,40 +131,93 @@ function StatusBadge({ type, message }) {
   )
 }
 
+// ─── Slot chip ────────────────────────────────────────────────────────────────
+
+function SlotChip({ slot, timezone, locale, deletingId, onDelete, t }) {
+  const isConfirmed = slot.status === 'confirmed'
+  const hasPending  = slot.pending_request_count > 0
+  const isDeleting  = deletingId === slot.id
+
+  // Visual state:
+  //   confirmed      → amber; locked icon; no delete
+  //   open+pending   → blue; pending count badge; delete button (with warning)
+  //   open           → slate; delete button
+  const chipClass = isConfirmed
+    ? 'border-amber-500/30 bg-amber-500/10 text-amber-400'
+    : hasPending
+      ? 'border-blue-500/30 bg-blue-500/10 text-blue-300'
+      : 'border-slate-700 bg-slate-800/60 text-slate-300'
+
+  return (
+    <div className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-colors ${chipClass}`}>
+      <span>{formatTimeInTz(slot.start_time, timezone, locale)}</span>
+      <span className="text-xs opacity-60">{slot.duration_minutes}m</span>
+
+      {isConfirmed && (
+        /* Lock icon — slot has a confirmed appointment */
+        <span className="ml-1 text-xs text-amber-500/70">{t('slots.confirmed')}</span>
+      )}
+
+      {!isConfirmed && hasPending && (
+        /* Pending request count badge */
+        <span className="ml-1 rounded-full bg-blue-500/20 px-1.5 py-0.5 text-xs font-medium text-blue-400">
+          {t('slots.pendingCount', { count: slot.pending_request_count })}
+        </span>
+      )}
+
+      {!isConfirmed && (
+        <button
+          onClick={() => onDelete(slot.id)}
+          disabled={isDeleting}
+          className="ml-1 text-slate-500 hover:text-rose-400 transition-colors disabled:opacity-40"
+          aria-label={t('slots.deleteSlot')}
+          title={hasPending ? t('slots.deleteWithPendingWarning') : undefined}
+        >
+          {isDeleting ? (
+            <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+            </svg>
+          ) : (
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          )}
+        </button>
+      )}
+    </div>
+  )
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function SlotsPage() {
-  const { user } = useAuth()
-  const navigate = useNavigate()
+  const { user }    = useAuth()
+  const navigate    = useNavigate()
   const { t, i18n } = useTranslation('appointments')
-  const days = getLocaleDays(i18n.language)
+  const days         = getLocaleDays(i18n.language)
 
-  // Timezone is read-only — set in /profile
-  const timezone = user?.timezone ?? 'UTC'
-
-  // Duration starts from the profile default but is local to this page visit.
-  // It is NOT saved to the server here — that happens in /profile.
+  const timezone      = user?.timezone ?? 'UTC'
   const profileDefault = user?.session_duration_minutes ?? 55
-  const [duration, setDuration] = useState(profileDefault)
 
-  // True whenever duration is outside the allowed range
-  const durationInvalid = duration < DURATION_MIN || duration > DURATION_MAX
+  const [duration, setDuration] = useState(profileDefault)
+  const durationInvalid         = duration < DURATION_MIN || duration > DURATION_MAX
 
   // ── Slots state ───────────────────────────────────────────────────────────
-  const [slots, setSlots] = useState([])
+  const [slots, setSlots]             = useState([])
   const [loadingSlots, setLoadingSlots] = useState(true)
-  const [slotsError, setSlotsError] = useState(null)
-  const [deletingId, setDeletingId] = useState(null)
+  const [slotsError, setSlotsError]   = useState(null)
+  const [deletingId, setDeletingId]   = useState(null)
 
   // ── Recurring rule state ──────────────────────────────────────────────────
-  const [ruleMode, setRuleMode] = useState('add')
-  const [dayMask, setDayMask] = useState(Array(7).fill(false))
-  const [startTime, setStartTime] = useState('09:00')
-  const [endTime, setEndTime] = useState('17:00')
-  const [fromDate, setFromDate] = useState(todayStr())
-  const [toDate, setToDate] = useState(maxDateStr())
+  const [ruleMode, setRuleMode]       = useState('add')
+  const [dayMask, setDayMask]         = useState(Array(7).fill(false))
+  const [startTime, setStartTime]     = useState('09:00')
+  const [endTime, setEndTime]         = useState('17:00')
+  const [fromDate, setFromDate]       = useState(todayStr())
+  const [toDate, setToDate]           = useState(maxDateStr())
   const [applyingRule, setApplyingRule] = useState(false)
-  const [ruleStatus, setRuleStatus] = useState(null)
+  const [ruleStatus, setRuleStatus]   = useState(null)
 
   useEffect(() => {
     getSlots().then((result) => {
@@ -186,18 +227,17 @@ export default function SlotsPage() {
     })
   }, [])
 
-  // ── Slot preview (derived, never sent anywhere on its own) ────────────────
+  // ── Preview ───────────────────────────────────────────────────────────────
   const previewSlots = useMemo(() => {
-    if (durationInvalid) return []
-    if (!dayMask.some(Boolean)) return []
+    if (durationInvalid || !dayMask.some(Boolean)) return []
     if (!fromDate || !toDate || fromDate > toDate) return []
 
-    const dates = datesForRecurringRule(fromDate, toDate, dayMask, timezone)
+    const dates  = datesForRecurringRule(fromDate, toDate, dayMask, timezone)
     const result = []
 
     for (const dateStr of dates) {
-      let [h, m] = startTime.split(':').map(Number)
-      const [eh, em] = endTime.split(':').map(Number)
+      let [h, m]       = startTime.split(':').map(Number)
+      const [eh, em]   = endTime.split(':').map(Number)
       const endMinutes = eh * 60 + em
 
       while (h * 60 + m + duration <= endMinutes) {
@@ -214,14 +254,13 @@ export default function SlotsPage() {
   // ── Apply recurring rule ──────────────────────────────────────────────────
   const handleApplyRule = async () => {
     if (previewSlots.length === 0 || durationInvalid) return
-    setApplyingRule(true)
-    setRuleStatus(null)
+    setApplyingRule(true); setRuleStatus(null)
 
     if (ruleMode === 'add') {
       const result = await createSlots(previewSlots.map((s) => s.isoUtc))
       if (result.ok) {
         setSlots((prev) => [...prev, ...result.data.created])
-        const n = result.data.created.length
+        const n       = result.data.created.length
         const skipped = result.data.errors?.length ?? 0
         setRuleStatus({
           type: 'success',
@@ -231,15 +270,20 @@ export default function SlotsPage() {
         setRuleStatus({ type: 'error', message: result.error })
       }
     } else {
+      // Remove mode — only delete 'open' slots matching the preview times
       const previewUtcSet = new Set(previewSlots.map((s) => new Date(s.isoUtc).getTime()))
       const toDelete = slots.filter(
-        (s) => !s.is_booked && previewUtcSet.has(new Date(s.start_time).getTime())
+        (s) => s.status === 'open' && previewUtcSet.has(new Date(s.start_time).getTime())
       )
       let deleted = 0, failed = 0
       for (const slot of toDelete) {
         const result = await deleteSlot(slot.id)
-        if (result.ok) { deleted++; setSlots((prev) => prev.filter((s) => s.id !== slot.id)) }
-        else failed++
+        if (result.ok) {
+          deleted++
+          setSlots((prev) => prev.filter((s) => s.id !== slot.id))
+        } else {
+          failed++
+        }
       }
       setRuleStatus({
         type: deleted > 0 ? 'success' : 'error',
@@ -254,12 +298,13 @@ export default function SlotsPage() {
     setDeletingId(slotId)
     const result = await deleteSlot(slotId)
     if (result.ok) setSlots((prev) => prev.filter((s) => s.id !== slotId))
+    else setRuleStatus({ type: 'error', message: result.error })
     setDeletingId(null)
   }, [])
 
-  // ── Group slots by local date ─────────────────────────────────────────────
+  // ── Group upcoming slots by local date ────────────────────────────────────
   const slotsByDate = useMemo(() => {
-    const map = new Map()
+    const map       = new Map()
     const todayLocal = utcToLocalDate(new Date().toISOString(), timezone)
     for (const slot of slots) {
       const dateLocal = utcToLocalDate(slot.start_time, timezone)
@@ -267,11 +312,11 @@ export default function SlotsPage() {
       if (!map.has(dateLocal)) map.set(dateLocal, [])
       map.get(dateLocal).push(slot)
     }
-    for (const [, daySlots] of map) daySlots.sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
+    for (const [, daySlots] of map)
+      daySlots.sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
     return new Map([...map.entries()].sort())
   }, [slots, timezone])
 
-  // ── Apply button label ────────────────────────────────────────────────────
   const applyLabel = applyingRule
     ? t('slots.applying')
     : ruleMode === 'add'
@@ -304,10 +349,7 @@ export default function SlotsPage() {
         </div>
 
         {/* ── Duration card ── */}
-        <SectionCard
-          title={t('slots.durationTitle')}
-          subtitle={t('slots.durationSubtitle')}
-        >
+        <SectionCard title={t('slots.durationTitle')} subtitle={t('slots.durationSubtitle')}>
           <div className="max-w-xs">
             <label className="block text-sm font-medium text-slate-300 mb-2">
               {t('slots.durationLabel')}
@@ -323,26 +365,19 @@ export default function SlotsPage() {
                   : 'border-slate-700 focus:border-blue-400 focus:ring-blue-400/30'
                 }`}
             />
-            {/* Hint: shows profile default when duration has been changed */}
             {duration !== profileDefault && (
               <p className="text-xs text-slate-500 mt-1.5">
                 {t('slots.durationHint', { default: profileDefault })}
               </p>
             )}
-            {/* Warning: shown (in amber) when outside valid range */}
             {durationInvalid && (
-              <p className="text-xs text-amber-400 mt-1.5">
-                {t('slots.durationWarning')}
-              </p>
+              <p className="text-xs text-amber-400 mt-1.5">{t('slots.durationWarning')}</p>
             )}
           </div>
         </SectionCard>
 
         {/* ── Recurring schedule card ── */}
-        <SectionCard
-          title={t('slots.scheduleTitle')}
-          subtitle={t('slots.scheduleSubtitle')}
-        >
+        <SectionCard title={t('slots.scheduleTitle')} subtitle={t('slots.scheduleSubtitle')}>
           {/* Add / Remove toggle */}
           <div className="flex gap-2 mb-5">
             {['add', 'remove'].map((mode) => (
@@ -353,7 +388,7 @@ export default function SlotsPage() {
                   ruleMode === mode
                     ? mode === 'add'
                       ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400'
-                      : 'bg-rose-500/20 border border-rose-500/40 text-rose-400'
+                      : 'bg-rose-500/20    border border-rose-500/40    text-rose-400'
                     : 'border border-slate-700 text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -371,120 +406,99 @@ export default function SlotsPage() {
               {days.map((day, i) => (
                 <button
                   key={i}
-                  onClick={() => setDayMask((prev) => { const next = [...prev]; next[i] = !next[i]; return next })}
+                  onClick={() => setDayMask((prev) => {
+                    const next = [...prev]; next[i] = !next[i]; return next
+                  })}
                   className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     dayMask[i]
-                      ? 'bg-blue-500/20 border border-blue-500/40 text-blue-300'
+                      ? ruleMode === 'add'
+                        ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400'
+                        : 'bg-rose-500/20    border border-rose-500/40    text-rose-400'
                       : 'border border-slate-700 text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  {day.slice(0, 3)}
+                  {day}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Time window + date range */}
-          <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {/* Time range */}
+          <div className="mt-5 grid grid-cols-2 gap-4">
             {[
-              { label: t('slots.fromTime'), value: startTime, set: setStartTime },
-              { label: t('slots.untilTime'), value: endTime, set: setEndTime },
-            ].map(({ label, value, set }) => (
+              { label: t('slots.fromTime'), value: startTime, onChange: setStartTime },
+              { label: t('slots.untilTime'), value: endTime, onChange: setEndTime },
+            ].map(({ label, value, onChange }) => (
               <div key={label}>
-                <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
-                  {label}
-                </label>
+                <label className="block text-xs font-medium text-slate-400 mb-1">{label}</label>
                 <select
                   value={value}
-                  onChange={(e) => set(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
+                  onChange={(e) => onChange(e.target.value)}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-400/30 focus:border-blue-400"
                 >
                   {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
             ))}
-            <div>
-              <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
-                {t('slots.startingDate')}
-              </label>
-              <input
-                type="date" value={fromDate} min={todayStr()} max={maxDateStr()}
-                onChange={(e) => setFromDate(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
-                {t('slots.endDate')}
-              </label>
-              <input
-                type="date" value={toDate} min={fromDate} max={maxDateStr()}
-                onChange={(e) => setToDate(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
-              />
-            </div>
           </div>
 
-          {/* Slot preview */}
-          {previewSlots.length > 0 && (
-            <div className="mt-5 rounded-xl border border-slate-700/50 bg-slate-800/30 p-4">
-              {(() => {
-                // Group preview by date, show max 5 dates
-                const byDate = {}
-                for (const s of previewSlots) {
-                  if (!byDate[s.dateStr]) byDate[s.dateStr] = []
-                  byDate[s.dateStr].push(s)
-                }
-                const dates = Object.keys(byDate)
-                const visible = dates.slice(0, 5)
-                const hiddenSlots = previewSlots.length - visible.flatMap((d) => byDate[d]).length
-                return (
-                  <>
-                    {visible.map((dateStr) => (
-                      <div key={dateStr} className="mb-3">
-                        <p className="text-xs font-medium text-slate-400 mb-1.5">
-                        {formatPreviewDate(dateStr, i18n.language)}
-                      </p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {byDate[dateStr].map((s) => (
-                            <span key={s.timeStr} className={`rounded px-2 py-0.5 text-xs ${
-                              ruleMode === 'add' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'
-                            }`}>
-                              {s.timeStr}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                    {hiddenSlots > 0 && (
-                      <p className="text-xs text-slate-500 mt-2">
-                        {t('slots.moreSlots', { count: hiddenSlots })}
-                      </p>
-                    )}
-                  </>
-                )
-              })()}
+          {/* Date range */}
+          <div className="mt-4 grid grid-cols-2 gap-4">
+            {[
+              { label: t('slots.startingDate'), value: fromDate, onChange: setFromDate },
+              { label: t('slots.endDate'),       value: toDate,   onChange: setToDate },
+            ].map(({ label, value, onChange }) => (
+              <div key={label}>
+                <label className="block text-xs font-medium text-slate-400 mb-1">{label}</label>
+                <input
+                  type="date"
+                  value={value}
+                  min={todayStr()}
+                  max={maxDateStr()}
+                  onChange={(e) => onChange(e.target.value)}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-400/30 focus:border-blue-400"
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Preview */}
+          {previewSlots.length > 0 && !durationInvalid && (
+            <div className="mt-5">
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
+                Preview
+              </p>
+              <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+                {previewSlots.slice(0, 20).map((s) => (
+                  <span key={s.isoUtc} className="rounded-md border border-slate-700 bg-slate-800/60 px-2 py-1 text-xs text-slate-300">
+                    {formatPreviewDate(s.dateStr, i18n.language)} {s.timeStr}
+                  </span>
+                ))}
+                {previewSlots.length > 20 && (
+                  <span className="text-xs text-slate-500 self-center">
+                    {t('slots.moreSlots', { count: previewSlots.length - 20 })}
+                  </span>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Empty preview hint — only shown when days are selected but nothing fits */}
           {previewSlots.length === 0 && dayMask.some(Boolean) && !durationInvalid && (
-            <p className="mt-4 text-sm text-slate-500 italic">
+            <p className="mt-4 text-xs text-slate-500 italic">
               {t('slots.noSlotsPreview', { duration })}
             </p>
           )}
 
           {/* Apply button */}
-          <div className="mt-5 flex items-center gap-4 flex-wrap">
+          <div className="mt-5 flex items-center gap-4">
             <button
               onClick={handleApplyRule}
-              disabled={applyingRule || previewSlots.length === 0 || durationInvalid}
-              className={`rounded-lg px-5 py-2.5 text-sm font-semibold transition-colors
-                disabled:cursor-not-allowed disabled:opacity-50 ${
-                ruleMode === 'add'
+              disabled={previewSlots.length === 0 || durationInvalid || applyingRule}
+              className={`rounded-lg px-5 py-2.5 text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed
+                ${ruleMode === 'add'
                   ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30'
-                  : 'bg-rose-500/20 border border-rose-500/40 text-rose-300 hover:bg-rose-500/30'
-              }`}
+                  : 'bg-rose-500/20    border border-rose-500/40    text-rose-300    hover:bg-rose-500/30'
+                }`}
             >
               {applyLabel}
             </button>
@@ -493,10 +507,7 @@ export default function SlotsPage() {
         </SectionCard>
 
         {/* ── Upcoming slots card ── */}
-        <SectionCard
-          title={t('slots.upcomingTitle')}
-          subtitle={t('slots.upcomingSubtitle')}
-        >
+        <SectionCard title={t('slots.upcomingTitle')} subtitle={t('slots.upcomingSubtitle')}>
           {loadingSlots && (
             <div className="space-y-3">
               {Array.from({ length: 3 }, (_, i) => (
@@ -522,38 +533,15 @@ export default function SlotsPage() {
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {daySlots.map((slot) => (
-                      <div
+                      <SlotChip
                         key={slot.id}
-                        className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-colors ${
-                          slot.is_booked
-                            ? 'border-amber-500/30 bg-amber-500/10 text-amber-400'
-                            : 'border-slate-700 bg-slate-800/60 text-slate-300'
-                        }`}
-                      >
-                        <span>{formatTimeInTz(slot.start_time, timezone, i18n.language)}</span>
-                        <span className="text-xs text-slate-500">{slot.duration_minutes}m</span>
-                        {slot.is_booked ? (
-                          <span className="text-xs text-amber-500/70 ml-1">{t('slots.booked')}</span>
-                        ) : (
-                          <button
-                            onClick={() => handleDeleteSlot(slot.id)}
-                            disabled={deletingId === slot.id}
-                            className="ml-1 text-slate-500 hover:text-rose-400 transition-colors disabled:opacity-40"
-                            aria-label="Delete slot"
-                          >
-                            {deletingId === slot.id ? (
-                              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                              </svg>
-                            ) : (
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            )}
-                          </button>
-                        )}
-                      </div>
+                        slot={slot}
+                        timezone={timezone}
+                        locale={i18n.language}
+                        deletingId={deletingId}
+                        onDelete={handleDeleteSlot}
+                        t={t}
+                      />
                     ))}
                   </div>
                 </div>

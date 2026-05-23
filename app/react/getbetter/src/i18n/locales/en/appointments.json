@@ -8,6 +8,7 @@
     "done":            "Done",
     "pending_request": "Pending",
     "rejected":        "Rejected",
+    "withdrawn":       "Withdrawn",
     "cancelled":       "Cancelled"
   },
   "previousSessions": {
@@ -47,14 +48,17 @@
     "skipped_other":   " {{count}} skipped (errors).",
     "removed_one":     "{{count}} slot removed.",
     "removed_other":   "{{count}} slots removed.",
-    "couldNotDelete_one":  " {{count}} could not be deleted (booked).",
-    "couldNotDelete_other":" {{count}} could not be deleted (booked).",
+    "couldNotDelete_one":  " {{count}} could not be deleted.",
+    "couldNotDelete_other":" {{count}} could not be deleted.",
     "moreSlots":       "… and {{count}} more slots on later dates.",
     "upcomingTitle":   "Upcoming slots",
-    "upcomingSubtitle":"Your slots from today onward. Confirmed slots cannot be deleted until their appointment is cancelled.",
+    "upcomingSubtitle":"Open and confirmed slots from today. Confirmed slots are locked until their appointment is cancelled.",
     "noUpcoming":      "No upcoming slots. Use the recurring schedule above to add some.",
-    "statusOpen":      "Open",
-    "statusConfirmed": "Confirmed",
-    "deleteBlocked":   "Cancel the appointment first"
+    "confirmed":       "Confirmed",
+    "pendingCount_one":   "{{count}} request",
+    "pendingCount_other": "{{count}} requests",
+    "deleteSlot":               "Delete slot",
+    "deleteWithPendingWarning": "Deleting will reject all pending requests for this slot",
+    "deleteBlocked":            "Cancel the appointment first"
   }
 }

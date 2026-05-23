@@ -8,6 +8,7 @@
     "done":            "Finalizada",
     "pending_request": "Pendiente",
     "rejected":        "Rechazada",
+    "withdrawn":       "Retirada",
     "cancelled":       "Cancelada"
   },
   "previousSessions": {
@@ -22,12 +23,12 @@
     "pageTitle":       "Gestionar horarios",
     "pageSubtitle":    "Configura tu disponibilidad. Los horarios se muestran en tu zona horaria (cámbiala en Perfil).",
     "durationTitle":   "Duración de sesión",
-    "durationSubtitle":"Sobreescribe el valor por defecto de tu perfil solo para esta sesión. Cambia el valor por defecto en Perfil.",
+    "durationSubtitle":"Sobreescribe el valor por defecto solo para esta sesión. Cambia el valor por defecto en Perfil.",
     "durationLabel":   "Duración (minutos)",
     "durationHint":    "Tu valor por defecto: {{default}} min",
-    "durationWarning": "Debe estar entre 15 y 180 minutos para crear franjas.",
+    "durationWarning": "Debe estar entre 15 y 180 minutos.",
     "scheduleTitle":   "Horario recurrente",
-    "scheduleSubtitle":"Selecciona días y una franja horaria para añadir o eliminar varias franjas a la vez.",
+    "scheduleSubtitle":"Selecciona días y una franja horaria para añadir o eliminar franjas a la vez.",
     "addSlots":        "+ Añadir franjas",
     "removeSlots":     "− Eliminar franjas",
     "daysOfWeek":      "Días de la semana",
@@ -47,14 +48,17 @@
     "skipped_other":   " {{count}} omitidas (errores).",
     "removed_one":     "{{count}} franja eliminada.",
     "removed_other":   "{{count}} franjas eliminadas.",
-    "couldNotDelete_one":  " {{count}} no se pudo eliminar (reservada).",
-    "couldNotDelete_other":" {{count}} no se pudieron eliminar (reservadas).",
+    "couldNotDelete_one":  " {{count}} no se pudo eliminar.",
+    "couldNotDelete_other":" {{count}} no se pudieron eliminar.",
     "moreSlots":       "… y {{count}} franjas más en fechas posteriores.",
     "upcomingTitle":   "Próximas franjas",
-    "upcomingSubtitle":"Tus franjas desde hoy. Las franjas confirmadas no se pueden eliminar hasta que se cancele su cita.",
-    "noUpcoming":      "Sin próximas franjas. Usa el horario recurrente de arriba para añadir.",
-    "statusOpen":      "Disponible",
-    "statusConfirmed": "Confirmada",
-    "deleteBlocked":   "Cancela la cita primero"
+    "upcomingSubtitle":"Franjas abiertas y confirmadas desde hoy. Las confirmadas están bloqueadas hasta que se cancele su cita.",
+    "noUpcoming":      "Sin próximas franjas. Usa el horario recurrente para añadir.",
+    "confirmed":       "Confirmada",
+    "pendingCount_one":   "{{count}} solicitud",
+    "pendingCount_other": "{{count}} solicitudes",
+    "deleteSlot":               "Eliminar franja",
+    "deleteWithPendingWarning": "Eliminar rechazará todas las solicitudes pendientes de esta franja",
+    "deleteBlocked":            "Cancela la cita primero"
   }
 }

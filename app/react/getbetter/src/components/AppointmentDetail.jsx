@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import PreviousSessions from './PreviousSessions'
-import { formatFullDate, formatTime, STATUS_BADGE, STATUS_STYLES } from '../utils/appointmentFormatters'
+import { formatFullDate, formatTime, STATUS_BADGE, STATUS_STYLES, FALLBACK_STYLE } from '../utils/appointmentFormatters'
 
 const VIDEO_ICON = (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -10,36 +10,26 @@ const VIDEO_ICON = (
 )
 
 export default function AppointmentDetail({
-  appointment,
-  counterpart,
-  meetLinkLabel,
-  previousLabel,
-  previousUserId,
-  role,
-  notes,
-  actions,
+  appointment, counterpart, meetLinkLabel, previousLabel, previousUserId, role, notes, actions,
 }) {
   const { i18n, t } = useTranslation('appointments')
   const { firstName, lastName, namePrefix, profilePicture } = counterpart
-  const displayName = [namePrefix, firstName, lastName].filter(Boolean).join(' ')
-  const initials    = `${firstName[0]}${lastName[0]}`
-
-  // appointment.status is already the computed effective status from the API
-  const style      = STATUS_STYLES[appointment.status] ?? STATUS_STYLES.pending_request
-  const statusLabel = t(style.labelKey, style.label)
+  const displayName  = [namePrefix, firstName, lastName].filter(Boolean).join(' ')
+  const initials     = `${firstName[0]}${lastName[0]}`
+  const style        = STATUS_STYLES[appointment.status] ?? FALLBACK_STYLE
+  const badgeClass   = STATUS_BADGE[appointment.status]  ?? STATUS_BADGE.pending_request
 
   return (
     <div className="mt-4 bg-slate-900/60 border border-slate-800 rounded-2xl p-6 animate-in slide-in-from-top duration-300">
       <div className="flex gap-6">
 
-        {/* Counterpart avatar */}
+        {/* Avatar */}
         <div className="flex-shrink-0 flex flex-col items-center gap-2">
           <div className="w-16 h-16 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center overflow-hidden">
-            {profilePicture ? (
-              <img src={profilePicture} alt={displayName} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-lg font-semibold text-slate-400">{initials}</span>
-            )}
+            {profilePicture
+              ? <img src={profilePicture} alt={displayName} className="w-full h-full object-cover" />
+              : <span className="text-lg font-semibold text-slate-400">{initials}</span>
+            }
           </div>
           <p className="text-xs text-slate-400 text-center leading-tight">
             {namePrefix
@@ -49,10 +39,8 @@ export default function AppointmentDetail({
           </p>
         </div>
 
-        {/* Main content */}
+        {/* Content */}
         <div className="flex-1 min-w-0">
-
-          {/* Date / time / status */}
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <h3 className="text-white font-semibold text-lg">
@@ -64,8 +52,8 @@ export default function AppointmentDetail({
                 {appointment.slot.duration_minutes} min
               </p>
             </div>
-            <span className={`text-xs font-medium px-3 py-1 rounded-full ${STATUS_BADGE[appointment.status] ?? STATUS_BADGE.pending_request}`}>
-              {statusLabel}
+            <span className={`text-xs font-medium px-3 py-1 rounded-full ${badgeClass}`}>
+              {t(style.labelKey)}
             </span>
           </div>
 
@@ -93,7 +81,6 @@ export default function AppointmentDetail({
             </p>
             <PreviousSessions withUserId={previousUserId} role={role} />
           </div>
-
         </div>
       </div>
     </div>

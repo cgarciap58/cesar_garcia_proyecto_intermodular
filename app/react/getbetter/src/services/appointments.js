@@ -3,10 +3,8 @@ import { buildUrl, parseResponse } from './http'
 // ─── Slots (psychologist-facing) ──────────────────────────────────────────────
 
 export const getSlots = async () => {
-  const response = await fetch(buildUrl('/api/appointments/slots/'), {
-    credentials: 'include',
-  })
-  const payload = await parseResponse(response)
+  const response = await fetch(buildUrl('/api/appointments/slots/'), { credentials: 'include' })
+  const payload  = await parseResponse(response)
   if (!response.ok) return { ok: false, error: payload.error || 'Failed to fetch slots' }
   return { ok: true, data: payload }
 }
@@ -33,17 +31,11 @@ export const deleteSlot = async (slotId) => {
   return { ok: true }
 }
 
-// ─── Available slots (patient-facing) ────────────────────────────────────────
-//
-// Returns { psychologists: [ { id, first_name, last_name, session_price,
-//   session_duration_minutes, is_verified, verification_status, slots: [...] } ] }
-// Already grouped by psychologist, ready to render one card each.
+// ─── Available slots (patient-facing /book) ───────────────────────────────────
 
 export const getAvailableSlots = async () => {
-  const response = await fetch(buildUrl('/api/appointments/slots/available/'), {
-    credentials: 'include',
-  })
-  const payload = await parseResponse(response)
+  const response = await fetch(buildUrl('/api/appointments/slots/available/'), { credentials: 'include' })
+  const payload  = await parseResponse(response)
   if (!response.ok) return { ok: false, error: payload.error || 'Failed to fetch available slots' }
   return { ok: true, data: payload }
 }
@@ -51,14 +43,13 @@ export const getAvailableSlots = async () => {
 // ─── Appointments ─────────────────────────────────────────────────────────────
 
 export const getAppointments = async () => {
-  const response = await fetch(buildUrl('/api/appointments/'), {
-    credentials: 'include',
-  })
-  const payload = await parseResponse(response)
+  const response = await fetch(buildUrl('/api/appointments/'), { credentials: 'include' })
+  const payload  = await parseResponse(response)
   if (!response.ok) return { ok: false, error: payload.error || 'Failed to fetch appointments' }
   return { ok: true, data: payload }
 }
 
+/** Patient requests a slot. */
 export const bookAppointment = async (slotId) => {
   const response = await fetch(buildUrl('/api/appointments/'), {
     method: 'POST',
@@ -67,10 +58,11 @@ export const bookAppointment = async (slotId) => {
     body: JSON.stringify({ slot_id: slotId }),
   })
   const payload = await parseResponse(response)
-  if (!response.ok) return { ok: false, error: payload.error || 'Failed to book appointment' }
+  if (!response.ok) return { ok: false, error: payload.error || 'Failed to request appointment' }
   return { ok: true, data: payload }
 }
 
+/** Psychologist confirms one pending_request. */
 export const confirmAppointment = async (appointmentId) => {
   const response = await fetch(buildUrl(`/api/appointments/${appointmentId}/confirm/`), {
     method: 'PATCH',
@@ -81,6 +73,29 @@ export const confirmAppointment = async (appointmentId) => {
   return { ok: true, data: payload }
 }
 
+/** Psychologist rejects one specific pending_request (slot stays open). */
+export const rejectAppointment = async (appointmentId) => {
+  const response = await fetch(buildUrl(`/api/appointments/${appointmentId}/reject/`), {
+    method: 'PATCH',
+    credentials: 'include',
+  })
+  const payload = await parseResponse(response)
+  if (!response.ok) return { ok: false, error: payload.error || 'Failed to reject request' }
+  return { ok: true, data: payload }
+}
+
+/** Patient withdraws their own pending_request before psych acts. */
+export const withdrawAppointment = async (appointmentId) => {
+  const response = await fetch(buildUrl(`/api/appointments/${appointmentId}/withdraw/`), {
+    method: 'PATCH',
+    credentials: 'include',
+  })
+  const payload = await parseResponse(response)
+  if (!response.ok) return { ok: false, error: payload.error || 'Failed to withdraw request' }
+  return { ok: true, data: payload }
+}
+
+/** Cancel a confirmed appointment (either role). */
 export const cancelAppointment = async (appointmentId) => {
   const response = await fetch(buildUrl(`/api/appointments/${appointmentId}/cancel/`), {
     method: 'PATCH',
