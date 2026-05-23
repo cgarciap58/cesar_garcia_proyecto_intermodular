@@ -16,6 +16,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { getSlots, createSlots, deleteSlot } from '../services'
 import { updateProfile } from '../services/profile'
@@ -57,45 +58,20 @@ const TIMEZONES = [
 
 // ─── Timezone helpers ─────────────────────────────────────────────────────────
 
-/**
- * Format an ISO UTC string as a human-readable time in the given IANA timezone.
- * Uses the browser's built-in Intl.DateTimeFormat — no library needed.
- *
- * Example: formatInTz('2026-06-02T10:00:00Z', 'Europe/Madrid') → '12:00'
- */
 function formatTimeInTz(isoUtc, tz) {
   return new Intl.DateTimeFormat('en-GB', {
     hour: '2-digit', minute: '2-digit', timeZone: tz,
   }).format(new Date(isoUtc))
 }
 
-function formatDateInTz(isoUtc, tz) {
-  return new Intl.DateTimeFormat('en-GB', {
-    weekday: 'short', day: 'numeric', month: 'short', timeZone: tz,
-  }).format(new Date(isoUtc))
-}
-
-/**
- * Given a local wall-clock date string like "2026-06-02" and a time like "14:00",
- * and an IANA timezone, return the equivalent UTC ISO string.
- *
- * Strategy: we construct a Date by interpreting the string in the target timezone
- * using the Intl.DateTimeFormat offset trick — reliable cross-browser.
- */
 function localToUtcIso(dateStr, timeStr, tz) {
-  // Build a Date as if in UTC, then figure out what offset applies there.
   const naive = new Date(`${dateStr}T${timeStr}:00`)
-
-  // Get the UTC time that corresponds to that wall-clock in tz
-  // by formatting the naive date in that tz and comparing.
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: tz,
     year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', second: '2-digit',
     hour12: false,
   })
-  // We need to find t such that formatter(t) shows dateStr+timeStr.
-  // Shortcut: use the offset at the naive point.
   const parts = formatter.formatToParts(naive)
   const p = Object.fromEntries(parts.map(({ type, value }) => [type, value]))
   const localMs = new Date(`${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}`).getTime()
@@ -104,9 +80,6 @@ function localToUtcIso(dateStr, timeStr, tz) {
   return new Date(naiveMs + offsetMs).toISOString()
 }
 
-/**
- * Given a UTC ISO string and an IANA timezone, return the local date as "YYYY-MM-DD".
- */
 function utcToLocalDate(isoUtc, tz) {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
@@ -133,24 +106,16 @@ function maxDateStr() {
   return d.toISOString().slice(0, 10)
 }
 
-/**
- * Return all dates (as "YYYY-MM-DD" strings, in LOCAL timezone) between
- * fromStr and toStr (inclusive) whose day-of-week matches any bit in dayMask
- * (bit 0 = Monday … bit 6 = Sunday).
- */
 function datesForRecurringRule(fromStr, toStr, dayMask, tz) {
   const results = []
-  // Iterate day by day
-  let cursor = new Date(`${fromStr}T12:00:00Z`) // noon UTC avoids DST edge cases
+  let cursor = new Date(`${fromStr}T12:00:00Z`)
   const end = new Date(`${toStr}T12:00:00Z`)
-
   while (cursor <= end) {
     const localDate = utcToLocalDate(cursor.toISOString(), tz)
-    // JS weekday: 0=Sun..6=Sat → remap to Mon=0..Sun=6
     const jsDow = new Date(`${localDate}T12:00:00Z`).getDay()
     const idx = JS_DAY_TO_IDX[jsDow]
     if (dayMask[idx]) results.push(localDate)
-    cursor = new Date(cursor.getTime() + 86400000) // +1 day
+    cursor = new Date(cursor.getTime() + 86400000)
   }
   return results
 }
@@ -188,40 +153,31 @@ function StatusBadge({ type, message }) {
 export default function SlotsPage() {
   const { user, setUser } = useAuth()
   const navigate = useNavigate()
+  const { t } = useTranslation('appointments')
 
-  // Redirect non-psychologists
   useEffect(() => {
     if (user && user.role !== 'psychologist') navigate('/dashboard')
   }, [user, navigate])
 
-  // ── Profile settings state ────────────────────────────────────────────────
-  // We initialise from the user object that AuthContext already has.
-  // When we save we also call setUser() so the whole app sees the update.
   const [duration, setDuration] = useState(user?.session_duration_minutes ?? 55)
   const [timezone, setTimezone] = useState(user?.timezone ?? 'UTC')
   const [savingProfile, setSavingProfile] = useState(false)
-  const [profileStatus, setProfileStatus] = useState(null) // { type, message }
+  const [profileStatus, setProfileStatus] = useState(null)
 
-  // ── Slots state ───────────────────────────────────────────────────────────
-  const [slots, setSlots] = useState([])
-  const [loadingSlots, setLoadingSlots] = useState(true)
-  const [slotsError, setSlotsError] = useState(null)
-
-  // ── Recurring rule state ──────────────────────────────────────────────────
-  // dayMask: array of 7 booleans, index 0=Mon … 6=Sun
+  const [ruleMode, setRuleMode] = useState('add')
   const [dayMask, setDayMask] = useState(Array(7).fill(false))
   const [startTime, setStartTime] = useState('09:00')
   const [endTime, setEndTime] = useState('17:00')
   const [fromDate, setFromDate] = useState(todayStr())
-  const [toDate, setToDate] = useState(todayStr())
-  const [ruleMode, setRuleMode] = useState('add') // 'add' | 'remove'
+  const [toDate, setToDate] = useState(maxDateStr())
   const [applyingRule, setApplyingRule] = useState(false)
   const [ruleStatus, setRuleStatus] = useState(null)
 
-  // ── Delete state ──────────────────────────────────────────────────────────
+  const [slots, setSlots] = useState([])
+  const [loadingSlots, setLoadingSlots] = useState(true)
+  const [slotsError, setSlotsError] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
 
-  // ── Fetch existing slots on mount ─────────────────────────────────────────
   useEffect(() => {
     getSlots().then((result) => {
       if (result.ok) setSlots(result.data.slots)
@@ -230,41 +186,32 @@ export default function SlotsPage() {
     })
   }, [])
 
-  // ── Save profile settings ─────────────────────────────────────────────────
   const handleSaveProfile = async () => {
     setSavingProfile(true)
     setProfileStatus(null)
     const result = await updateProfile({ session_duration_minutes: duration, timezone })
     if (result.ok) {
-      setUser(result.data)       // update AuthContext so other pages see it
-      setProfileStatus({ type: 'success', message: 'Settings saved.' })
+      setUser((prev) => ({ ...prev, session_duration_minutes: duration, timezone }))
+      setProfileStatus({ type: 'success', message: 'Saved.' })
     } else {
       setProfileStatus({ type: 'error', message: result.error })
     }
     setSavingProfile(false)
   }
 
-  // ── Preview: what slots would the recurring rule generate? ────────────────
-  // useMemo means this only re-runs when its dependencies change,
-  // not on every render — important for performance.
   const previewSlots = useMemo(() => {
     if (!dayMask.some(Boolean)) return []
     if (!fromDate || !toDate || fromDate > toDate) return []
-
     const sessionMin = duration
     const dates = datesForRecurringRule(fromDate, toDate, dayMask, timezone)
     const slots = []
-
     for (const dateStr of dates) {
-      // Walk from startTime to endTime in session-duration steps
       let [h, m] = startTime.split(':').map(Number)
       const [eh, em] = endTime.split(':').map(Number)
       const endMinutes = eh * 60 + em
-
       while (h * 60 + m + sessionMin <= endMinutes) {
         const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
         slots.push({ dateStr, timeStr, isoUtc: localToUtcIso(dateStr, timeStr, timezone) })
-        // advance by session duration
         const total = h * 60 + m + sessionMin
         h = Math.floor(total / 60)
         m = total % 60
@@ -273,99 +220,76 @@ export default function SlotsPage() {
     return slots
   }, [dayMask, fromDate, toDate, startTime, endTime, duration, timezone])
 
-  // ── Apply recurring rule ──────────────────────────────────────────────────
   const handleApplyRule = async () => {
     if (previewSlots.length === 0) return
     setApplyingRule(true)
     setRuleStatus(null)
 
     if (ruleMode === 'add') {
-      // POST the ISO UTC start_times to the API
-      const isoTimes = previewSlots.map((s) => s.isoUtc)
-      const result = await createSlots(isoTimes)
+      const result = await createSlots(previewSlots.map((s) => s.isoUtc))
       if (result.ok) {
-        // Merge the newly created slots into our local list
         setSlots((prev) => [...prev, ...result.data.created])
         const n = result.data.created.length
         const skipped = result.data.errors?.length ?? 0
         setRuleStatus({
           type: 'success',
-          message: `${n} slot${n !== 1 ? 's' : ''} created.${skipped ? ` ${skipped} skipped (errors).` : ''}`,
+          message: t('slots.created', { count: n }) + (skipped ? t('slots.skipped', { count: skipped }) : ''),
         })
       } else {
         setRuleStatus({ type: 'error', message: result.error })
       }
     } else {
-      // Remove mode: find existing unbooked slots that match the preview times
       const previewUtcSet = new Set(previewSlots.map((s) => new Date(s.isoUtc).getTime()))
       const toDelete = slots.filter(
         (s) => !s.is_booked && previewUtcSet.has(new Date(s.start_time).getTime())
       )
-
-      let deleted = 0
-      let failed = 0
-      // Delete one by one (could be batched, but keeps the code readable)
+      let deleted = 0, failed = 0
       for (const slot of toDelete) {
         const result = await deleteSlot(slot.id)
-        if (result.ok) {
-          deleted++
-          setSlots((prev) => prev.filter((s) => s.id !== slot.id))
-        } else {
-          failed++
-        }
+        if (result.ok) { deleted++; setSlots((prev) => prev.filter((s) => s.id !== slot.id)) }
+        else failed++
       }
       setRuleStatus({
         type: deleted > 0 ? 'success' : 'error',
-        message: `${deleted} slot${deleted !== 1 ? 's' : ''} removed.${failed ? ` ${failed} could not be deleted (booked).` : ''}`,
+        message: t('slots.removed', { count: deleted }) + (failed ? t('slots.couldNotDelete', { count: failed }) : ''),
       })
     }
     setApplyingRule(false)
   }
 
-  // ── Delete a single slot ──────────────────────────────────────────────────
   const handleDeleteSlot = useCallback(async (slotId) => {
     setDeletingId(slotId)
     const result = await deleteSlot(slotId)
-    if (result.ok) {
-      setSlots((prev) => prev.filter((s) => s.id !== slotId))
-    }
+    if (result.ok) setSlots((prev) => prev.filter((s) => s.id !== slotId))
     setDeletingId(null)
   }, [])
 
-  // ── Group slots by local date for display ─────────────────────────────────
-  // We build a Map: "YYYY-MM-DD" → [slot, slot, …]
   const slotsByDate = useMemo(() => {
     const map = new Map()
     const tz = timezone
-
-    // Only show slots from today onward in this view
     const todayLocal = utcToLocalDate(new Date().toISOString(), tz)
-
     for (const slot of slots) {
       const dateLocal = utcToLocalDate(slot.start_time, tz)
       if (dateLocal < todayLocal) continue
       if (!map.has(dateLocal)) map.set(dateLocal, [])
       map.get(dateLocal).push(slot)
     }
-
-    // Sort each day's slots by time
-    for (const [, daySlots] of map) {
-      daySlots.sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
-    }
-
-    // Return sorted by date
+    for (const [, daySlots] of map) daySlots.sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
     return new Map([...map.entries()].sort())
   }, [slots, timezone])
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // Render
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── Apply button label ────────────────────────────────────────────────────
+  const applyLabel = applyingRule
+    ? t('slots.applying')
+    : ruleMode === 'add'
+      ? t('slots.applyCreate', { count: previewSlots.length })
+      : t('slots.applyRemove', { count: previewSlots.length })
 
   return (
     <main className="min-h-screen bg-slate-950 pt-20 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-6">
 
-        {/* ── Page header ── */}
+        {/* Page header */}
         <div className="flex items-center gap-4 pt-4">
           <button
             onClick={() => navigate('/dashboard')}
@@ -377,25 +301,14 @@ export default function SlotsPage() {
             </svg>
           </button>
           <div>
-            <h1 className="text-2xl font-semibold text-white">Manage slots</h1>
-            <p className="text-sm text-slate-500 mt-0.5">
-              Set your working schedule. All times shown in your timezone.
-            </p>
+            <h1 className="text-2xl font-semibold text-white">{t('slots.pageTitle')}</h1>
+            <p className="text-sm text-slate-500 mt-0.5">{t('slots.pageSubtitle')}</p>
           </div>
         </div>
 
-        {/* ══════════════════════════════════════════════════════════════
-            SECTION 2 — Recurring rule
-            The psych picks days of week + a time window + a date range.
-            We generate a preview client-side (useMemo) before sending
-            anything to the server.
-        ══════════════════════════════════════════════════════════════ */}
-        <SectionCard
-          title="Recurring schedule"
-          subtitle="Select days and a time window to fill or clear multiple slots at once."
-        >
+        {/* Section 2 — Recurring schedule */}
+        <SectionCard title={t('slots.scheduleTitle')} subtitle={t('slots.scheduleSubtitle')}>
 
-          {/* Add / Remove toggle */}
           <div className="flex gap-2 mb-5">
             {['add', 'remove'].map((mode) => (
               <button
@@ -409,34 +322,20 @@ export default function SlotsPage() {
                     : 'border border-slate-700 text-slate-400 hover:text-slate-200'
                 }`}
               >
-                {mode === 'add' ? '+ Add slots' : '− Remove slots'}
+                {mode === 'add' ? t('slots.addSlots') : t('slots.removeSlots')}
               </button>
             ))}
           </div>
 
-          {/* Day-of-week checkboxes */}
-          {/*
-            LEARNER NOTE: dayMask is an array of 7 booleans. When the user
-            clicks a day, we create a NEW array (spread [...prev]) and flip
-            the boolean at that index. React requires immutable updates —
-            mutating the array directly (dayMask[i] = true) would NOT cause
-            a re-render.
-          */}
           <div>
             <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">
-              Days of week
+              {t('slots.daysOfWeek')}
             </p>
             <div className="flex flex-wrap gap-2">
               {DAYS.map((day, i) => (
                 <button
                   key={day}
-                  onClick={() =>
-                    setDayMask((prev) => {
-                      const next = [...prev]
-                      next[i] = !next[i]
-                      return next
-                    })
-                  }
+                  onClick={() => setDayMask((prev) => { const next = [...prev]; next[i] = !next[i]; return next })}
                   className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     dayMask[i]
                       ? 'bg-blue-500/20 border border-blue-500/40 text-blue-300'
@@ -449,115 +348,74 @@ export default function SlotsPage() {
             </div>
           </div>
 
-          {/* Time window */}
           <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
-                From time
+                {t('slots.fromTime')}
               </label>
-              <select
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
-              >
+              <select value={startTime} onChange={(e) => setStartTime(e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none">
                 {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
-                Until time
+                {t('slots.untilTime')}
               </label>
-              <select
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
-              >
+              <select value={endTime} onChange={(e) => setEndTime(e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none">
                 {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
-                Starting date
+                {t('slots.startingDate')}
               </label>
-              {/*
-                LEARNER NOTE: min/max on date inputs restrict the calendar
-                picker. We also enforce in our generation logic.
-              */}
-              <input
-                type="date"
-                value={fromDate}
-                min={todayStr()}
-                max={maxDateStr()}
+              <input type="date" value={fromDate} min={todayStr()} max={maxDateStr()}
                 onChange={(e) => setFromDate(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
-              />
+                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none" />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
-                Ending date
+                {t('slots.endDate')}
               </label>
-              <input
-                type="date"
-                value={toDate}
-                min={fromDate}
-                max={maxDateStr()}
+              <input type="date" value={toDate} min={fromDate} max={maxDateStr()}
                 onChange={(e) => setToDate(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
-              />
+                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none" />
             </div>
           </div>
 
           {/* Preview */}
           {previewSlots.length > 0 && (
-            <div className="mt-5 rounded-xl border border-slate-700/50 bg-slate-800/40 p-4">
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">
-                Preview — {previewSlots.length} slot{previewSlots.length !== 1 ? 's' : ''} will be{' '}
-                {ruleMode === 'add' ? 'created' : 'removed'}
-              </p>
-              {/*
-                LEARNER NOTE: We group the flat previewSlots array by date
-                using reduce() — a functional pattern that builds an object
-                {date: [slots]} in one pass.
-              */}
+            <div className="mt-5 rounded-xl border border-slate-700/50 bg-slate-800/30 p-4">
               {Object.entries(
-                previewSlots.reduce((acc, s) => {
-                  ;(acc[s.dateStr] ??= []).push(s)
+                previewSlots.slice(0, previewSlots.findIndex((s, i) => {
+                  const dates = [...new Set(previewSlots.slice(0, i + 1).map(x => x.dateStr))]
+                  return dates.length > 5
+                }) || previewSlots.length).reduce((acc, s) => {
+                  if (!acc[s.dateStr]) acc[s.dateStr] = []
+                  acc[s.dateStr].push(s)
                   return acc
                 }, {})
-              )
-                .slice(0, 5) // show only first 5 days to keep it readable
-                .map(([date, daySlots]) => (
-                  <div key={date} className="flex items-start gap-3 mb-2 last:mb-0">
-                    <span className="text-xs text-slate-400 w-24 flex-shrink-0 pt-0.5">
-                      {new Intl.DateTimeFormat('en-GB', {
-                        weekday: 'short', day: 'numeric', month: 'short',
-                      }).format(new Date(`${date}T12:00:00Z`))}
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {daySlots.map((s) => (
-                        <span
-                          key={s.isoUtc}
-                          className={`text-xs px-2 py-0.5 rounded-full ${
-                            ruleMode === 'add'
-                              ? 'bg-emerald-500/15 text-emerald-400'
-                              : 'bg-rose-500/15 text-rose-400'
-                          }`}
-                        >
-                          {s.timeStr}
-                        </span>
-                      ))}
-                    </div>
+              ).map(([dateStr, daySlots]) => (
+                <div key={dateStr} className="mb-3">
+                  <p className="text-xs font-medium text-slate-400 mb-1.5">{dateStr}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {daySlots.map((s) => (
+                      <span key={s.timeStr} className={`rounded px-2 py-0.5 text-xs ${
+                        ruleMode === 'add' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'
+                      }`}>
+                        {s.timeStr}
+                      </span>
+                    ))}
                   </div>
-                ))}
-              {Object.keys(
-                previewSlots.reduce((acc, s) => { acc[s.dateStr] = true; return acc }, {})
-              ).length > 5 && (
+                </div>
+              ))}
+              {[...new Set(previewSlots.map(s => s.dateStr))].length > 5 && (
                 <p className="text-xs text-slate-500 mt-2">
-                  … and {previewSlots.length - previewSlots.filter(
-                    (s) => Object.keys(
-                      previewSlots.slice(0, 5).reduce((a, x) => { a[x.dateStr] = true; return a }, {})
-                    ).includes(s.dateStr)
-                  ).length} more slots on later dates.
+                  {t('slots.moreSlots', { count: previewSlots.length - previewSlots.filter(s =>
+                    [...new Set(previewSlots.slice(0, previewSlots.indexOf(s)).map(x => x.dateStr))].length < 5
+                  ).length })}
                 </p>
               )}
             </div>
@@ -565,7 +423,7 @@ export default function SlotsPage() {
 
           {previewSlots.length === 0 && dayMask.some(Boolean) && (
             <p className="mt-4 text-sm text-slate-500 italic">
-              No slots generated — check that your time window is wide enough for at least one {duration}-minute session.
+              {t('slots.noSlotsPreview', { duration })}
             </p>
           )}
 
@@ -579,60 +437,42 @@ export default function SlotsPage() {
                   : 'bg-rose-500/20 border border-rose-500/40 text-rose-300 hover:bg-rose-500/30'
               }`}
             >
-              {applyingRule
-                ? ruleMode === 'add' ? 'Creating…' : 'Removing…'
-                : ruleMode === 'add'
-                  ? `Apply — create ${previewSlots.length} slot${previewSlots.length !== 1 ? 's' : ''}`
-                  : `Apply — remove ${previewSlots.length} slot${previewSlots.length !== 1 ? 's' : ''}`
-              }
+              {applyLabel}
             </button>
             <StatusBadge type={ruleStatus?.type} message={ruleStatus?.message} />
           </div>
         </SectionCard>
 
-        {/* ══════════════════════════════════════════════════════════════
-            SECTION 1 — Profile settings
-            Duration and timezone are stored on the server. Changing them
-            here only affects NEW slots created after saving.
-        ══════════════════════════════════════════════════════════════ */}
-        <SectionCard
-          title="Session settings"
-          subtitle="Changes apply to new slots only — existing bookings are unaffected."
-        >
+        {/* Section 1 — Session settings */}
+        <SectionCard title={t('slots.profileTitle')} subtitle={t('slots.profileSubtitle')}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-
-            {/* Session duration */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Session duration (minutes)
+                {t('slots.durationLabel')}
               </label>
-              {/*
-                LEARNER NOTE: type="number" with min/max/step gives a native
-                spinner. We parse the value as an integer with parseInt because
-                HTML inputs always return strings even for type="number".
-              */}
               <input
-                type="number"
-                min={15}
-                max={180}
-                step={5}
-                value={duration}
+                type="number" min={15} max={180} step={5} value={duration}
                 onChange={(e) => setDuration(parseInt(e.target.value, 10) || 55)}
                 className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30"
               />
-              <p className="text-xs text-slate-500 mt-1.5">Between 15 and 180 minutes.</p>
+              <p className="text-xs text-slate-500 mt-1.5">{t('slots.durationHint')}</p>
             </div>
-
-
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                {t('slots.timezoneLabel')}
+              </label>
+              <select value={timezone} onChange={(e) => setTimezone(e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30">
+                {TIMEZONES.map((tz) => <option key={tz.value} value={tz.value}>{tz.label}</option>)}
+              </select>
+            </div>
           </div>
-
           <div className="mt-5 flex items-center gap-4">
             <button
-              onClick={handleSaveProfile}
-              disabled={savingProfile}
+              onClick={handleSaveProfile} disabled={savingProfile}
               className="rounded-lg bg-blue-500 hover:bg-blue-400 disabled:bg-blue-400/50 px-5 py-2.5 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed"
             >
-              {savingProfile ? 'Saving…' : 'Save settings'}
+              {savingProfile ? t('slots.savingSettings') : t('slots.saveSettings')}
             </button>
             {profileStatus && (
               <span className={`text-sm ${profileStatus.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -642,44 +482,31 @@ export default function SlotsPage() {
           </div>
         </SectionCard>
 
-        {/* ══════════════════════════════════════════════════════════════
-            SECTION 3 — Existing slots
-            Read from the API on mount. Shows upcoming slots grouped by
-            date, with a delete button for each unbooked slot.
-        ══════════════════════════════════════════════════════════════ */}
-        <SectionCard
-          title="Upcoming open slots"
-          subtitle="Your available slots from today onward. Booked slots cannot be deleted."
-        >
+        {/* Section 3 — Upcoming slots */}
+        <SectionCard title={t('slots.upcomingTitle')} subtitle={t('slots.upcomingSubtitle')}>
           {loadingSlots && (
             <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
+              {Array.from({ length: 3 }, (_, i) => (
                 <div key={i} className="h-12 rounded-xl bg-slate-800/60 animate-pulse" />
               ))}
             </div>
           )}
 
-          {slotsError && (
-            <p className="text-rose-400 text-sm">{slotsError}</p>
-          )}
+          {slotsError && <p className="text-rose-400 text-sm">{slotsError}</p>}
 
           {!loadingSlots && !slotsError && slotsByDate.size === 0 && (
-            <p className="text-slate-500 text-sm italic">
-              No upcoming slots. Use the recurring schedule above to add some.
-            </p>
+            <p className="text-slate-500 text-sm italic">{t('slots.noUpcoming')}</p>
           )}
 
           {!loadingSlots && !slotsError && slotsByDate.size > 0 && (
             <div className="space-y-4">
               {[...slotsByDate.entries()].map(([dateStr, daySlots]) => (
                 <div key={dateStr}>
-                  {/* Date header */}
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
                     {new Intl.DateTimeFormat('en-GB', {
                       weekday: 'long', day: 'numeric', month: 'long',
                     }).format(new Date(`${dateStr}T12:00:00Z`))}
                   </p>
-                  {/* Slot chips */}
                   <div className="flex flex-wrap gap-2">
                     {daySlots.map((slot) => (
                       <div
@@ -693,13 +520,8 @@ export default function SlotsPage() {
                         <span>{formatTimeInTz(slot.start_time, timezone)}</span>
                         <span className="text-xs text-slate-500">{slot.duration_minutes}m</span>
                         {slot.is_booked ? (
-                          <span className="text-xs text-amber-500/70 ml-1">booked</span>
+                          <span className="text-xs text-amber-500/70 ml-1">{t('slots.booked')}</span>
                         ) : (
-                          /*
-                            LEARNER NOTE: We disable the button while this
-                            specific slot is being deleted (deletingId === slot.id)
-                            so the user can't double-click and fire two requests.
-                          */
                           <button
                             onClick={() => handleDeleteSlot(slot.id)}
                             disabled={deletingId === slot.id}

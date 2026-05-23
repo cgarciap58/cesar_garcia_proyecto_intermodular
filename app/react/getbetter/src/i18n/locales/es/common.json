@@ -24,5 +24,47 @@
   },
   "errors": {
     "generic": "Algo salió mal. Por favor, inténtalo de nuevo."
+  },
+  "landing": {
+    "hero": {
+      "headline": "Apoyo en salud mental para ayudarte a",
+      "headlineAccent": "ponerte bien",
+      "subtitle": "Conecta con psicólogos colegiados y toma el control de tu bienestar emocional.",
+      "cta": "Comenzar"
+    },
+    "features": {
+      "heading": "Diseñado para una mejor atención en salud mental",
+      "items": [
+        {
+          "title": "Terapeutas a tu medida",
+          "description": "Encuentra psicólogos por especialidad, idioma y estilo de atención."
+        },
+        {
+          "title": "Sesiones seguras",
+          "description": "Sesiones online privadas y seguimiento adaptado a tu horario."
+        },
+        {
+          "title": "Seguimiento del progreso",
+          "description": "Registros sencillos para medir tu estado de ánimo, hábitos y recuperación."
+        }
+      ]
+    },
+    "testimonials": {
+      "heading": "Lo que dicen nuestros usuarios",
+      "items": [
+        {
+          "quote": "GetBetter me ayudó a encontrar al terapeuta adecuado en dos días.",
+          "author": "Paciente, Madrid"
+        },
+        {
+          "quote": "Mi consulta online creció gracias a una mejor visibilidad y reservas.",
+          "author": "Psicóloga, Barcelona"
+        }
+      ]
+    },
+    "footer": {
+      "rights": "© 2026 GetBetter. Todos los derechos reservados.",
+      "tagline": "Conectando pacientes y psicólogos."
+    }
   }
 }

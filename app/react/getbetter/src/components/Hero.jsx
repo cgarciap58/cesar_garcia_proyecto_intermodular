@@ -1,4 +1,8 @@
+import { useTranslation } from 'react-i18next'
+
 export default function Hero() {
+  const { t } = useTranslation('common')
+
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-16 sm:pt-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
       <div className="absolute top-20 left-4 sm:left-10 w-48 sm:w-72 h-48 sm:h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse" />
@@ -6,15 +10,16 @@ export default function Hero() {
 
       <div className="relative max-w-4xl text-center">
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight">
-          Mental health support that helps you <span className="text-blue-400">get better</span>
+          {t('landing.hero.headline')}{' '}
+          <span className="text-blue-400">{t('landing.hero.headlineAccent')}</span>
         </h1>
         <p className="mt-6 text-lg text-gray-300">
-          Connect with licensed psychologists and take control of your emotional wellbeing.
+          {t('landing.hero.subtitle')}
         </p>
         <a href="#signup" className="inline-block mt-8 rounded-lg bg-blue-500 hover:bg-blue-400 px-6 py-3 font-medium transition-colors">
-          Get started
+          {t('landing.hero.cta')}
         </a>
       </div>
     </section>
-  );
+  )
 }

@@ -76,7 +76,6 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <a href="#features" className="text-gray-300 hover:text-white text-sm lg:text-base">{t('nav.features')}</a>
                 <a href="#testimonials" className="text-gray-300 hover:text-white text-sm lg:text-base">{t('nav.testimonials')}</a>
                 <NavLink to="/signin" className="text-gray-300 hover:text-white text-sm lg:text-base">{t('nav.signIn')}</NavLink>
               </>
@@ -102,7 +101,6 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <a href="#features" className="block text-center text-gray-300 hover:text-white" onClick={close}>{t('nav.features')}</a>
               <a href="#testimonials" className="block text-center text-gray-300 hover:text-white" onClick={close}>{t('nav.testimonials')}</a>
               <NavLink to="/signin" className="block text-center text-gray-300 hover:text-white" onClick={close}>{t('nav.signIn')}</NavLink>
             </>

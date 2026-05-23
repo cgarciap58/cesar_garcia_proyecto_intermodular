@@ -24,5 +24,47 @@
   },
   "errors": {
     "generic": "Something went wrong. Please try again."
+  },
+  "landing": {
+    "hero": {
+      "headline": "Mental health support that helps you",
+      "headlineAccent": "get better",
+      "subtitle": "Connect with licensed psychologists and take control of your emotional wellbeing.",
+      "cta": "Get started"
+    },
+    "features": {
+      "heading": "Built for better mental health care",
+      "items": [
+        {
+          "title": "Matched therapists",
+          "description": "Find psychologists by specialty, language, and care style."
+        },
+        {
+          "title": "Secure sessions",
+          "description": "Private online sessions and follow-ups that fit your schedule."
+        },
+        {
+          "title": "Progress tracking",
+          "description": "Simple check-ins to measure mood, habits, and recovery over time."
+        }
+      ]
+    },
+    "testimonials": {
+      "heading": "What users say",
+      "items": [
+        {
+          "quote": "GetBetter helped me find the right therapist in two days.",
+          "author": "Patient, New York"
+        },
+        {
+          "quote": "My online practice grew with better discovery and booking.",
+          "author": "Psychologist, California"
+        }
+      ]
+    },
+    "footer": {
+      "rights": "© 2026 GetBetter. All rights reserved.",
+      "tagline": "Made to connect patients and psychologists."
+    }
   }
 }
