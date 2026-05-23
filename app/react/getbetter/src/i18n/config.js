@@ -31,16 +31,24 @@ i18n
       },
     },
 
-    lng: localStorage.getItem('lang') ?? 'en',  // persist choice across sessions
-    fallbackLng: 'en',                           // if a key is missing in 'es', fall back to 'en'
-
-    // Tell i18next which namespace to look in when you call t() without a prefix.
-    // e.g. t('save') looks in 'common'. t('auth:signIn') looks in 'auth'.
+    lng: localStorage.getItem('lang') ?? 'es',
+    fallbackLng: 'en',
     defaultNS: 'common',
 
     interpolation: {
-      escapeValue: false, // React already escapes values, no need to double-escape
+      escapeValue: false,
     },
   })
+
+// Keep <html lang="..."> in sync with the active language.
+// The browser uses this attribute to format <input type="date"> correctly
+// (YYYY-MM-DD for 'es', MM/DD/YYYY for 'en-US', etc.).
+const syncHtmlLang = (lng) => { document.documentElement.lang = lng }
+
+// Set on startup
+syncHtmlLang(i18n.language)
+
+// Update whenever the user switches language
+i18n.on('languageChanged', syncHtmlLang)
 
 export default i18n

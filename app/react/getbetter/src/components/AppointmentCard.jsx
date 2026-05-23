@@ -1,6 +1,6 @@
+import { useTranslation } from 'react-i18next'
 import { formatShortDate, formatTime, STATUS_STYLES } from '../utils/appointmentFormatters'
 
-// The person shown on the card is always the OTHER party
 function getCounterpart(appointment, role) {
   if (role === 'patient') {
     return {
@@ -17,6 +17,7 @@ function getCounterpart(appointment, role) {
 }
 
 export default function AppointmentCard({ appointment, role, isSelected, onClick }) {
+  const { i18n } = useTranslation()
   const style = STATUS_STYLES[appointment.status] ?? STATUS_STYLES.pending
   const counterpart = getCounterpart(appointment, role)
 
@@ -35,35 +36,23 @@ export default function AppointmentCard({ appointment, role, isSelected, onClick
         ${appointment.status === 'cancelled' ? 'opacity-50 hover:opacity-60' : ''}
       `}
     >
-      {/* Profile picture */}
       <div className="w-10 h-10 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center overflow-hidden mb-3">
         {counterpart.picture ? (
-          <img
-            src={counterpart.picture}
-            alt={counterpart.name}
-            className="w-full h-full object-cover"
-          />
+          <img src={counterpart.picture} alt={counterpart.name} className="w-full h-full object-cover" />
         ) : (
-          <span className="text-xs font-semibold text-slate-300">
-            {counterpart.initials}
-          </span>
+          <span className="text-xs font-semibold text-slate-300">{counterpart.initials}</span>
         )}
       </div>
 
-      {/* Counterpart name */}
-      <p className="text-slate-200 text-xs font-medium truncate mb-2">
-        {counterpart.name}
-      </p>
+      <p className="text-slate-200 text-xs font-medium truncate mb-2">{counterpart.name}</p>
 
-      {/* Date + time */}
       <p className="text-white font-semibold text-sm leading-tight">
-        {formatShortDate(appointment.slot.start_time)}
+        {formatShortDate(appointment.slot.start_time, i18n.language)}
       </p>
       <p className="text-slate-400 text-xs mt-0.5">
-        {formatTime(appointment.slot.start_time)}
+        {formatTime(appointment.slot.start_time, i18n.language)}
       </p>
 
-      {/* Status dot + label */}
       <div className="flex items-center gap-1.5 mt-3">
         <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${style.dot}`} />
         <span className={`text-xs ${style.text}`}>{style.label}</span>

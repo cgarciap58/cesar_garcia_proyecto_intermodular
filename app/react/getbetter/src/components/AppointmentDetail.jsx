@@ -1,22 +1,4 @@
-// AppointmentDetail — the expanded panel shown when an appointment is selected.
-//
-// Owns all the shared structure: outer wrapper, counterpart avatar, date/time
-// header, status badge, meet link, and previous sessions footer.
-//
-// Role-specific zones (notes, action buttons) are passed in as render props
-// so this component stays completely role-agnostic.
-//
-// Props:
-//   appointment     – the selected appointment object
-//   counterpart     – { firstName, lastName, namePrefix?, profilePicture? }
-//                     the OTHER party shown in the avatar column
-//   meetLinkLabel   – string for the meet link button (e.g. "Join session")
-//   previousLabel   – string above the PreviousSessions list
-//   previousUserId  – id passed to PreviousSessions
-//   role            – "patient" | "psychologist", forwarded to PreviousSessions
-//   notes           – ReactNode rendered in the notes zone (optional)
-//   actions         – ReactNode rendered in the actions zone (optional)
-
+import { useTranslation } from 'react-i18next'
 import PreviousSessions from './PreviousSessions'
 import { formatFullDate, formatTime, STATUS_BADGE } from '../utils/appointmentFormatters'
 
@@ -37,12 +19,11 @@ export default function AppointmentDetail({
   notes,
   actions,
 }) {
+  const { i18n } = useTranslation()
   const { firstName, lastName, namePrefix, profilePicture } = counterpart
   const displayName = [namePrefix, firstName, lastName].filter(Boolean).join(' ')
   const initials = `${firstName[0]}${lastName[0]}`
-
-  const statusLabel =
-    appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)
+  const statusLabel = appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)
 
   return (
     <div className="mt-4 bg-slate-900/60 border border-slate-800 rounded-2xl p-6 animate-in slide-in-from-top duration-300">
@@ -69,10 +50,10 @@ export default function AppointmentDetail({
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <h3 className="text-white font-semibold text-lg">
-                {formatFullDate(appointment.slot.start_time)}
+                {formatFullDate(appointment.slot.start_time, i18n.language)}
               </h3>
               <p className="text-slate-400 text-sm mt-0.5">
-                {formatTime(appointment.slot.start_time)}
+                {formatTime(appointment.slot.start_time, i18n.language)}
                 {' · '}
                 {appointment.slot.duration_minutes} min
               </p>
@@ -82,10 +63,8 @@ export default function AppointmentDetail({
             </span>
           </div>
 
-          {/* Notes slot — rendered by the parent, role-specific */}
           {notes}
 
-          {/* Meet link */}
           {appointment.meet_link && (
             <div className="mt-3">
               <a
@@ -100,10 +79,8 @@ export default function AppointmentDetail({
             </div>
           )}
 
-          {/* Actions slot — rendered by the parent, role-specific */}
           {actions}
 
-          {/* Previous sessions */}
           <div className="mt-6 border-t border-slate-800 pt-5">
             <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">
               {previousLabel}

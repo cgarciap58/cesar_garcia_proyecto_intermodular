@@ -1,20 +1,32 @@
 // ─── Date formatting ──────────────────────────────────────────────────────────
+//
+// All functions accept a `locale` parameter (e.g. 'en', 'es').
+// Callers get it from i18next: const { i18n } = useTranslation()
+// then pass i18n.language.
+//
+// Dates returned by Intl in some locales (e.g. Spanish) start lowercase
+// ("jueves, 5 de junio"). Since these strings always open a sentence in our
+// UI we capitalise the first character unconditionally.
 
-export function formatFullDate(isoString) {
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+export function formatFullDate(isoString, locale = 'en') {
   const date = new Date(isoString)
-  return date.toLocaleDateString('en-GB', {
+  return capitalize(date.toLocaleDateString(locale, {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  })
+  }))
 }
 
-export function formatShortDate(isoString) {
+export function formatShortDate(isoString, locale = 'en') {
   const date = new Date(isoString)
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  return capitalize(date.toLocaleDateString(locale, { day: 'numeric', month: 'short' }))
 }
 
-export function formatTime(isoString) {
+export function formatTime(isoString, locale = 'en') {
   const date = new Date(isoString)
-  return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
 }
 
 // ─── Status styles ────────────────────────────────────────────────────────────

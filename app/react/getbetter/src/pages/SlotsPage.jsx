@@ -23,19 +23,44 @@ import { getSlots, createSlots, deleteSlot } from '../services'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 // JS Date.getDay() returns 0=Sun…6=Sat; remap to Mon=0…Sun=6
 const JS_DAY_TO_IDX = [6, 0, 1, 2, 3, 4, 5]
+
+// Generate localised day names (Mon→Sun) for the active locale using Intl.
+// We format a known reference week: 2 June 2025 was a Monday.
+// This keeps the LOGIC (dayMask index 0=Mon…6=Sun) language-independent
+// while the DISPLAY labels follow the active locale automatically.
+function getLocaleDays(locale) {
+  return Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(`2025-06-0${i + 2}T12:00:00Z`) // Mon 2 Jun … Sun 8 Jun 2025
+    const full = new Intl.DateTimeFormat(locale, { weekday: 'long' }).format(date)
+    return full.charAt(0).toUpperCase() + full.slice(1)
+  })
+}
 
 const DURATION_MIN = 15
 const DURATION_MAX = 180
 
 // ─── Timezone helpers ─────────────────────────────────────────────────────────
 
-function formatTimeInTz(isoUtc, tz) {
-  return new Intl.DateTimeFormat('en-GB', {
+function formatTimeInTz(isoUtc, tz, locale = 'en') {
+  return new Intl.DateTimeFormat(locale, {
     hour: '2-digit', minute: '2-digit', timeZone: tz,
   }).format(new Date(isoUtc))
+}
+
+function formatDateHeader(dateStr, locale = 'en') {
+  const str = new Intl.DateTimeFormat(locale, {
+    weekday: 'long', day: 'numeric', month: 'long',
+  }).format(new Date(`${dateStr}T12:00:00Z`))
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+function formatPreviewDate(dateStr, locale = 'en') {
+  const str = new Intl.DateTimeFormat(locale, {
+    weekday: 'short', day: 'numeric', month: 'short',
+  }).format(new Date(`${dateStr}T12:00:00Z`))
+  return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
 function localToUtcIso(dateStr, timeStr, tz) {
@@ -123,7 +148,8 @@ function StatusBadge({ type, message }) {
 export default function SlotsPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const { t } = useTranslation('appointments')
+  const { t, i18n } = useTranslation('appointments')
+  const days = getLocaleDays(i18n.language)
 
   // Timezone is read-only — set in /profile
   const timezone = user?.timezone ?? 'UTC'
@@ -342,9 +368,9 @@ export default function SlotsPage() {
               {t('slots.daysOfWeek')}
             </p>
             <div className="flex flex-wrap gap-2">
-              {DAYS.map((day, i) => (
+              {days.map((day, i) => (
                 <button
-                  key={day}
+                  key={i}
                   onClick={() => setDayMask((prev) => { const next = [...prev]; next[i] = !next[i]; return next })}
                   className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     dayMask[i]
@@ -416,7 +442,9 @@ export default function SlotsPage() {
                   <>
                     {visible.map((dateStr) => (
                       <div key={dateStr} className="mb-3">
-                        <p className="text-xs font-medium text-slate-400 mb-1.5">{dateStr}</p>
+                        <p className="text-xs font-medium text-slate-400 mb-1.5">
+                        {formatPreviewDate(dateStr, i18n.language)}
+                      </p>
                         <div className="flex flex-wrap gap-1.5">
                           {byDate[dateStr].map((s) => (
                             <span key={s.timeStr} className={`rounded px-2 py-0.5 text-xs ${
@@ -490,9 +518,7 @@ export default function SlotsPage() {
               {[...slotsByDate.entries()].map(([dateStr, daySlots]) => (
                 <div key={dateStr}>
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                    {new Intl.DateTimeFormat('en-GB', {
-                      weekday: 'long', day: 'numeric', month: 'long',
-                    }).format(new Date(`${dateStr}T12:00:00Z`))}
+                    {formatDateHeader(dateStr, i18n.language)}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {daySlots.map((slot) => (
@@ -504,7 +530,7 @@ export default function SlotsPage() {
                             : 'border-slate-700 bg-slate-800/60 text-slate-300'
                         }`}
                       >
-                        <span>{formatTimeInTz(slot.start_time, timezone)}</span>
+                        <span>{formatTimeInTz(slot.start_time, timezone, i18n.language)}</span>
                         <span className="text-xs text-slate-500">{slot.duration_minutes}m</span>
                         {slot.is_booked ? (
                           <span className="text-xs text-amber-500/70 ml-1">{t('slots.booked')}</span>

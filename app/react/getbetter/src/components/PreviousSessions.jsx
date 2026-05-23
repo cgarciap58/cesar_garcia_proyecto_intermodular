@@ -2,17 +2,16 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAppointmentHistory } from '../services'
 
-function formatFullDate(isoString) {
-  const date = new Date(isoString)
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-
 function SessionEntry({ appointment, role }) {
   const [open, setOpen] = useState(false)
-  const { t } = useTranslation('appointments')
-  const hasNotes = role === 'psychologist'
-    ? appointment.private_notes || appointment.patient_notes
-    : appointment.patient_notes
+  const { t, i18n } = useTranslation('appointments')
+
+  const dateLabel = (() => {
+    const str = new Date(appointment.slot.start_time).toLocaleDateString(i18n.language, {
+      day: 'numeric', month: 'short', year: 'numeric',
+    })
+    return str.charAt(0).toUpperCase() + str.slice(1)
+  })()
 
   return (
     <div className="rounded-xl border border-slate-700/50 bg-slate-800/40 overflow-hidden">
@@ -22,7 +21,7 @@ function SessionEntry({ appointment, role }) {
       >
         <div className="flex items-center gap-3">
           <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
-          <span className="text-sm text-slate-200">{formatFullDate(appointment.slot.start_time)}</span>
+          <span className="text-sm text-slate-200">{dateLabel}</span>
           <span className="text-xs text-slate-500">{appointment.slot.duration_minutes} min</span>
         </div>
         <svg
@@ -45,7 +44,6 @@ function SessionEntry({ appointment, role }) {
               )}
             </p>
           </div>
-
           {role === 'psychologist' && (
             <div>
               <p className="text-xs font-medium text-amber-500/70 uppercase tracking-wider mb-1">
