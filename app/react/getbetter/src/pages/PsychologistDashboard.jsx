@@ -12,9 +12,7 @@ import AppointmentsPanel from '../components/AppointmentsPanel'
 import AppointmentDetail from '../components/AppointmentDetail'
 
 function sortByTime(appts) {
-  return [...appts].sort((a, b) =>
-    new Date(a.slot.start_time) - new Date(b.slot.start_time)
-  )
+  return [...appts].sort((a, b) => new Date(a.slot.start_time) - new Date(b.slot.start_time))
 }
 
 export default function PsychologistDashboard() {
@@ -27,9 +25,13 @@ export default function PsychologistDashboard() {
   const [error, setError]                 = useState(null)
   const [actionLoading, setActionLoading] = useState(false)
   const [actionError, setActionError]     = useState(null)
-  // Two separate archive toggles for the two groups
   const [showRejected, setShowRejected]   = useState(false)
   const [showCancelled, setShowCancelled] = useState(false)
+
+  // ── Notification banner ───────────────────────────────────────────────────
+  // Shown when confirming one patient auto-rejects others on the same slot.
+  // Shape: { names: string[], slotTime: string } | null
+  const [rejectionNotice, setRejectionNotice] = useState(null)
 
   const psychologistActions = [
     { label: t('psychologist.manageSlots'), href: '/slots', variant: 'primary' },
@@ -37,26 +39,55 @@ export default function PsychologistDashboard() {
 
   useEffect(() => {
     getAppointments().then((result) => {
-      if (result.ok) {
-        setAppointments(sortByTime(result.data.appointments))
-      } else {
-        setError(result.error)
-      }
+      if (result.ok) setAppointments(sortByTime(result.data.appointments))
+      else setError(result.error)
       setLoading(false)
     })
   }, [])
 
+  // Apply a single updated appointment into state, keeping sort order.
   const applyUpdate = useCallback((updated) => {
-    setAppointments((prev) => prev.map((a) => a.id === updated.id ? updated : a))
+    setAppointments((prev) => {
+      const next = prev.map((a) => a.id === updated.id ? updated : a)
+      return sortByTime(next)
+    })
     setSelected(updated)
+  }, [])
+
+  // Apply a batch of updated appointments (e.g. auto-rejected siblings).
+  const applyBatch = useCallback((updatedList) => {
+    setAppointments((prev) => {
+      const map = Object.fromEntries(updatedList.map((a) => [a.id, a]))
+      const next = prev.map((a) => map[a.id] ?? a)
+      return sortByTime(next)
+    })
   }, [])
 
   const handleConfirm = async () => {
     if (!selected) return
-    setActionLoading(true); setActionError(null)
+    setActionLoading(true); setActionError(null); setRejectionNotice(null)
+
     const result = await confirmAppointment(selected.id)
-    if (result.ok) applyUpdate(result.data)
-    else setActionError(result.error)
+    if (result.ok) {
+      applyUpdate(result.data)
+
+      // Handle auto-rejected siblings
+      const rejected = result.data.rejected_appointments ?? []
+      if (rejected.length > 0) {
+        applyBatch(rejected)
+        const names = rejected.map(
+          (a) => `${a.patient.first_name} ${a.patient.last_name}`
+        )
+        setRejectionNotice({
+          names,
+          slotTime: result.data.slot.start_time,
+        })
+        // Auto-dismiss after 8 s
+        setTimeout(() => setRejectionNotice(null), 8000)
+      }
+    } else {
+      setActionError(result.error)
+    }
     setActionLoading(false)
   }
 
@@ -82,14 +113,9 @@ export default function PsychologistDashboard() {
     setSelected((prev) => (prev?.id === appt.id ? null : appt))
 
   // ── Derived lists ──────────────────────────────────────────────────────────
-  // Active = pending_request, confirmed, in_progress
-  const active = appointments.filter((a) => ACTIVE_STATUSES.has(computedStatus(a)))
-
-  // For psychologists, archive splits into two meaningful groups:
-  // "rejected requests" (psych rejected them, or auto-rejected on confirm)
-  // "cancelled / done" (past confirmed appointments)
-  const rejectedGroup  = appointments.filter((a) => computedStatus(a) === 'rejected')
-  const resolvedGroup  = appointments.filter((a) =>
+  const active       = appointments.filter((a) => ACTIVE_STATUSES.has(computedStatus(a)))
+  const rejectedGroup = appointments.filter((a) => computedStatus(a) === 'rejected')
+  const resolvedGroup = appointments.filter((a) =>
     ['cancelled', 'done', 'withdrawn'].includes(computedStatus(a))
   )
 
@@ -101,6 +127,36 @@ export default function PsychologistDashboard() {
   return (
     <main className="min-h-screen bg-slate-950 pt-20 pb-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
+
+        {/* ── Auto-rejection notification banner ── */}
+        {rejectionNotice && (
+          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-5 py-3.5 flex items-start gap-3">
+            <svg className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
+            </svg>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-amber-300">
+                {t('psychologist.autoRejectedTitle')}
+              </p>
+              <p className="text-xs text-amber-400/80 mt-0.5">
+                {t('psychologist.autoRejectedBody', {
+                  names: rejectionNotice.names.join(', '),
+                  count: rejectionNotice.names.length,
+                })}
+              </p>
+            </div>
+            <button
+              onClick={() => setRejectionNotice(null)}
+              className="flex-shrink-0 text-amber-500/60 hover:text-amber-300 transition-colors"
+              aria-label="Dismiss"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
 
         <div className="flex gap-4 items-start">
           <ProfileSidebar
@@ -141,16 +197,18 @@ export default function PsychologistDashboard() {
                     : t('psychologist.showRejected', { count: rejectedGroup.length })}
                 </button>
                 {showRejected && (
-                  <AppointmentsPanel
-                    title={t('psychologist.rejectedTitle')}
-                    appointments={rejectedGroup}
-                    loading={false}
-                    error={null}
-                    emptyMessage=""
-                    role="psychologist"
-                    selectedId={selectedAppointment?.id}
-                    onSelect={handleSelect}
-                  />
+                  <div className="mt-2">
+                    <AppointmentsPanel
+                      title={t('psychologist.rejectedTitle')}
+                      appointments={rejectedGroup}
+                      loading={false}
+                      error={null}
+                      emptyMessage=""
+                      role="psychologist"
+                      selectedId={selectedAppointment?.id}
+                      onSelect={handleSelect}
+                    />
+                  </div>
                 )}
               </div>
             )}
@@ -173,16 +231,18 @@ export default function PsychologistDashboard() {
                     : t('psychologist.showCancelled', { count: resolvedGroup.length })}
                 </button>
                 {showCancelled && (
-                  <AppointmentsPanel
-                    title={t('psychologist.cancelledTitle')}
-                    appointments={resolvedGroup}
-                    loading={false}
-                    error={null}
-                    emptyMessage=""
-                    role="psychologist"
-                    selectedId={selectedAppointment?.id}
-                    onSelect={handleSelect}
-                  />
+                  <div className="mt-2">
+                    <AppointmentsPanel
+                      title={t('psychologist.cancelledTitle')}
+                      appointments={resolvedGroup}
+                      loading={false}
+                      error={null}
+                      emptyMessage=""
+                      role="psychologist"
+                      selectedId={selectedAppointment?.id}
+                      onSelect={handleSelect}
+                    />
+                  </div>
                 )}
               </div>
             )}
@@ -233,27 +293,24 @@ export default function PsychologistDashboard() {
             }
             actions={
               <div className="mt-5 flex items-center gap-3 flex-wrap">
-                {/* Confirm — pending requests only */}
                 {selStatus === 'pending_request' && (
-                  <button
-                    onClick={handleConfirm}
-                    disabled={actionLoading}
-                    className="rounded-lg bg-emerald-500/15 border border-emerald-500/40 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/25 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {actionLoading ? t('psychologist.confirmingAppointment') : t('psychologist.confirmAppointment')}
-                  </button>
+                  <>
+                    <button
+                      onClick={handleConfirm}
+                      disabled={actionLoading}
+                      className="rounded-lg bg-emerald-500/15 border border-emerald-500/40 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/25 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {actionLoading ? t('psychologist.confirmingAppointment') : t('psychologist.confirmAppointment')}
+                    </button>
+                    <button
+                      onClick={handleReject}
+                      disabled={actionLoading}
+                      className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-400 hover:bg-rose-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {actionLoading ? t('psychologist.rejectingRequest') : t('psychologist.rejectRequest')}
+                    </button>
+                  </>
                 )}
-                {/* Reject — pending requests only */}
-                {selStatus === 'pending_request' && (
-                  <button
-                    onClick={handleReject}
-                    disabled={actionLoading}
-                    className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-400 hover:bg-rose-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {actionLoading ? t('psychologist.rejectingRequest') : t('psychologist.rejectRequest')}
-                  </button>
-                )}
-                {/* Cancel — confirmed or in_progress */}
                 {(selStatus === 'confirmed' || selStatus === 'in_progress') && (
                   <button
                     onClick={handleCancel}
