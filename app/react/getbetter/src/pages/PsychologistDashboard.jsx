@@ -3,24 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { getAppointments, confirmAppointment, cancelAppointment } from '../services'
 import AppointmentCard from '../components/AppointmentCard'
 import PreviousSessions from '../components/PreviousSessions'
-
-function formatFullDate(isoString) {
-  const date = new Date(isoString)
-  return date.toLocaleDateString('en-GB', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  })
-}
-
-function formatTime(isoString) {
-  const date = new Date(isoString)
-  return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-}
-
-const STATUS_BADGE = {
-  confirmed: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
-  pending:   'bg-amber-500/20 text-amber-400 border border-amber-500/30',
-  cancelled: 'bg-slate-500/20 text-slate-400 border border-slate-500/30',
-}
+import { formatFullDate, formatTime, STATUS_BADGE } from '../utils/appointments'
 
 export default function PsychologistDashboard() {
   const { user } = useAuth()
@@ -205,7 +188,6 @@ export default function PsychologistDashboard() {
                   </span>
                 </div>
 
-                {/* Notes — only shown after session has taken place */}
                 {isPast && (
                   <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-4">
@@ -231,7 +213,6 @@ export default function PsychologistDashboard() {
                   </div>
                 )}
 
-                {/* Meet link */}
                 {selectedAppointment.meet_link && (
                   <div className="mt-3">
                     <a
@@ -248,7 +229,6 @@ export default function PsychologistDashboard() {
                   </div>
                 )}
 
-                {/* Action buttons */}
                 {selectedAppointment.status !== 'cancelled' && (
                   <div className="mt-5 flex items-center gap-3 flex-wrap">
                     {selectedAppointment.status === 'pending' && (
@@ -271,7 +251,6 @@ export default function PsychologistDashboard() {
                   </div>
                 )}
 
-                {/* Previous sessions with this patient */}
                 <div className="mt-6 border-t border-slate-800 pt-5">
                   <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">
                     Previous sessions with {selectedAppointment.patient.first_name} {selectedAppointment.patient.last_name}

@@ -3,24 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { getAppointments, cancelAppointment } from '../services'
 import AppointmentCard from '../components/AppointmentCard'
 import PreviousSessions from '../components/PreviousSessions'
-
-function formatFullDate(isoString) {
-  const date = new Date(isoString)
-  return date.toLocaleDateString('en-GB', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  })
-}
-
-function formatTime(isoString) {
-  const date = new Date(isoString)
-  return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-}
-
-const STATUS_BADGE = {
-  confirmed: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
-  pending:   'bg-amber-500/20 text-amber-400 border border-amber-500/30',
-  cancelled: 'bg-slate-500/20 text-slate-400 border border-slate-500/30',
-}
+import { formatFullDate, formatTime, STATUS_BADGE } from '../utils/appointments'
 
 export default function PatientDashboard() {
   const { user } = useAuth()
@@ -31,8 +14,6 @@ export default function PatientDashboard() {
   const [cancelling, setCancelling] = useState(false)
   const [cancelError, setCancelError] = useState(null)
 
-
-  
   useEffect(() => {
     getAppointments().then((result) => {
       if (result.ok) {
@@ -68,7 +49,6 @@ export default function PatientDashboard() {
     ? appointments.find((a) => a.id === selected.id) ?? selected
     : null
 
-  // Is the selected appointment in the past?
   const isPast = selectedAppointment
     ? new Date(selectedAppointment.slot.start_time) < new Date()
     : false
@@ -202,7 +182,6 @@ export default function PatientDashboard() {
                   </span>
                 </div>
 
-                {/* Session notes — only shown after the session has taken place */}
                 {isPast && selectedAppointment.patient_notes && (
                   <div className="mt-4 rounded-xl bg-slate-800/60 border border-slate-700/50 p-4">
                     <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
@@ -214,7 +193,6 @@ export default function PatientDashboard() {
                   </div>
                 )}
 
-                {/* Meet link */}
                 {selectedAppointment.meet_link && (
                   <div className="mt-3">
                     <a
@@ -231,7 +209,6 @@ export default function PatientDashboard() {
                   </div>
                 )}
 
-                {/* Cancel button */}
                 {selectedAppointment.status !== 'cancelled' && (
                   <div className="mt-5 flex items-center gap-3">
                     <button
@@ -245,7 +222,6 @@ export default function PatientDashboard() {
                   </div>
                 )}
 
-                {/* Previous sessions with this psychologist */}
                 <div className="mt-6 border-t border-slate-800 pt-5">
                   <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">
                     Previous sessions with Dr. {selectedAppointment.psychologist.last_name}
