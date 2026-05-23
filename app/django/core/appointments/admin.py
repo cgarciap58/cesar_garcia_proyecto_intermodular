@@ -8,10 +8,10 @@ class AvailableSlotAdmin(admin.ModelAdmin):
         'psychologist',
         'start_time',
         'duration_minutes',
-        'is_booked',
+        'status',
         'created_at',
     )
-    list_filter = ('is_booked', 'psychologist')
+    list_filter  = ('status', 'psychologist')
     search_fields = (
         'psychologist__user__username',
         'psychologist__user__email',
@@ -29,7 +29,7 @@ class AppointmentAdmin(admin.ModelAdmin):
         'created_at',
         'updated_at',
     )
-    list_filter = ('status',)
+    list_filter   = ('status',)
     search_fields = (
         'patient__user__username',
         'patient__user__email',
@@ -37,8 +37,6 @@ class AppointmentAdmin(admin.ModelAdmin):
     )
     readonly_fields = ('created_at', 'updated_at')
 
-    # Se saca todo menos las notas privadas del psicólogo por privacidad
-    
     @admin.display(description='Psychologist')
     def get_psychologist(self, obj):
         return obj.slot.psychologist

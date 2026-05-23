@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import PreviousSessions from './PreviousSessions'
-import { formatFullDate, formatTime, STATUS_BADGE } from '../utils/appointmentFormatters'
+import { formatFullDate, formatTime, STATUS_BADGE, STATUS_STYLES } from '../utils/appointmentFormatters'
 
 const VIDEO_ICON = (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -19,11 +19,14 @@ export default function AppointmentDetail({
   notes,
   actions,
 }) {
-  const { i18n } = useTranslation()
+  const { i18n, t } = useTranslation('appointments')
   const { firstName, lastName, namePrefix, profilePicture } = counterpart
   const displayName = [namePrefix, firstName, lastName].filter(Boolean).join(' ')
-  const initials = `${firstName[0]}${lastName[0]}`
-  const statusLabel = appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)
+  const initials    = `${firstName[0]}${lastName[0]}`
+
+  // appointment.status is already the computed effective status from the API
+  const style      = STATUS_STYLES[appointment.status] ?? STATUS_STYLES.pending_request
+  const statusLabel = t(style.labelKey, style.label)
 
   return (
     <div className="mt-4 bg-slate-900/60 border border-slate-800 rounded-2xl p-6 animate-in slide-in-from-top duration-300">
@@ -39,7 +42,10 @@ export default function AppointmentDetail({
             )}
           </div>
           <p className="text-xs text-slate-400 text-center leading-tight">
-            {namePrefix ? <>{namePrefix} {firstName}<br />{lastName}</> : <>{firstName}<br />{lastName}</>}
+            {namePrefix
+              ? <>{namePrefix} {firstName}<br />{lastName}</>
+              : <>{firstName}<br />{lastName}</>
+            }
           </p>
         </div>
 
@@ -58,7 +64,7 @@ export default function AppointmentDetail({
                 {appointment.slot.duration_minutes} min
               </p>
             </div>
-            <span className={`text-xs font-medium px-3 py-1 rounded-full ${STATUS_BADGE[appointment.status]}`}>
+            <span className={`text-xs font-medium px-3 py-1 rounded-full ${STATUS_BADGE[appointment.status] ?? STATUS_BADGE.pending_request}`}>
               {statusLabel}
             </span>
           </div>

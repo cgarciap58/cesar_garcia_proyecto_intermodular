@@ -41,7 +41,7 @@ class User(AbstractUser):
 class PatientProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='patient_profile')
     concerns = models.TextField(blank=True)
- 
+    credits = models.PositiveIntegerField(default=0)
     def __str__(self):
         return f'PatientProfile<{self.user.username}>'
  
@@ -54,7 +54,10 @@ class PsychologistProfile(models.Model):
     # session_duration_minutes is psych-specific: it determines how long
     # each slot they open will be, and thus the length of appointments.
     session_duration_minutes = models.PositiveIntegerField(default=55)
- 
+    session_price = models.DecimalField(
+        max_digits=4, decimal_places=1, default=1.0
+    )
+
     VERIFICATION_PENDING = 'pending'
     VERIFICATION_APPROVED = 'approved'
     VERIFICATION_REJECTED = 'rejected'

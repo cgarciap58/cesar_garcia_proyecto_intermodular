@@ -7,6 +7,7 @@ import SignIn from './pages/SignIn'
 import SignUpPage from './pages/SignUpPage'
 import DashboardPage from './pages/DashboardPage'
 import SlotsPage from './pages/SlotsPage'
+import BookPage from './pages/BookPage'
 
 function AppLayout() {
   return (
@@ -37,6 +38,14 @@ function App() {
           element={
             <ProtectedRoute role="psychologist">
               <SlotsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/book"
+          element={
+            <ProtectedRoute role="patient">
+              <BookPage />
             </ProtectedRoute>
           }
         />
