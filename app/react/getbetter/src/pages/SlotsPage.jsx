@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { getSlots, createSlots, deleteSlot } from '../services'
-import IsoDatePicker from '../components/IsoDatePicker'
+import AppDatePicker from '../components/AppDatePicker'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -23,7 +23,7 @@ function getLocaleDays(locale) {
   })
 }
 
-// ─── Timezone helpers ─────────────────────────────────────────────────────────
+// ─── Timezone / date helpers ──────────────────────────────────────────────────
 
 function formatTimeInTz(isoUtc, tz, locale = 'en') {
   return new Intl.DateTimeFormat(locale, {
@@ -66,9 +66,7 @@ function utcToLocalDate(isoUtc, tz) {
   }).format(new Date(isoUtc))
 }
 
-// ─── Date range helpers ───────────────────────────────────────────────────────
-
-// Always produce YYYY-MM-DD using en-CA (ISO order, locale-neutral).
+// Always YYYY-MM-DD, locale-neutral (en-CA gives ISO order).
 function todayStr() {
   return new Intl.DateTimeFormat('en-CA').format(new Date())
 }
@@ -133,9 +131,9 @@ function StatusBadge({ type, message }) {
 // ─── Slot chip ────────────────────────────────────────────────────────────────
 //
 // Colours mirror dashboard STATUS_STYLES:
-//   confirmed    → emerald (same as confirmed appointment cards)
-//   open+pending → amber   (same as pending_request appointment cards)
-//   open         → slate   (neutral, deletable)
+//   confirmed    → emerald  (same as confirmed appointment cards)
+//   open+pending → amber    (same as pending_request appointment cards)
+//   open         → slate    (neutral, deletable)
 
 function SlotChip({ slot, timezone, locale, deletingId, onDelete, t }) {
   const isConfirmed = slot.status === 'confirmed'
@@ -331,7 +329,7 @@ export default function SlotsPage() {
           </div>
         </div>
 
-        {/* ── Duration card ── */}
+        {/* ── Duration ── */}
         <SectionCard title={t('slots.durationTitle')} subtitle={t('slots.durationSubtitle')}>
           <div className="max-w-xs">
             <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -359,7 +357,7 @@ export default function SlotsPage() {
           </div>
         </SectionCard>
 
-        {/* ── Recurring schedule card ── */}
+        {/* ── Recurring schedule ── */}
         <SectionCard title={t('slots.scheduleTitle')} subtitle={t('slots.scheduleSubtitle')}>
           {/* Add / Remove toggle */}
           <div className="flex gap-2 mb-5">
@@ -425,16 +423,16 @@ export default function SlotsPage() {
             ))}
           </div>
 
-          {/* Date range — IsoDatePicker renders YYYY-MM-DD selects, no browser locale involved */}
+          {/* Date range — AppDatePicker shows DD/MM/YYYY, stores YYYY-MM-DD */}
           <div className="mt-4 grid grid-cols-2 gap-4">
-            <IsoDatePicker
+            <AppDatePicker
               label={t('slots.startingDate')}
               value={fromDate}
               onChange={setFromDate}
               min={todayStr()}
               max={maxDateStr()}
             />
-            <IsoDatePicker
+            <AppDatePicker
               label={t('slots.endDate')}
               value={toDate}
               onChange={setToDate}
@@ -470,7 +468,7 @@ export default function SlotsPage() {
             </p>
           )}
 
-          {/* Apply button */}
+          {/* Apply */}
           <div className="mt-5 flex items-center gap-4">
             <button
               onClick={handleApplyRule}
