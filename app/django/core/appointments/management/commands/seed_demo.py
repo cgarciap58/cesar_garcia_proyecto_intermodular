@@ -70,6 +70,18 @@ PSYCHOLOGISTS = [
         'is_verified':              True,
         'verification_status':      'approved',
     },
+    # {
+    #     'email':                    'dr.borja.rodriguez@demo.com',
+    #     'first_name':               'Borja',
+    #     'last_name':                'Rodríguez',
+    #     'city':                     'Mérida',
+    #     'license_number':           'ES-PSY-3274',
+    #     'country_code':             'ES',
+    #     'session_duration_minutes': 50,
+    #     'session_price':            '2.0',
+    #     'is_verified':              False,
+    #     'verification_status':      'pending',
+    # },
 ]
 
 PATIENTS = [

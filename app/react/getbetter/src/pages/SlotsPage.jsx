@@ -1,26 +1,15 @@
 // pages/SlotsPage.jsx
-//
-// Psychologist slot management. Shows upcoming slots grouped by date with
-// their status (open / pending requests / confirmed) and allows deletion.
-//
-// Slot status rules (from the model):
-//   open      — deletable; shown with delete button
-//   confirmed — NOT deletable; shown with locked indicator
-//   deleted   — never returned by the API (excluded server-side)
-//
-// A slot with pending_request_count > 0 is still 'open' and CAN be deleted
-// (pending requests are auto-rejected on delete). We show the count as a
-// warning so the psych is aware before acting.
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { getSlots, createSlots, deleteSlot } from '../services'
+import IsoDatePicker from '../components/IsoDatePicker'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const JS_DAY_TO_IDX = [6, 0, 1, 2, 3, 4, 5]   // JS Sun=0 → Mon=0 index
+const JS_DAY_TO_IDX = [6, 0, 1, 2, 3, 4, 5]
 const DURATION_MIN  = 15
 const DURATION_MAX  = 180
 
@@ -77,18 +66,28 @@ function utcToLocalDate(isoUtc, tz) {
   }).format(new Date(isoUtc))
 }
 
-// ─── Time option helpers ──────────────────────────────────────────────────────
+// ─── Date range helpers ───────────────────────────────────────────────────────
+
+// Always produce YYYY-MM-DD using en-CA (ISO order, locale-neutral).
+function todayStr() {
+  return new Intl.DateTimeFormat('en-CA').format(new Date())
+}
+function defaultToDateStr() {
+  const d = new Date(); d.setMonth(d.getMonth() + 1)
+  return new Intl.DateTimeFormat('en-CA').format(d)
+}
+function maxDateStr() {
+  const d = new Date(); d.setMonth(d.getMonth() + 3)
+  return new Intl.DateTimeFormat('en-CA').format(d)
+}
+
+// ─── Time options ─────────────────────────────────────────────────────────────
 
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   const h = String(Math.floor(i / 2)).padStart(2, '0')
   const m = i % 2 === 0 ? '00' : '30'
   return `${h}:${m}`
 })
-
-function todayStr()  { return new Date().toISOString().slice(0, 10) }
-function maxDateStr() {
-  const d = new Date(); d.setMonth(d.getMonth() + 3); return d.toISOString().slice(0, 10)
-}
 
 function datesForRecurringRule(fromStr, toStr, dayMask, tz) {
   const results = []
@@ -132,20 +131,21 @@ function StatusBadge({ type, message }) {
 }
 
 // ─── Slot chip ────────────────────────────────────────────────────────────────
+//
+// Colours mirror dashboard STATUS_STYLES:
+//   confirmed    → emerald (same as confirmed appointment cards)
+//   open+pending → amber   (same as pending_request appointment cards)
+//   open         → slate   (neutral, deletable)
 
 function SlotChip({ slot, timezone, locale, deletingId, onDelete, t }) {
   const isConfirmed = slot.status === 'confirmed'
   const hasPending  = slot.pending_request_count > 0
   const isDeleting  = deletingId === slot.id
 
-  // Visual state:
-  //   confirmed      → amber; locked icon; no delete
-  //   open+pending   → blue; pending count badge; delete button (with warning)
-  //   open           → slate; delete button
   const chipClass = isConfirmed
-    ? 'border-amber-500/30 bg-amber-500/10 text-amber-400'
+    ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-400'
     : hasPending
-      ? 'border-blue-500/30 bg-blue-500/10 text-blue-300'
+      ? 'border-amber-500/40 bg-amber-500/15 text-amber-400'
       : 'border-slate-700 bg-slate-800/60 text-slate-300'
 
   return (
@@ -154,13 +154,11 @@ function SlotChip({ slot, timezone, locale, deletingId, onDelete, t }) {
       <span className="text-xs opacity-60">{slot.duration_minutes}m</span>
 
       {isConfirmed && (
-        /* Lock icon — slot has a confirmed appointment */
-        <span className="ml-1 text-xs text-amber-500/70">{t('slots.confirmed')}</span>
+        <span className="ml-1 text-xs text-emerald-500/80">{t('slots.confirmed')}</span>
       )}
 
       {!isConfirmed && hasPending && (
-        /* Pending request count badge */
-        <span className="ml-1 rounded-full bg-blue-500/20 px-1.5 py-0.5 text-xs font-medium text-blue-400">
+        <span className="ml-1 rounded-full bg-amber-500/20 px-1.5 py-0.5 text-xs font-medium text-amber-400">
           {t('slots.pendingCount', { count: slot.pending_request_count })}
         </span>
       )}
@@ -169,7 +167,7 @@ function SlotChip({ slot, timezone, locale, deletingId, onDelete, t }) {
         <button
           onClick={() => onDelete(slot.id)}
           disabled={isDeleting}
-          className="ml-1 text-slate-500 hover:text-rose-400 transition-colors disabled:opacity-40"
+          className="ml-1 text-current opacity-50 hover:opacity-100 hover:text-rose-400 transition-colors disabled:opacity-30"
           aria-label={t('slots.deleteSlot')}
           title={hasPending ? t('slots.deleteWithPendingWarning') : undefined}
         >
@@ -197,27 +195,25 @@ export default function SlotsPage() {
   const { t, i18n } = useTranslation('appointments')
   const days         = getLocaleDays(i18n.language)
 
-  const timezone      = user?.timezone ?? 'UTC'
+  const timezone       = user?.timezone ?? 'UTC'
   const profileDefault = user?.session_duration_minutes ?? 55
 
-  const [duration, setDuration] = useState(profileDefault)
-  const durationInvalid         = duration < DURATION_MIN || duration > DURATION_MAX
+  const [duration, setDuration]         = useState(profileDefault)
+  const durationInvalid                 = duration < DURATION_MIN || duration > DURATION_MAX
 
-  // ── Slots state ───────────────────────────────────────────────────────────
-  const [slots, setSlots]             = useState([])
+  const [slots, setSlots]               = useState([])
   const [loadingSlots, setLoadingSlots] = useState(true)
-  const [slotsError, setSlotsError]   = useState(null)
-  const [deletingId, setDeletingId]   = useState(null)
+  const [slotsError, setSlotsError]     = useState(null)
+  const [deletingId, setDeletingId]     = useState(null)
 
-  // ── Recurring rule state ──────────────────────────────────────────────────
-  const [ruleMode, setRuleMode]       = useState('add')
-  const [dayMask, setDayMask]         = useState(Array(7).fill(false))
-  const [startTime, setStartTime]     = useState('09:00')
-  const [endTime, setEndTime]         = useState('17:00')
-  const [fromDate, setFromDate]       = useState(todayStr())
-  const [toDate, setToDate]           = useState(maxDateStr())
+  const [ruleMode, setRuleMode]         = useState('add')
+  const [dayMask, setDayMask]           = useState(Array(7).fill(false))
+  const [startTime, setStartTime]       = useState('09:00')
+  const [endTime, setEndTime]           = useState('17:00')
+  const [fromDate, setFromDate]         = useState(todayStr())
+  const [toDate, setToDate]             = useState(defaultToDateStr())
   const [applyingRule, setApplyingRule] = useState(false)
-  const [ruleStatus, setRuleStatus]   = useState(null)
+  const [ruleStatus, setRuleStatus]     = useState(null)
 
   useEffect(() => {
     getSlots().then((result) => {
@@ -227,7 +223,6 @@ export default function SlotsPage() {
     })
   }, [])
 
-  // ── Preview ───────────────────────────────────────────────────────────────
   const previewSlots = useMemo(() => {
     if (durationInvalid || !dayMask.some(Boolean)) return []
     if (!fromDate || !toDate || fromDate > toDate) return []
@@ -251,7 +246,6 @@ export default function SlotsPage() {
     return result
   }, [durationInvalid, dayMask, fromDate, toDate, startTime, endTime, duration, timezone])
 
-  // ── Apply recurring rule ──────────────────────────────────────────────────
   const handleApplyRule = async () => {
     if (previewSlots.length === 0 || durationInvalid) return
     setApplyingRule(true); setRuleStatus(null)
@@ -270,7 +264,6 @@ export default function SlotsPage() {
         setRuleStatus({ type: 'error', message: result.error })
       }
     } else {
-      // Remove mode — only delete 'open' slots matching the preview times
       const previewUtcSet = new Set(previewSlots.map((s) => new Date(s.isoUtc).getTime()))
       const toDelete = slots.filter(
         (s) => s.status === 'open' && previewUtcSet.has(new Date(s.start_time).getTime())
@@ -278,12 +271,8 @@ export default function SlotsPage() {
       let deleted = 0, failed = 0
       for (const slot of toDelete) {
         const result = await deleteSlot(slot.id)
-        if (result.ok) {
-          deleted++
-          setSlots((prev) => prev.filter((s) => s.id !== slot.id))
-        } else {
-          failed++
-        }
+        if (result.ok) { deleted++; setSlots((prev) => prev.filter((s) => s.id !== slot.id)) }
+        else failed++
       }
       setRuleStatus({
         type: deleted > 0 ? 'success' : 'error',
@@ -293,7 +282,6 @@ export default function SlotsPage() {
     setApplyingRule(false)
   }
 
-  // ── Delete single slot ────────────────────────────────────────────────────
   const handleDeleteSlot = useCallback(async (slotId) => {
     setDeletingId(slotId)
     const result = await deleteSlot(slotId)
@@ -302,9 +290,8 @@ export default function SlotsPage() {
     setDeletingId(null)
   }, [])
 
-  // ── Group upcoming slots by local date ────────────────────────────────────
   const slotsByDate = useMemo(() => {
-    const map       = new Map()
+    const map        = new Map()
     const todayLocal = utcToLocalDate(new Date().toISOString(), timezone)
     for (const slot of slots) {
       const dateLocal = utcToLocalDate(slot.start_time, timezone)
@@ -322,10 +309,6 @@ export default function SlotsPage() {
     : ruleMode === 'add'
       ? t('slots.applyCreate', { count: previewSlots.length })
       : t('slots.applyRemove', { count: previewSlots.length })
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Render
-  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <main className="min-h-screen bg-slate-950 pt-20 pb-16 px-4 sm:px-6 lg:px-8">
@@ -427,7 +410,7 @@ export default function SlotsPage() {
           <div className="mt-5 grid grid-cols-2 gap-4">
             {[
               { label: t('slots.fromTime'), value: startTime, onChange: setStartTime },
-              { label: t('slots.untilTime'), value: endTime, onChange: setEndTime },
+              { label: t('slots.untilTime'), value: endTime,   onChange: setEndTime },
             ].map(({ label, value, onChange }) => (
               <div key={label}>
                 <label className="block text-xs font-medium text-slate-400 mb-1">{label}</label>
@@ -436,30 +419,28 @@ export default function SlotsPage() {
                   onChange={(e) => onChange(e.target.value)}
                   className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-400/30 focus:border-blue-400"
                 >
-                  {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+                  {TIME_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
             ))}
           </div>
 
-          {/* Date range */}
+          {/* Date range — IsoDatePicker renders YYYY-MM-DD selects, no browser locale involved */}
           <div className="mt-4 grid grid-cols-2 gap-4">
-            {[
-              { label: t('slots.startingDate'), value: fromDate, onChange: setFromDate },
-              { label: t('slots.endDate'),       value: toDate,   onChange: setToDate },
-            ].map(({ label, value, onChange }) => (
-              <div key={label}>
-                <label className="block text-xs font-medium text-slate-400 mb-1">{label}</label>
-                <input
-                  type="date"
-                  value={value}
-                  min={todayStr()}
-                  max={maxDateStr()}
-                  onChange={(e) => onChange(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-400/30 focus:border-blue-400"
-                />
-              </div>
-            ))}
+            <IsoDatePicker
+              label={t('slots.startingDate')}
+              value={fromDate}
+              onChange={setFromDate}
+              min={todayStr()}
+              max={maxDateStr()}
+            />
+            <IsoDatePicker
+              label={t('slots.endDate')}
+              value={toDate}
+              onChange={setToDate}
+              min={todayStr()}
+              max={maxDateStr()}
+            />
           </div>
 
           {/* Preview */}
@@ -506,7 +487,7 @@ export default function SlotsPage() {
           </div>
         </SectionCard>
 
-        {/* ── Upcoming slots card ── */}
+        {/* ── Upcoming slots ── */}
         <SectionCard title={t('slots.upcomingTitle')} subtitle={t('slots.upcomingSubtitle')}>
           {loadingSlots && (
             <div className="space-y-3">

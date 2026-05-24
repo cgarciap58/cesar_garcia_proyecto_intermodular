@@ -40,25 +40,30 @@ export function computedStatus(appointment) {
   return 'confirmed'
 }
 
-// ─── Terminal statuses ────────────────────────────────────────────────────────
-// Used by both dashboards to decide which appointments go into the archive
-// toggle vs. the active panel.
+// ─── Terminal / active sets ───────────────────────────────────────────────────
 
 export const ACTIVE_STATUSES  = new Set(['pending_request', 'confirmed', 'in_progress'])
 export const ARCHIVE_STATUSES = new Set(['withdrawn', 'rejected', 'cancelled', 'done'])
 
 // ─── Status styles ────────────────────────────────────────────────────────────
 //
-// labelKey maps to the 'appointments' i18n namespace: t(labelKey) in components.
+// Colour logic:
+//   confirmed    → emerald  (active, positive)
+//   in_progress  → blue     (happening right now)
+//   done         → emerald  (completed successfully — same as confirmed)
+//   pending_request → amber (waiting for action)
+//   rejected     → rose     (negative outcome)
+//   cancelled    → rose     (negative outcome, same family as rejected)
+//   withdrawn    → slate    (neutral — patient chose to withdraw)
 
 export const STATUS_BADGE = {
   confirmed:       'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
   in_progress:     'bg-blue-500/20    text-blue-400    border border-blue-500/30',
-  done:            'bg-slate-500/20   text-slate-400   border border-slate-500/30',
+  done:            'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
   pending_request: 'bg-amber-500/20   text-amber-400   border border-amber-500/30',
   rejected:        'bg-rose-500/20    text-rose-400    border border-rose-500/30',
   withdrawn:       'bg-slate-500/20   text-slate-400   border border-slate-500/30',
-  cancelled:       'bg-slate-500/20   text-slate-400   border border-slate-500/30',
+  cancelled:       'bg-rose-500/20    text-rose-400    border border-rose-500/30',
 }
 
 export const STATUS_STYLES = {
@@ -73,8 +78,8 @@ export const STATUS_STYLES = {
     labelKey: 'status.in_progress',
   },
   done: {
-    bg: 'bg-slate-500/15', border: 'border-slate-500/30',
-    text: 'text-slate-400', dot: 'bg-slate-400',
+    bg: 'bg-emerald-500/15', border: 'border-emerald-500/40',
+    text: 'text-emerald-400', dot: 'bg-emerald-400',
     labelKey: 'status.done',
   },
   pending_request: {
@@ -93,11 +98,10 @@ export const STATUS_STYLES = {
     labelKey: 'status.withdrawn',
   },
   cancelled: {
-    bg: 'bg-slate-500/15', border: 'border-slate-500/30',
-    text: 'text-slate-500', dot: 'bg-slate-500',
+    bg: 'bg-rose-500/15', border: 'border-rose-500/40',
+    text: 'text-rose-400', dot: 'bg-rose-400',
     labelKey: 'status.cancelled',
   },
 }
 
-// Fallback for unknown statuses
 export const FALLBACK_STYLE = STATUS_STYLES.pending_request
