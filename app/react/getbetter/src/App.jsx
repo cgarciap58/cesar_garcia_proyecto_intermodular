@@ -1,6 +1,6 @@
 import { Outlet, Route, Routes } from 'react-router-dom'
 import './spinner.css'
-import { useEffect, useState } from 'react'
+import logoGif from '/public/logo.gif'
 
 import { useAuth } from './context/AuthContext'
 import Navbar from './components/Navbar'
@@ -26,7 +26,7 @@ function SplashScreen() {
   return (
     <div className="splash-screen">
       <div className="splash-spinner">
-        <img src="/logo.gif" alt="Loading GetBetter..." />
+        <img src={logoGif} alt="Loading GetBetter..." />
       </div>
     </div>
   )
