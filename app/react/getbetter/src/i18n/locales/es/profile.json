@@ -1,0 +1,60 @@
+{
+  "pageTitle": "Mi perfil",
+  "pageSubtitle": "Actualiza tu información personal.",
+  "emailNote": "El correo no se puede cambiar en esta demo.",
+  "sections": {
+    "personal": "Información personal",
+    "personalSubtitle": "Tu nombre, fecha de nacimiento, ciudad y teléfono.",
+    "password": "Cambiar contraseña",
+    "passwordSubtitle": "Déjalo en blanco para mantener tu contraseña actual.",
+    "roleInfo": "Configuración del rol",
+    "roleInfoSubtitle": "Ajustes específicos de tu rol.",
+    "timezone": "Zona horaria",
+    "timezoneSubtitle": "Se usa para mostrar las citas en tu horario local."
+  },
+  "fields": {
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "email": "Correo electrónico",
+    "dob": "Fecha de nacimiento",
+    "city": "Ciudad",
+    "phone": "Teléfono",
+    "timezone": "Zona horaria",
+    "currentPassword": "Contraseña actual",
+    "newPassword": "Nueva contraseña",
+    "concerns": "Tus preocupaciones",
+    "concernsPlaceholder": "Describe en qué te gustaría trabajar…",
+    "sessionDuration": "Duración de sesión por defecto (min)",
+    "sessionPrice": "Precio de sesión (créditos)",
+    "licenseNumber": "Número de colegiado",
+    "countryCode": "País de la licencia"
+  },
+  "placeholders": {
+    "city": "ej. Madrid",
+    "phone": "ej. +34 600 000 000",
+    "currentPassword": "Requerida para cambiar la contraseña",
+    "newPassword": "Mín. 8 caracteres"
+  },
+  "actions": {
+    "save": "Guardar cambios",
+    "saving": "Guardando…"
+  },
+  "success": "Perfil actualizado correctamente.",
+  "errors": {
+    "firstNameRequired": "El nombre es obligatorio.",
+    "firstNameInvalid": "El nombre solo puede contener letras y guiones.",
+    "lastNameRequired": "Los apellidos son obligatorios.",
+    "lastNameInvalid": "Los apellidos solo pueden contener letras y guiones.",
+    "newPasswordTooShort": "La nueva contraseña debe tener al menos 8 caracteres.",
+    "currentPasswordRequired": "La contraseña actual es necesaria para establecer una nueva.",
+    "sessionDurationRange": "La duración debe estar entre 15 y 180 minutos.",
+    "generic": "Algo salió mal. Por favor, inténtalo de nuevo."
+  },
+  "verification": {
+    "label": "Estado de verificación",
+    "pending": "En revisión",
+    "approved": "Aprobado",
+    "rejected": "Rechazado",
+    "warning": "Actualizar tu número de colegiado o país reiniciará la verificación a pendiente."
+  }
+}

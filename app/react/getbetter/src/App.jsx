@@ -8,6 +8,7 @@ import SignUpPage from './pages/SignUpPage'
 import DashboardPage from './pages/DashboardPage'
 import SlotsPage from './pages/SlotsPage'
 import BookPage from './pages/BookPage'
+import ProfilePage from './pages/ProfilePage'
 
 function AppLayout() {
   return (
@@ -49,7 +50,16 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
       </Route>
+      
     </Routes>
   )
 }

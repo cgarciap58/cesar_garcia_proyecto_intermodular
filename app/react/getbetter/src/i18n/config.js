@@ -7,6 +7,7 @@ import enAuth         from './locales/en/auth.json'
 import enDashboard    from './locales/en/dashboard.json'
 import enAppointments from './locales/en/appointments.json'
 import enBook         from './locales/en/book.json'
+import enProfile      from './locales/en/profile.json'
 
 // ── Spanish ───────────────────────────────────────────────────────────────────
 import esCommon       from './locales/es/common.json'
@@ -14,6 +15,7 @@ import esAuth         from './locales/es/auth.json'
 import esDashboard    from './locales/es/dashboard.json'
 import esAppointments from './locales/es/appointments.json'
 import esBook         from './locales/es/book.json'
+import esProfile      from './locales/es/profile.json'
 
 i18n
   .use(initReactI18next)

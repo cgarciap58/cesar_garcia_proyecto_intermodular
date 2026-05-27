@@ -1,6 +1,6 @@
 Presentación: "Construir un castillo"
 
-- "Primero de todo, dar las gracias a los miembros del tribunal por estar aquí hoy, y por haber sido mis profesores. Especialmente en este caso, donde todos vosotros habéis sido mis profesores durante los dos años que he pasado aquí."
+- "Con la venia del tribunal, primero de todo, dar las gracias a los miembros del tribunal por estar aquí hoy, y por haber sido mis profesores. Especialmente en este caso, donde todos vosotros habéis sido mis profesores durante los dos años que he pasado aquí."
 
 - "A Borja Rodríguez Puertas, profesor de implantación de sistemas operativos en primero y administración de sistemas operativos en segundo, a María Jesús, profesora de sistemas gestores de bases de datos en primero y administración de sistemas gestores de bases de datos y seguridad informática en segundo, y Carlos Rodríguez, jefe de estudios de ASIR y mi profesor de implantación de aplicaciones web. " 
 

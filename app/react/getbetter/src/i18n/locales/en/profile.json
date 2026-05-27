@@ -1,0 +1,60 @@
+{
+  "pageTitle": "My Profile",
+  "pageSubtitle": "Update your personal information.",
+  "emailNote": "Email cannot be changed in this demo.",
+  "sections": {
+    "personal": "Personal information",
+    "personalSubtitle": "Your name, date of birth, city and phone number.",
+    "password": "Change password",
+    "passwordSubtitle": "Leave blank to keep your current password.",
+    "roleInfo": "Role settings",
+    "roleInfoSubtitle": "Settings specific to your role.",
+    "timezone": "Timezone",
+    "timezoneSubtitle": "Used to display appointment times correctly."
+  },
+  "fields": {
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "dob": "Date of birth",
+    "city": "City",
+    "phone": "Phone number",
+    "timezone": "Timezone",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "concerns": "Your concerns",
+    "concernsPlaceholder": "Describe what you'd like to work on…",
+    "sessionDuration": "Default session duration (min)",
+    "sessionPrice": "Session price (credits)",
+    "licenseNumber": "License number",
+    "countryCode": "License country"
+  },
+  "placeholders": {
+    "city": "e.g. Madrid",
+    "phone": "e.g. +34 600 000 000",
+    "currentPassword": "Required to change password",
+    "newPassword": "Min. 8 characters"
+  },
+  "actions": {
+    "save": "Save changes",
+    "saving": "Saving…"
+  },
+  "success": "Profile updated successfully.",
+  "errors": {
+    "firstNameRequired": "First name is required.",
+    "firstNameInvalid": "First name can only contain letters and hyphens.",
+    "lastNameRequired": "Last name is required.",
+    "lastNameInvalid": "Last name can only contain letters and hyphens.",
+    "newPasswordTooShort": "New password must be at least 8 characters.",
+    "currentPasswordRequired": "Current password is required to set a new one.",
+    "sessionDurationRange": "Session duration must be between 15 and 180 minutes.",
+    "generic": "Something went wrong. Please try again."
+  },
+  "verification": {
+    "label": "Verification status",
+    "pending": "Pending review",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "warning": "Updating your license number or country will reset your verification to pending."
+  }
+}

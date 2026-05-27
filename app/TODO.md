@@ -7,4 +7,4 @@ Important:
 - [ ] 
 
 Optional:
-- [ ] 
+- [ ] Move from blue palette to green palette
