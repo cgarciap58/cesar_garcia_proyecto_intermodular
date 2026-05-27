@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import {
-  getAppointments, confirmAppointment, rejectAppointment, cancelAppointment,
+  getAppointments, getAppointment, confirmAppointment, rejectAppointment, cancelAppointment,
 } from '../services'
 import {
   computedStatus, ACTIVE_STATUSES, ARCHIVE_STATUSES,
@@ -109,11 +109,26 @@ export default function PsychologistDashboard() {
     setActionLoading(false)
   }
 
-  const handleSelect = (appt) =>
-    setSelected((prev) => (prev?.id === appt.id ? null : appt))
+  // Show cached data immediately, then silently refresh from backend.
+  // The backend will generate a meet_link if within the 30-min window.
+  const handleSelect = useCallback(async (appt) => {
+    // Toggle off if same card clicked again
+    if (selected?.id === appt.id) {
+      setSelected(null)
+      return
+    }
+    setSelected(appt)                        // show detail instantly from cache
+    const result = await getAppointment(appt.id)
+    if (result.ok) {
+      setSelected(result.data)               // update with fresh data (meet_link etc.)
+      setAppointments((prev) =>
+        sortByTime(prev.map((a) => a.id === result.data.id ? result.data : a))
+      )
+    }
+  }, [selected])
 
   // ── Derived lists ──────────────────────────────────────────────────────────
-  const active       = appointments.filter((a) => ACTIVE_STATUSES.has(computedStatus(a)))
+  const active        = appointments.filter((a) => ACTIVE_STATUSES.has(computedStatus(a)))
   const rejectedGroup = appointments.filter((a) => computedStatus(a) === 'rejected')
   const resolvedGroup = appointments.filter((a) =>
     ['cancelled', 'done', 'withdrawn'].includes(computedStatus(a))
@@ -258,7 +273,6 @@ export default function PsychologistDashboard() {
               lastName:       selectedAppointment.patient.last_name,
               profilePicture: selectedAppointment.patient.profile_picture,
             }}
-            meetLinkLabel={t('psychologist.startSession')}
             previousLabel={t('psychologist.previousSessionsWith', {
               firstName: selectedAppointment.patient.first_name,
               lastName:  selectedAppointment.patient.last_name,
@@ -311,7 +325,7 @@ export default function PsychologistDashboard() {
                     </button>
                   </>
                 )}
-                {(selStatus === 'confirmed' || selStatus === 'in_progress') && (
+                {selStatus === 'confirmed' && (
                   <button
                     onClick={handleCancel}
                     disabled={actionLoading}

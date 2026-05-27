@@ -130,11 +130,6 @@ export default function SessionModal({ appointment, counterpart, onClose }) {
       {/* Card */}
       <div className="relative w-full max-w-sm bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl shadow-black/60 overflow-hidden">
 
-        {/* Top accent bar — blue when in_progress, emerald otherwise */}
-        <div className={`h-1 w-full ${
-          appointment.status === 'in_progress' ? 'bg-blue-500' : 'bg-emerald-500/70'
-        }`} />
-
         <div className="p-6">
 
           {/* Close button */}

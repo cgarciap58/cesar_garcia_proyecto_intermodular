@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import {
-  getAppointments, withdrawAppointment, cancelAppointment, addCredits,
+  getAppointments, getAppointment, withdrawAppointment, cancelAppointment, addCredits,
 } from '../services'
 import {
   computedStatus, ACTIVE_STATUSES, ARCHIVE_STATUSES,
@@ -102,8 +102,23 @@ export default function PatientDashboard() {
     setActionLoading(false)
   }
 
-  const handleSelect = (appt) =>
-    setSelected((prev) => (prev?.id === appt.id ? null : appt))
+  // Show cached data immediately, then silently refresh from backend.
+  // The backend will generate a meet_link if within the 30-min window.
+  const handleSelect = useCallback(async (appt) => {
+    // Toggle off if same card clicked again
+    if (selected?.id === appt.id) {
+      setSelected(null)
+      return
+    }
+    setSelected(appt)                        // show detail instantly from cache
+    const result = await getAppointment(appt.id)
+    if (result.ok) {
+      setSelected(result.data)               // update with fresh data (meet_link etc.)
+      setAppointments((prev) =>
+        sortByTime(prev.map((a) => a.id === result.data.id ? result.data : a))
+      )
+    }
+  }, [selected])
 
   // ── Derived lists ──────────────────────────────────────────────────────────
   const active  = appointments.filter((a) => ACTIVE_STATUSES.has(computedStatus(a)))
@@ -211,7 +226,6 @@ export default function PatientDashboard() {
               namePrefix:     'Dr.',
               profilePicture: selectedAppointment.psychologist.profile_picture,
             }}
-            meetLinkLabel={t('patient.joinSession')}
             previousLabel={t('patient.previousSessionsWith', {
               lastName: selectedAppointment.psychologist.last_name,
             })}

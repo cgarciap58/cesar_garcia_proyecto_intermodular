@@ -10,7 +10,7 @@ from .appointments.views import (
     slots_list, slot_detail, available_slots,
     appointments_list,
     appointment_confirm, appointment_reject, appointment_withdraw, appointment_cancel,
-    appointment_history,
+    appointment_history, appointment_detail,
 )
 
 urlpatterns = [
@@ -33,10 +33,12 @@ urlpatterns = [
     path('api/appointments/slots/<int:slot_id>/', slot_detail),
 
     # ── Appointments ──────────────────────────────────────────────────────────
-    path('api/appointments/',                              appointments_list),
-    path('api/appointments/<int:appointment_id>/confirm/', appointment_confirm),
-    path('api/appointments/<int:appointment_id>/reject/',  appointment_reject),
+    # Specific action paths must be registered BEFORE the generic <id>/ path
+    path('api/appointments/history/',                       appointment_history),
+    path('api/appointments/<int:appointment_id>/confirm/',  appointment_confirm),
+    path('api/appointments/<int:appointment_id>/reject/',   appointment_reject),
     path('api/appointments/<int:appointment_id>/withdraw/', appointment_withdraw),
-    path('api/appointments/<int:appointment_id>/cancel/',  appointment_cancel),
-    path('api/appointments/history/',                      appointment_history),
+    path('api/appointments/<int:appointment_id>/cancel/',   appointment_cancel),
+    path('api/appointments/<int:appointment_id>/',          appointment_detail),
+    path('api/appointments/',                               appointments_list),
 ]

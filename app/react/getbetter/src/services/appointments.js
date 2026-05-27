@@ -49,6 +49,17 @@ export const getAppointments = async () => {
   return { ok: true, data: payload }
 }
 
+/** Fetch a single appointment by id. Triggers meet_link generation on backend
+ *  if the appointment is confirmed and within the 30-minute window. */
+export const getAppointment = async (appointmentId) => {
+  const response = await fetch(buildUrl(`/api/appointments/${appointmentId}/`), {
+    credentials: 'include',
+  })
+  const payload = await parseResponse(response)
+  if (!response.ok) return { ok: false, error: payload.error || 'Failed to fetch appointment' }
+  return { ok: true, data: payload }
+}
+
 /** Patient requests a slot. */
 export const bookAppointment = async (slotId) => {
   const response = await fetch(buildUrl('/api/appointments/'), {

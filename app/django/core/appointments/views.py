@@ -1,5 +1,6 @@
 import json
 import math
+import uuid
 from datetime import timedelta
 
 from django.db import transaction
@@ -440,6 +441,8 @@ def appointment_confirm(request, appointment_id):
         appt.slot.status = AvailableSlot.SLOT_CONFIRMED
         appt.slot.save(update_fields=['status'])
 
+    appt = maybe_attach_meet_link(appt)
+
     response = appointment_to_dict(appt, 'psychologist')
     response['rejected_appointments'] = rejected_dicts
     return JsonResponse(response)
@@ -648,3 +651,71 @@ def appointment_history(request):
         return JsonResponse({'history': [appointment_to_dict(a, 'psychologist') for a in done]})
 
     return JsonResponse({'error': 'Invalid role'}, status=403)
+
+# ─── Link generation ────────────────────────────────────────────────────── 
+
+def generate_meet_link():
+    code = uuid.uuid4().hex
+    return f"https://meet.google.com/{code[:3]}-{code[3:7]}-{code[7:10]}"
+
+MEET_LINK_WINDOW_MINUTES = 30
+
+def maybe_attach_meet_link(appt):
+    """
+    Generates and saves a meet_link if ALL conditions are met:
+      - stored status is confirmed
+      - no link exists yet
+      - start_time is within 30 minutes (or already in progress)
+
+    Race-safe: uses SELECT FOR UPDATE so two concurrent requests
+    on the same appointment cannot both write a link.
+
+    Must be called OUTSIDE any existing transaction.
+    Returns the appt object (refreshed if a link was generated).
+    """
+    if appt.status != Appointment.STATUS_CONFIRMED:
+        return appt
+    if appt.meet_link:
+        return appt
+
+    now = timezone.now()
+    minutes_until = (appt.slot.start_time - now).total_seconds() / 60
+    if minutes_until > MEET_LINK_WINDOW_MINUTES:
+        return appt
+
+    # Atomic: re-fetch with row lock, re-check, then write.
+    # If another request beat us to it, we'll see meet_link already set.
+    with transaction.atomic():
+        locked = (
+            Appointment.objects
+            .select_for_update()
+            .get(id=appt.id)
+        )
+        if locked.meet_link:          # other host already wrote it
+            return locked
+        locked.meet_link = generate_meet_link()
+        locked.save(update_fields=['meet_link', 'updated_at'])
+        return locked
+
+@require_http_methods(['GET'])
+def appointment_detail(request, appointment_id):
+    user = require_auth(request)
+    if not user:
+        return JsonResponse({'error': 'Not authenticated'}, status=401)
+
+    try:
+        if user.role == 'patient':
+            appt = Appointment.objects.select_related(
+                'slot', 'patient__user', 'slot__psychologist__user'
+            ).get(id=appointment_id, patient=user.patient_profile)
+        elif user.role == 'psychologist':
+            appt = Appointment.objects.select_related(
+                'slot', 'patient__user', 'slot__psychologist__user'
+            ).get(id=appointment_id, slot__psychologist=user.psychologist_profile)
+        else:
+            return JsonResponse({'error': 'Invalid role'}, status=403)
+    except Appointment.DoesNotExist:
+        return JsonResponse({'error': 'Appointment not found'}, status=404)
+
+    appt = maybe_attach_meet_link(appt)
+    return JsonResponse(appointment_to_dict(appt, user.role))
