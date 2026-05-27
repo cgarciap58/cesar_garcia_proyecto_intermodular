@@ -1,7 +1,4 @@
 import { Outlet, Route, Routes } from 'react-router-dom'
-import './spinner.css'
-import logoGif from '/public/logo.gif'
-
 import { useAuth } from './context/AuthContext'
 import Navbar from './components/Navbar'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -22,22 +19,11 @@ function AppLayout() {
   )
 }
 
-function SplashScreen() {
-  return (
-    <div className="splash-screen">
-      <div className="splash-spinner">
-        <img src={logoGif} alt="Loading GetBetter..." />
-      </div>
-    </div>
-  )
-}
-
 function App() {
   const { user } = useAuth()
 
-  // user === undefined means AuthContext is still fetching /api/auth/me/
-  // Show the splash screen during that window
-  if (user === undefined) return <SplashScreen />
+  // Still fetching — render nothing; the HTML splash in index.html is still visible
+  if (user === undefined) return null
 
   return (
     <Routes>

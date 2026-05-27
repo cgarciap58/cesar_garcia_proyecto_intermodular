@@ -5,35 +5,6 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GetBetter</title>
-    <style>
-      #splash {
-        position: fixed;
-        inset: 0;
-        background: #020617; /* matches bg-slate-950 */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        transition: opacity 0.4s ease;
-      }
-
-      #splash.hide {
-        opacity: 0;
-        pointer-events: none;
-      }
-
-      #splash-logo {
-        width: 64px;
-        height: 64px;
-        animation: splash-spin 1.2s linear infinite;
-        animation-delay: 1s; /* still for 1 second, then spins */
-      }
-
-      @keyframes splash-spin {
-        from { transform: rotate(0deg); }
-        to   { transform: rotate(360deg); }
-      }
-    </style>
   </head>
   <body>
     <div id="root">
