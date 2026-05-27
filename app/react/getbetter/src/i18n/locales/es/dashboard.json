@@ -3,7 +3,7 @@
     "roleLabel":             "Paciente",
     "appointmentsTitle":     "Tus citas",
     "archiveTitle":          "Pasadas y canceladas",
-    "emptyAppointments":     "Sin citas todavía",
+    "emptyAppointments":     "Sin citas por ahora",
     "showArchive":           "Mostrar {{count}} pasadas / canceladas",
     "hideArchive":           "Ocultar pasadas y canceladas",
     "bookAppointment":       "Reservar cita",
@@ -18,7 +18,7 @@
     "withdrawingRequest":    "Retirando…",
     "cancelAppointment":     "Cancelar cita",
     "cancellingAppointment": "Cancelando…",
-    "previousSessionsWith":  "Sesiones anteriores con el Dr./Dra. {{lastName}}"
+    "previousSessionsWith":  "Sesiones anteriores con el Dr. {{lastName}}"
   },
   "psychologist": {
     "roleLabel":              "Psicólogo/a",
@@ -30,7 +30,7 @@
     "hideRejected":           "Ocultar solicitudes rechazadas",
     "showCancelled":          "Mostrar {{count}} canceladas / finalizadas",
     "hideCancelled":          "Ocultar canceladas y finalizadas",
-    "manageSlots":            "Gestionar horarios",
+    "manageSlots":            "Gestionar franjas",
     "sessionNotes":           "Notas de sesión",
     "noSessionNotes":         "Sin notas escritas",
     "privateNotes":           "Notas privadas",
@@ -44,7 +44,22 @@
     "cancellingAppointment":  "Cancelando…",
     "previousSessionsWith":   "Sesiones anteriores con {{firstName}} {{lastName}}",
     "autoRejectedTitle":      "Otras solicitudes rechazadas automáticamente",
-    "autoRejectedBody_one":   "{{names}} fue rechazado/a y sus créditos devueltos.",
-    "autoRejectedBody_other": "{{names}} fueron rechazados/as y sus créditos devueltos."
+    "autoRejectedBody_one":   "{{names}} fue rechazado/a y se le devolvieron los créditos.",
+    "autoRejectedBody_other": "{{names}} fueron rechazados/as y se les devolvieron los créditos."
+  },
+  "session": {
+    "title":                  "Sesión próxima",
+    "modalLabel":             "Detalles de la sesión",
+    "goToSession":            "Ir a la sesión",
+    "goNow":                  "Ir ahora",
+    "goNowActive":            "Unirse — sesión en curso",
+    "close":                  "Cerrar",
+    "startsIn":               "Empieza en",
+    "startsInDays_one":       "Empieza en {{count}} día",
+    "startsInDays_other":     "Empieza en {{count}} días",
+    "startsInHours":          "Empieza en {{hours}}h {{mins}}m",
+    "inProgressEndsIn_one":   "En curso · {{count}} min restante",
+    "inProgressEndsIn_other": "En curso · {{count}} min restantes",
+    "sessionEnded":           "La sesión ha finalizado"
   }
 }

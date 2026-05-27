@@ -46,5 +46,20 @@
     "autoRejectedTitle":      "Other requests automatically rejected",
     "autoRejectedBody_one":   "{{names}} was rejected and their credits refunded.",
     "autoRejectedBody_other": "{{names}} were rejected and their credits refunded."
+  },
+  "session": {
+    "title":                  "Upcoming session",
+    "modalLabel":             "Session details",
+    "goToSession":            "Go to session",
+    "goNow":                  "Go now",
+    "goNowActive":            "Join now — session in progress",
+    "close":                  "Close",
+    "startsIn":               "Starts in",
+    "startsInDays_one":       "Starts in {{count}} day",
+    "startsInDays_other":     "Starts in {{count}} days",
+    "startsInHours":          "Starts in {{hours}}h {{mins}}m",
+    "inProgressEndsIn_one":   "In progress · {{count}} min remaining",
+    "inProgressEndsIn_other": "In progress · {{count}} mins remaining",
+    "sessionEnded":           "Session has ended"
   }
 }

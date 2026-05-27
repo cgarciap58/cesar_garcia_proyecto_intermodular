@@ -5,10 +5,32 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GetBetter</title>
+    <style>
+      #splash {
+        position: fixed;
+        inset: 0;
+        background: #020617;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        opacity: 1;
+        transition: opacity 0.4s ease;
+      }
+      #splash.hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #splash img {
+        width: clamp(100px, 20vw, 220px);
+      }
+    </style>
   </head>
   <body>
-    <div id="root">
+    <div id="splash">
+      <img src="/logo.gif" alt="Loading…" />
     </div>
+    <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
