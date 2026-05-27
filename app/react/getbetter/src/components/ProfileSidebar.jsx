@@ -5,8 +5,15 @@
 //   namePrefix  – optional string prepended to the name (e.g. "Dr.")
 //   roleLabel   – string shown below the name (e.g. "Patient", "Psychologist")
 //   actions     – array of action descriptors rendered as buttons/links:
-//                 { label, href?, onClick?, variant? }
+//                 { label, to?, onClick?, variant? }
 //                 variant: 'primary' (default) | 'secondary'
+//
+// NOTE: internal navigation uses React Router <Link to="..."> so that the
+// router handles the transition client-side — a plain <a href="..."> causes a
+// full page reload which races with AuthContext hydration and produces a blank
+// screen on protected routes.
+
+import { Link } from 'react-router-dom'
 
 const VARIANTS = {
   primary:
@@ -18,7 +25,7 @@ const VARIANTS = {
 }
 
 export default function ProfileSidebar({ user, namePrefix, roleLabel, actions = [] }) {
-  const initials = `${user?.first_name?.[0] ?? ''}${user?.last_name?.[0] ?? ''}`
+  const initials    = `${user?.first_name?.[0] ?? ''}${user?.last_name?.[0] ?? ''}`
   const displayName = [namePrefix, user?.first_name, user?.last_name].filter(Boolean).join(' ')
 
   return (
@@ -41,17 +48,30 @@ export default function ProfileSidebar({ user, namePrefix, roleLabel, actions = 
       {/* Actions */}
       {actions.length > 0 && (
         <div className="w-full flex flex-col gap-2 mt-2">
-          {actions.map(({ label, href, onClick, variant = 'primary' }) =>
-            href ? (
-              <a key={label} href={href} className={VARIANTS[variant]}>
-                {label}
-              </a>
-            ) : (
+          {actions.map(({ label, to, href, onClick, variant = 'primary' }) => {
+            // Prefer `to` (React Router Link) over legacy `href` (plain anchor).
+            // onClick-only actions render as <button>.
+            if (to) {
+              return (
+                <Link key={label} to={to} className={VARIANTS[variant]}>
+                  {label}
+                </Link>
+              )
+            }
+            if (href) {
+              // Kept for backwards compat, but callers should migrate to `to`.
+              return (
+                <Link key={label} to={href} className={VARIANTS[variant]}>
+                  {label}
+                </Link>
+              )
+            }
+            return (
               <button key={label} onClick={onClick} className={VARIANTS[variant]}>
                 {label}
               </button>
             )
-          )}
+          })}
         </div>
       )}
     </div>

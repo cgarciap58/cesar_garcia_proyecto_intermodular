@@ -27,6 +27,7 @@ i18n
         dashboard:    enDashboard,
         appointments: enAppointments,
         book:         enBook,
+        profile:      enProfile,
       },
       es: {
         common:       esCommon,
@@ -34,6 +35,7 @@ i18n
         dashboard:    esDashboard,
         appointments: esAppointments,
         book:         esBook,
+        profile:      esProfile,
       },
     },
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { updateProfile } from '../services/profile'
+import AppDatePicker from '../components/AppDatePicker'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -323,10 +324,9 @@ export default function ProfilePage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label={t('fields.dob')}>
-                  <TextInput
-                    type="date"
+                  <AppDatePicker
                     value={values.dob}
-                    onChange={handleChange('dob')}
+                    onChange={(iso) => setValues((prev) => ({ ...prev, dob: iso }))}
                   />
                 </Field>
                 <Field label={t('fields.city')}>
