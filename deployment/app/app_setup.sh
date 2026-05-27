@@ -1,46 +1,24 @@
 #!/bin/bash
-
 set -euo pipefail
 
-echo "Actualizando el sistema..."
-sudo apt update
-sudo apt upgrade -y
-
-
-if [ $# -ne 1 ]; then
-    echo "Uso: $0 <numero_instancia>"
+if [ $# -ne 2 ]; then
+    echo "Uso: $0 <numero_instancia> <ip_privada>"
     exit 1
 fi
 
-instacia_app=$1
-DOMAIN="getbetter.ddns.net" # Necesario?
-HOSTNAME="app-$instacia_app"
+INSTANCIA=$1
+IP=$2
+HOSTNAME="app-$INSTANCIA"
 
-case $instacia_app in
-    1)
-        IP="10.0.0.69"
-        ;;
-    2)
-        IP="10.0.0.100"
-        ;;
-    *)
-        echo "Número de instancia no válido"
-        exit 1
-        ;;
-esac
-
-# Actualización de nombre
-echo "===== CONFIGURANDO APP $instacia_app ====="
+echo "===== CONFIGURANDO APP $INSTANCIA ($IP) ====="
 
 echo "[1] Hostname persistente..."
 sudo hostnamectl set-hostname $HOSTNAME
-
 sudo sed -i 's/^preserve_hostname: false/preserve_hostname: true/' /etc/cloud/cloud.cfg || true
 
 cat <<EOF | sudo tee /etc/hosts
 127.0.0.1 localhost
-127.0.1.1 $HOSTNAME app-$instacia_app
-
+127.0.1.1 $HOSTNAME app-$INSTANCIA
 ::1 localhost ip6-localhost ip6-loopback
 ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters
@@ -80,12 +58,4 @@ sudo systemctl status docker
 echo "[4] Instalando git..."
 
 sudo apt install git -y
-
-# echo "[5] Instalando Tailscale..."
-
-# curl -fsSL https://tailscale.com/install.sh | sh # Reemplazar por la clave de autenticación de Tailscale
-# tailscale up --authkey=TSKEY \ 
-#  --hostname=app-03 \ 
-#  --accept-dns=false
-
 

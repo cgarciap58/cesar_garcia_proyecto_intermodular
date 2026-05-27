@@ -16,6 +16,11 @@ else
     exit 1
 fi
 
+# cat ../app/.app.base.env > .env.runtime
+# cat ../app/.app.aws.env >> .env.runtime
+# cat ./topologia-aws.env >> .env.runtime
+
+# source ./.env.runtime
 source ./.topologia-aws.env
 
 eval "$(ssh-agent -s)"
@@ -52,13 +57,11 @@ case $maquina in
         ;;
 
     3)
-
+        source ../app/.app.base.env
         APP_NODES="$APP_IP_1 $APP_IP_2"
     
-        ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB \
-        $USUARIO_ROOT_EC2@$REDIS_IP \
-        "bash -s" \
-        -- "$REDIS_IP" "$APP_IP_1" "$APP_IP_2" "$REDIS_PASS" \
+        ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$REDIS_IP \
+        "bash -s" -- "$REDIS_IP" "$APP_IP_1" "$APP_IP_2" "$REDIS_PASS" \
         < ./redis/redis_setup.sh
         ;;
 
@@ -70,13 +73,8 @@ case $maquina in
         read -p "--> " app
 
         case $app in
-            1)
-                IP=$APP_IP_1
-
-                ;;
-            2)
-                IP=$APP_IP_2
-                ;;
+            1) IP=$APP_IP_1 ;;
+            2) IP=$APP_IP_2 ;;
             *)
                 echo "Instancia no válida"
                 exit 1
@@ -93,13 +91,14 @@ case $maquina in
 
         case $opcion in
             1)
-                ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$IP 'bash -s' < ./app/app_setup.sh
+                ssh -J $USUARIO_ROOT_EC2@$BASTION_IP_PUB $USUARIO_ROOT_EC2@$IP "bash -s $app $IP" < ./app/app_setup.sh
                 ;;
             2)
+                # Creamos el .env y lo cargamos hasta arriba
+
                 cat ../app/.app.base.env > .env.runtime
                 cat ../app/.app.aws.env >> .env.runtime
 
-                # Creamos el .env
                 echo "DB_HOST=$DB_IP" >> .env.runtime
                 echo "REDIS_HOST=$REDIS_IP" >> .env.runtime
                 echo "DJANGO_ALLOWED_HOSTS=$LB_IP,$DOMAIN" >> .env.runtime
