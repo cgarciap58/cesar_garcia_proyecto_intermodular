@@ -15,11 +15,3 @@ createRoot(document.getElementById('root')).render(
     </BrowserRouter>
   </StrictMode>,
 )
-
-
-// Fade out the splash screen once React starts rendering
-const splash = document.getElementById('splash')
-if (splash) {
-  splash.classList.add('hide')
-  setTimeout(() => splash.remove(), 400) // clean up after fade
-}
