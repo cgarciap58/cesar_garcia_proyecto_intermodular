@@ -33,8 +33,6 @@ cd ./app
 
 echo "[3] Rescatando .env.runtime"
 
-
-
 if [ ! -f /tmp/.env.runtime ]; then
     echo "ERROR: .env.runtime no encontrado"
     exit 1
