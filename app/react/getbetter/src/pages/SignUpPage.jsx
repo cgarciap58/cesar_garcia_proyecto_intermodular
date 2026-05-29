@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { signUp } from '../services'
-import { getPasswordStrength, validateSignUpValues } from '../utils/validate'
+import { filterName, getPasswordStrength, validateSignUpValues } from '../utils/validate'
 import { useAuth } from '../context/AuthContext'
 import FormField from '../components/FormField'
 
 const ROLE_OPTIONS = (t) => [
-  { value: 'patient', label: t('signUp.rolePatient') },
-  { value: 'psychologist', label: t('signUp.rolePsychologist') },
+  { value: 'patient',       label: t('signUp.rolePatient') },
+  { value: 'psychologist',  label: t('signUp.rolePsychologist') },
 ]
 
 const COUNTRY_OPTIONS = [
@@ -39,8 +39,9 @@ function SignUpPage() {
 
   const handleChange = (event) => {
     const { name, value } = event.target
+    // Apply live keystroke filter for name fields using the shared helper
     const nextValue = (name === 'first_name' || name === 'last_name')
-      ? value.replace(/[^a-zA-ZñÑáéíóúÁÉÍÓÚ-]/g, '')
+      ? filterName(value)
       : value
     setValues((prev) => ({ ...prev, [name]: nextValue }))
     setErrors((prev) => ({ ...prev, [name]: '', form: '' }))
@@ -48,7 +49,8 @@ function SignUpPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-    const validationErrors = validateSignUpValues(values)
+    // Pass t so all validation messages come out localised
+    const validationErrors = validateSignUpValues(values, t)
     if (Object.keys(validationErrors).length) {
       setErrors(validationErrors)
       return
@@ -149,14 +151,15 @@ function SignUpPage() {
             error={errors.confirmPassword} autoComplete="new-password"
           />
 
-          {errors.form ? <p className="text-sm text-rose-400">{errors.form}</p> : null}
-
           <button
             type="submit" disabled={isSubmitting}
             className="w-full rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400/40 disabled:cursor-not-allowed disabled:bg-blue-400/60"
           >
             {isSubmitting ? t('signUp.submittingButton') : t('signUp.submitButton')}
           </button>
+
+          {/* Form-level error sits below the submit button per spec */}
+          {errors.form ? <p className="text-sm text-rose-400">{errors.form}</p> : null}
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-300">

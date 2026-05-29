@@ -3,7 +3,7 @@ from django.core.validators import RegexValidator, validate_email
 from django.db import models
  
 name_validator = RegexValidator(
-    regex=r'^[a-zA-ZñÑáéíóúÁÉÍÓÚ-]+$',
+    regex=r'^[a-zA-ZñÑáéíóúÁÉÍÓÚ- ]+$'+'',
     message='This field can only contain letters and hyphens.',
 )
  

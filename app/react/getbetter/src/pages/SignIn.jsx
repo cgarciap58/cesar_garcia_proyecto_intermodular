@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { signIn } from '../services'
+import { EMAIL_FORMAT_RE } from '../utils/validate'
 import { useAuth } from '../context/AuthContext'
 import FormField from '../components/FormField'
 
@@ -25,7 +26,7 @@ function SignIn() {
     const nextErrors = {}
     if (!values.email.trim()) {
       nextErrors.email = t('validation.emailRequired')
-    } else if (!/^\S+@\S+\.\S+$/.test(values.email)) {
+    } else if (!EMAIL_FORMAT_RE.test(values.email.trim())) {
       nextErrors.email = t('validation.emailInvalid')
     }
     if (!values.password.trim()) {
@@ -81,14 +82,15 @@ function SignIn() {
             error={errors.password} autoComplete="current-password"
           />
 
-          {errors.form ? <p className="text-sm text-rose-400">{errors.form}</p> : null}
-
           <button
             type="submit" disabled={isSubmitting}
             className="w-full rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400/40 disabled:cursor-not-allowed disabled:bg-blue-400/60"
           >
             {isSubmitting ? t('signIn.submittingButton') : t('signIn.submitButton')}
           </button>
+
+          {/* Form-level error (e.g. wrong credentials) sits below the submit button per spec */}
+          {errors.form ? <p className="text-sm text-rose-400">{errors.form}</p> : null}
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-300">

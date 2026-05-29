@@ -3,11 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { updateProfile } from '../services/profile'
+import { NAME_RE, PHONE_RE, filterName, filterPhone } from '../utils/validate'
 import AppDatePicker from '../components/AppDatePicker'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const NAME_RE = /^[a-zA-ZñÑáéíóúÁÉÍÓÚ-]+$/
 
 // Mirror of ALLOWED_TIMEZONES in Django views.py
 const TIMEZONES = [
@@ -32,6 +31,25 @@ const COUNTRY_OPTIONS = [
   { value: 'GB', label: 'United Kingdom' },
   { value: 'PT', label: 'Portugal' },
 ]
+
+// Maps raw backend error strings to i18n keys in profile.errors.
+// Extend this table whenever Django returns new error strings.
+const BACKEND_ERROR_KEYS = {
+  'Current password is incorrect':                 'errors.currentPasswordIncorrect',
+  'That email is already in use':                  'errors.emailInUse',
+  'first_name cannot be blank':                    'errors.firstNameRequired',
+  'last_name cannot be blank':                     'errors.lastNameRequired',
+  'This field can only contain letters and hyphens.': 'errors.nameInvalid',
+  'dob must be a valid date (YYYY-MM-DD)':         'errors.dobInvalid',
+  'New password must be at least 8 characters':    'errors.newPasswordTooShort',
+  'session_duration_minutes must be an integer between 15 and 180': 'errors.sessionDurationRange',
+  'session_price must be between 0.5 and 5.0 in steps of 0.5':     'errors.sessionPriceRange',
+}
+
+function localiseBackendError(raw, t) {
+  const key = BACKEND_ERROR_KEYS[raw]
+  return key ? t(key) : raw
+}
 
 // ─── Shared UI primitives ─────────────────────────────────────────────────────
 
@@ -61,8 +79,8 @@ function Field({ label, error, children, hint }) {
 const INPUT_BASE =
   'w-full rounded-lg border bg-slate-950/80 px-3 py-2.5 text-sm text-white ' +
   'focus:outline-none focus:ring-2 transition-colors'
-const INPUT_NORMAL = `${INPUT_BASE} border-slate-700 focus:border-blue-400 focus:ring-blue-400/30`
-const INPUT_ERROR  = `${INPUT_BASE} border-rose-500 focus:border-rose-400 focus:ring-rose-400/30`
+const INPUT_NORMAL   = `${INPUT_BASE} border-slate-700 focus:border-blue-400 focus:ring-blue-400/30`
+const INPUT_ERROR    = `${INPUT_BASE} border-rose-500 focus:border-rose-400 focus:ring-rose-400/30`
 const INPUT_DISABLED =
   'w-full rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2.5 text-sm text-slate-500 cursor-not-allowed'
 
@@ -112,24 +130,34 @@ function StatusBadge({ type, message }) {
 function validate(values, t) {
   const errors = {}
 
+  // First name — uses shared NAME_RE (includes space + apostrophe)
   const fn = (values.first_name || '').trim()
-  if (!fn) errors.first_name = t('errors.firstNameRequired')
+  if (!fn)                    errors.first_name = t('errors.firstNameRequired')
   else if (!NAME_RE.test(fn)) errors.first_name = t('errors.firstNameInvalid')
 
+  // Last name
   const ln = (values.last_name || '').trim()
-  if (!ln) errors.last_name = t('errors.lastNameRequired')
-  else if (!NAME_RE.test(ln)) errors.last_name = t('errors.lastNameInvalid')
+  if (!ln)                    errors.last_name  = t('errors.lastNameRequired')
+  else if (!NAME_RE.test(ln)) errors.last_name  = t('errors.lastNameInvalid')
 
+  // Phone — optional, but if filled must only contain digits/+/-
+  const ph = (values.phone_number || '').trim()
+  if (ph && !PHONE_RE.test(ph)) errors.phone_number = t('errors.phoneInvalid')
+
+  // Date of birth — AppDatePicker stores ISO (YYYY-MM-DD); no extra check needed
+  // (the picker itself prevents invalid dates). Field is optional.
+
+  // Password change
   if (values.new_password) {
-    if (values.new_password.length < 8) errors.new_password = t('errors.newPasswordTooShort')
-    if (!values.current_password) errors.current_password = t('errors.currentPasswordRequired')
+    if (values.new_password.length < 8) errors.new_password     = t('errors.newPasswordTooShort')
+    if (!values.current_password)       errors.current_password = t('errors.currentPasswordRequired')
   }
 
+  // Psychologist-specific
   if (values.role === 'psychologist') {
     const dur = parseInt(values.session_duration_minutes, 10)
-    if (isNaN(dur) || dur < 15 || dur > 180) {
+    if (isNaN(dur) || dur < 15 || dur > 180)
       errors.session_duration_minutes = t('errors.sessionDurationRange')
-    }
   }
 
   return errors
@@ -161,14 +189,18 @@ export default function ProfilePage() {
     country_code:             user.country_code    ?? '',
   })
 
-  const [errors, setErrors]   = useState({})
-  const [saving, setSaving]   = useState(false)
+  const [errors, setErrors]     = useState({})
+  const [saving, setSaving]     = useState(false)
   const [feedback, setFeedback] = useState(null) // { type, message }
 
-  // ── Field change handler ───────────────────────────────────────────────────
+  // ── Field change handler with per-field live keystroke filters ─────────────
   const handleChange = (field) => (e) => {
-    setValues((prev) => ({ ...prev, [field]: e.target.value }))
-    // Clear that field's error on change
+    const raw = e.target.value
+    let next = raw
+    if (field === 'first_name' || field === 'last_name') next = filterName(raw)
+    if (field === 'phone_number')                        next = filterPhone(raw)
+    setValues((prev) => ({ ...prev, [field]: next }))
+    // Clear that field's inline error on change
     if (errors[field]) setErrors((prev) => { const n = { ...prev }; delete n[field]; return n })
   }
 
@@ -177,7 +209,7 @@ export default function ProfilePage() {
     e.preventDefault()
     setFeedback(null)
 
-    const validationErrors = validate(values, t)
+    const validationErrors = validate({ ...values, role: user.role }, t)
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)
       return
@@ -185,25 +217,16 @@ export default function ProfilePage() {
 
     setSaving(true)
 
-    // Build payload — only send fields that changed from the current user
-    // (plus passwords if filled). This keeps the PATCH request minimal and
-    // avoids accidentally triggering server-side validation on untouched fields.
+    // Build payload — only send fields that changed (keeps PATCH minimal)
     const payload = {}
-
     const str = (v) => (v ?? '').trim()
 
-    if (str(values.first_name) !== str(user.first_name))
-      payload.first_name = str(values.first_name)
-    if (str(values.last_name) !== str(user.last_name))
-      payload.last_name = str(values.last_name)
-    if (str(values.dob) !== str(user.dob ?? ''))
-      payload.dob = str(values.dob) || null  // send null to clear
-    if (str(values.city) !== str(user.city ?? ''))
-      payload.city = str(values.city)
-    if (str(values.phone_number) !== str(user.phone_number ?? ''))
-      payload.phone_number = str(values.phone_number)
-    if (values.timezone !== user.timezone)
-      payload.timezone = values.timezone
+    if (str(values.first_name)   !== str(user.first_name))        payload.first_name    = str(values.first_name)
+    if (str(values.last_name)    !== str(user.last_name))         payload.last_name     = str(values.last_name)
+    if (str(values.dob)          !== str(user.dob ?? ''))         payload.dob           = str(values.dob) || null
+    if (str(values.city)         !== str(user.city ?? ''))        payload.city          = str(values.city)
+    if (str(values.phone_number) !== str(user.phone_number ?? '')) payload.phone_number = str(values.phone_number)
+    if (values.timezone          !== user.timezone)               payload.timezone      = values.timezone
 
     if (values.new_password) {
       payload.current_password = values.current_password
@@ -219,7 +242,6 @@ export default function ProfilePage() {
       const dur = parseInt(values.session_duration_minutes, 10)
       if (dur !== user.session_duration_minutes)
         payload.session_duration_minutes = dur
-
       if (str(values.session_price) !== str(user.session_price ?? ''))
         payload.session_price = parseFloat(values.session_price)
       if (str(values.license_number) !== str(user.license_number ?? ''))
@@ -228,7 +250,7 @@ export default function ProfilePage() {
         payload.country_code = str(values.country_code)
     }
 
-    // If nothing changed, skip the network call
+    // Nothing changed — skip the network call
     if (Object.keys(payload).length === 0) {
       setSaving(false)
       setFeedback({ type: 'success', message: t('success') })
@@ -240,12 +262,11 @@ export default function ProfilePage() {
     setSaving(false)
 
     if (result.ok) {
-      setUser(result.data)          // keep AuthContext fresh
-      setValues((prev) => ({        // clear password fields on success
+      setUser(result.data)
+      setValues((prev) => ({
         ...prev,
         current_password: '',
         new_password:     '',
-        // sync role-specific fields from fresh server response
         session_duration_minutes: String(result.data.session_duration_minutes ?? prev.session_duration_minutes),
         session_price:            String(result.data.session_price            ?? prev.session_price),
         license_number:           result.data.license_number                  ?? prev.license_number,
@@ -254,7 +275,9 @@ export default function ProfilePage() {
       setFeedback({ type: 'success', message: t('success') })
       setTimeout(() => setFeedback(null), 3500)
     } else {
-      setFeedback({ type: 'error', message: result.error || t('errors.generic') })
+      // Translate raw backend error string into the active language
+      const localised = localiseBackendError(result.error || '', t)
+      setFeedback({ type: 'error', message: localised || t('errors.generic') })
     }
   }
 
@@ -338,11 +361,12 @@ export default function ProfilePage() {
                 </Field>
               </div>
 
-              <Field label={t('fields.phone')}>
+              <Field label={t('fields.phone')} error={errors.phone_number}>
                 <TextInput
                   value={values.phone_number}
                   onChange={handleChange('phone_number')}
                   placeholder={t('placeholders.phone')}
+                  error={errors.phone_number}
                 />
               </Field>
 
@@ -480,11 +504,7 @@ export default function ProfilePage() {
             </div>
           </SectionCard>
 
-          {/* ── Feedback banner + submit ── */}
-          {feedback && (
-            <StatusBadge type={feedback.type} message={feedback.message} />
-          )}
-
+          {/* ── Submit + feedback ── */}
           <button
             type="submit"
             disabled={saving}
@@ -493,6 +513,11 @@ export default function ProfilePage() {
           >
             {saving ? t('actions.saving') : t('actions.save')}
           </button>
+
+          {/* Feedback banner sits below the submit button per spec */}
+          {feedback && (
+            <StatusBadge type={feedback.type} message={feedback.message} />
+          )}
 
         </form>
       </div>

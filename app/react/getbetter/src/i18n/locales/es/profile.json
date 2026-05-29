@@ -42,12 +42,18 @@
   "success": "Perfil actualizado correctamente.",
   "errors": {
     "firstNameRequired": "El nombre es obligatorio.",
-    "firstNameInvalid": "El nombre solo puede contener letras y guiones.",
+    "firstNameInvalid": "El nombre solo puede contener letras, guiones, espacios y apóstrofos.",
     "lastNameRequired": "Los apellidos son obligatorios.",
-    "lastNameInvalid": "Los apellidos solo pueden contener letras y guiones.",
+    "lastNameInvalid": "Los apellidos solo pueden contener letras, guiones, espacios y apóstrofos.",
+    "nameInvalid": "Los nombres solo pueden contener letras, guiones, espacios y apóstrofos.",
+    "phoneInvalid": "El teléfono solo puede contener dígitos, + y -.",
+    "dobInvalid": "Introduce una fecha válida.",
     "newPasswordTooShort": "La nueva contraseña debe tener al menos 8 caracteres.",
     "currentPasswordRequired": "La contraseña actual es necesaria para establecer una nueva.",
+    "currentPasswordIncorrect": "La contraseña actual que has introducido es incorrecta.",
+    "emailInUse": "Esa dirección de correo ya está en uso.",
     "sessionDurationRange": "La duración debe estar entre 15 y 180 minutos.",
+    "sessionPriceRange": "El precio debe estar entre 0,5 y 5,0 en incrementos de 0,5.",
     "generic": "Algo salió mal. Por favor, inténtalo de nuevo."
   },
   "verification": {
