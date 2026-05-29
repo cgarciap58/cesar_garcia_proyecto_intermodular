@@ -30,7 +30,6 @@ const CustomInput = forwardRef(({ value, onClick, onChange, placeholder }, ref) 
     onClick={onClick}
     onChange={onChange}
     placeholder={placeholder ?? 'DD/MM/YYYY'}
-    readOnly={false}
     className={
       'w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-white ' +
       'placeholder:text-slate-500 focus:border-blue-400 focus:outline-none ' +
@@ -43,30 +42,17 @@ CustomInput.displayName = 'CustomInput'
 // ─── Component ────────────────────────────────────────────────────────────────
 //
 // Props:
-//   label   – optional label string (rendered above the picker)
-//   value   – controlled ISO date string "YYYY-MM-DD" or ""
+//   label    – optional label string
+//   value    – controlled ISO date string "YYYY-MM-DD" or ""
 //   onChange – called with "YYYY-MM-DD" (or "" when cleared)
-//   min     – "YYYY-MM-DD" lower bound (optional)
-//   max     – "YYYY-MM-DD" upper bound (optional)
-//   dobMode – boolean; when true, restricts to users aged ≥ 16
+//   min      – "YYYY-MM-DD" lower bound (optional)
+//   max      – "YYYY-MM-DD" upper bound (optional)
 //
-// Date format is always DD/MM/YYYY (locale=enGB, dateFormat="P")
-// so it renders as dd/mm/yyyy in the input.
-//
-// The ISO string stored in state / sent to the backend is always YYYY-MM-DD
-// regardless of display format.
+// Date format is always DD/MM/YYYY (locale=enGB, dateFormat="P").
+// Age enforcement (e.g. min 16 years) is handled entirely by backend
+// validation — the picker itself imposes no year restrictions.
 
-export default function AppDatePicker({ label, value, onChange, min, max, dobMode = false }) {
-  // For DOB: max date = today minus 16 years
-  const dobMax = (() => {
-    const d = new Date()
-    d.setFullYear(d.getFullYear() - 16)
-    return d
-  })()
-
-  const resolvedMin = dobMode ? undefined      : isoToDate(min) ?? undefined
-  const resolvedMax = dobMode ? dobMax         : isoToDate(max) ?? undefined
-
+export default function AppDatePicker({ label, value, onChange, min, max }) {
   return (
     <div>
       {label && (
@@ -77,11 +63,11 @@ export default function AppDatePicker({ label, value, onChange, min, max, dobMod
         onChange={(date) => onChange(dateToIso(date))}
         locale={enGB}
         dateFormat="P"
-        minDate={resolvedMin}
-        maxDate={resolvedMax}
+        minDate={isoToDate(min) ?? undefined}
+        maxDate={isoToDate(max) ?? undefined}
         showYearDropdown
         scrollableYearDropdown
-        yearDropdownItemNumber={100}
+        yearDropdownItemNumber={120}
         customInput={<CustomInput />}
       />
     </div>

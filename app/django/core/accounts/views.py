@@ -1,5 +1,6 @@
 import json
 import re
+from datetime import date
 
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.core.validators import RegexValidator
@@ -11,32 +12,30 @@ from .models import PatientProfile, PsychologistProfile
 
 
 # ---------------------------------------------------------------------------
-# Canonical validators — kept in sync with react/src/utils/validate.js
+# Validators (kept in sync with react/src/utils/validate.js)
 # ---------------------------------------------------------------------------
 
-# Letters (a-z, A-Z, Spanish accented, ñ/Ñ), hyphen, space, apostrophe
-NAME_RE = re.compile(r"^[a-zA-ZñÑáéíóúÁÉÍÓÚ\s'\-]+$")
-
-# Digits, +, -
+NAME_RE  = re.compile(r"^[a-zA-ZñÑáéíóúÁÉÍÓÚ\s'\-]+$")
 PHONE_RE = re.compile(r"^[0-9+\-]+$")
 
 name_validator = RegexValidator(
     regex=NAME_RE.pattern,
-    message="name_invalid",          # machine-readable code, translated on the frontend
+    message="name_invalid",
 )
+
+MIN_AGE = 16
+
+def _is_old_enough(dob_date):
+    today  = date.today()
+    cutoff = date(today.year - MIN_AGE, today.month, today.day)
+    return dob_date <= cutoff
 
 
 def _err(code, status=400):
-    """Return a single-error JSON response using a machine-readable code."""
     return JsonResponse({"error": code}, status=status)
 
 
 def _field_errors(errors_dict, status=422):
-    """
-    Return a structured multi-field error response.
-    Shape: { "errors": { "field_name": "error_code", ... } }
-    The frontend maps each code through i18n.
-    """
     return JsonResponse({"errors": errors_dict}, status=status)
 
 
@@ -45,10 +44,6 @@ def _field_errors(errors_dict, status=422):
 # ---------------------------------------------------------------------------
 
 def _user_payload(user):
-    """
-    Shared dict returned by /api/auth/me/ and after login/register/profile update.
-    Always returns the freshest data.
-    """
     data = {
         'id':              user.id,
         'email':           user.email,
@@ -66,8 +61,7 @@ def _user_payload(user):
     if user.role == 'patient':
         try:
             p = user.patient_profile
-            data['credits']  = p.credits
-            data['concerns'] = p.concerns
+            data['credits'] = p.credits
         except PatientProfile.DoesNotExist:
             pass
 
@@ -102,10 +96,10 @@ def register_user(request):
     last_name        = (payload.get("last_name")        or "").strip()
     email            = (payload.get("email")            or "").strip().lower()
     role             =  payload.get("role")
+    dob_raw          = (payload.get("dob")              or "").strip()
     password         =  payload.get("password")         or ""
     confirm_password =  payload.get("confirmPassword")  or ""
 
-    # ── Collect all field-level errors up-front ─────────────────────────────
     errors = {}
 
     if not first_name:
@@ -120,6 +114,17 @@ def register_user(request):
 
     if not email:
         errors["email"] = "required"
+
+    # DOB: required + age ≥ 16
+    if not dob_raw:
+        errors["dob"] = "required"
+    else:
+        from django.utils.dateparse import parse_date
+        dob_date = parse_date(dob_raw)
+        if dob_date is None:
+            errors["dob"] = "dob_invalid"
+        elif not _is_old_enough(dob_date):
+            errors["dob"] = "dob_too_young"
 
     if role not in {"patient", "psychologist"}:
         errors["role"] = "invalid_role"
@@ -137,7 +142,6 @@ def register_user(request):
     if errors:
         return _field_errors(errors)
 
-    # ── Cross-field checks ───────────────────────────────────────────────────
     User = get_user_model()
     if User.objects.filter(username=email).exists() or User.objects.filter(email=email).exists():
         return _field_errors({"email": "email_already_exists"}, status=409)
@@ -153,7 +157,7 @@ def register_user(request):
         if psych_errors:
             return _field_errors(psych_errors)
 
-    # ── Create user ──────────────────────────────────────────────────────────
+    from django.utils.dateparse import parse_date
     user = User.objects.create_user(
         username=email,
         email=email,
@@ -161,6 +165,7 @@ def register_user(request):
         last_name=last_name,
         role=role,
         password=password,
+        dob=parse_date(dob_raw),
     )
 
     if role == "psychologist":
@@ -170,10 +175,7 @@ def register_user(request):
             country_code=(payload.get("country_code") or "").strip(),
         )
     elif role == "patient":
-        PatientProfile.objects.create(
-            user=user,
-            concerns=(payload.get("concerns") or "").strip(),
-        )
+        PatientProfile.objects.create(user=user)
 
     login(request, user)
     return JsonResponse(_user_payload(user), status=201)
@@ -191,10 +193,8 @@ def login_user(request):
     password =  payload.get("password") or ""
 
     errors = {}
-    if not email:
-        errors["email"] = "required"
-    if not password:
-        errors["password"] = "required"
+    if not email:    errors["email"]    = "required"
+    if not password: errors["password"] = "required"
     if errors:
         return _field_errors(errors)
 
@@ -242,13 +242,6 @@ ALLOWED_TIMEZONES = {
 @csrf_exempt
 @require_http_methods(["PATCH"])
 def update_profile(request):
-    """
-    PATCH /api/auth/profile/
-
-    Validates all supplied fields and returns structured error codes on failure.
-    Error shape: { "errors": { "field": "error_code" } }
-    Success shape: full user payload (same as /api/auth/me/).
-    """
     if not request.user.is_authenticated:
         return _err("not_authenticated", 401)
 
@@ -257,25 +250,19 @@ def update_profile(request):
     except json.JSONDecodeError:
         return _err("invalid_json")
 
-    user       = request.user
-    errors     = {}
+    user   = request.user
+    errors = {}
     user_dirty = False
-
-    # ── Shared personal fields ──────────────────────────────────────────────
 
     if "first_name" in payload:
         v = (payload["first_name"] or "").strip()
-        if not v:
-            errors["first_name"] = "required"
-        elif not NAME_RE.match(v):
-            errors["first_name"] = "name_invalid"
+        if not v:                    errors["first_name"] = "required"
+        elif not NAME_RE.match(v):   errors["first_name"] = "name_invalid"
 
     if "last_name" in payload:
         v = (payload["last_name"] or "").strip()
-        if not v:
-            errors["last_name"] = "required"
-        elif not NAME_RE.match(v):
-            errors["last_name"] = "name_invalid"
+        if not v:                    errors["last_name"] = "required"
+        elif not NAME_RE.match(v):   errors["last_name"] = "name_invalid"
 
     if "phone_number" in payload:
         ph = (payload["phone_number"] or "").strip()
@@ -285,15 +272,17 @@ def update_profile(request):
     if "dob" in payload:
         from django.utils.dateparse import parse_date
         raw = (payload["dob"] or "").strip()
-        if raw and parse_date(raw) is None:
-            errors["dob"] = "dob_invalid"
+        if raw:
+            dob_date = parse_date(raw)
+            if dob_date is None:
+                errors["dob"] = "dob_invalid"
+            elif not _is_old_enough(dob_date):
+                errors["dob"] = "dob_too_young"
 
     if "timezone" in payload:
         tz = (payload["timezone"] or "").strip()
         if tz not in ALLOWED_TIMEZONES:
             errors["timezone"] = "timezone_invalid"
-
-    # ── Sensitive fields ────────────────────────────────────────────────────
 
     sensitive_requested = "email" in payload or "new_password" in payload
     if sensitive_requested:
@@ -311,11 +300,8 @@ def update_profile(request):
                     errors["email"] = "email_already_exists"
 
         if "new_password" in payload and "current_password" not in errors:
-            new_password = payload.get("new_password") or ""
-            if len(new_password) < 8:
+            if len(payload.get("new_password") or "") < 8:
                 errors["new_password"] = "password_too_short"
-
-    # ── Psychologist-specific ───────────────────────────────────────────────
 
     psych_fields = {"session_duration_minutes", "session_price", "license_number", "country_code"}
     if psych_fields & payload.keys():
@@ -335,87 +321,60 @@ def update_profile(request):
                 except (TypeError, ValueError):
                     errors["session_price"] = "session_price_range"
 
-    # ── Return all errors at once ───────────────────────────────────────────
-
     if errors:
         return _field_errors(errors)
 
-    # ── Apply changes ───────────────────────────────────────────────────────
+    # ── Apply changes ──────────────────────────────────────────────────────
 
     if "first_name" in payload:
-        user.first_name = (payload["first_name"] or "").strip()
-        user_dirty = True
+        user.first_name = (payload["first_name"] or "").strip(); user_dirty = True
     if "last_name" in payload:
-        user.last_name = (payload["last_name"] or "").strip()
-        user_dirty = True
+        user.last_name  = (payload["last_name"]  or "").strip(); user_dirty = True
     if "city" in payload:
-        user.city = (payload["city"] or "").strip()
-        user_dirty = True
+        user.city = (payload["city"] or "").strip(); user_dirty = True
     if "phone_number" in payload:
-        user.phone_number = (payload["phone_number"] or "").strip()
-        user_dirty = True
+        user.phone_number = (payload["phone_number"] or "").strip(); user_dirty = True
     if "dob" in payload:
         from django.utils.dateparse import parse_date
         raw = (payload["dob"] or "").strip()
-        user.dob = parse_date(raw) if raw else None
-        user_dirty = True
+        user.dob = parse_date(raw) if raw else None; user_dirty = True
     if "timezone" in payload:
-        user.timezone = (payload["timezone"] or "").strip()
-        user_dirty = True
+        user.timezone = (payload["timezone"] or "").strip(); user_dirty = True
 
-    if sensitive_requested and not errors:
+    if sensitive_requested:
         if "email" in payload:
             new_email = (payload["email"] or "").strip().lower()
-            user.email    = new_email
-            user.username = new_email
-            user_dirty = True
+            user.email = new_email; user.username = new_email; user_dirty = True
         if "new_password" in payload:
-            user.set_password(payload["new_password"])
-            user_dirty = True
+            user.set_password(payload["new_password"]); user_dirty = True
 
     if user_dirty:
         user.save()
 
-    # Patient-only
-    if "concerns" in payload:
-        if user.role != "patient":
-            return _err("not_patient", 403)
-        try:
-            profile = user.patient_profile
-        except PatientProfile.DoesNotExist:
-            return _err("profile_not_found", 404)
-        profile.concerns = (payload["concerns"] or "").strip()
-        profile.save()
-
-    # Psychologist-only
     if psych_fields & payload.keys() and user.role == "psychologist":
         try:
             profile = user.psychologist_profile
         except PsychologistProfile.DoesNotExist:
             return _err("profile_not_found", 404)
 
-        psych_dirty        = False
+        psych_dirty = False
         verification_reset = False
 
         if "session_duration_minutes" in payload:
-            profile.session_duration_minutes = payload["session_duration_minutes"]
-            psych_dirty = True
+            profile.session_duration_minutes = payload["session_duration_minutes"]; psych_dirty = True
         if "session_price" in payload:
             from decimal import Decimal
-            profile.session_price = Decimal(str(float(payload["session_price"])))
-            psych_dirty = True
+            profile.session_price = Decimal(str(float(payload["session_price"]))); psych_dirty = True
         if "license_number" in payload:
             profile.license_number = (payload["license_number"] or "").strip()
-            psych_dirty        = True
-            verification_reset = True
+            psych_dirty = True; verification_reset = True
         if "country_code" in payload:
             profile.country_code = (payload["country_code"] or "").strip()
-            psych_dirty        = True
-            verification_reset = True
+            psych_dirty = True; verification_reset = True
 
         if verification_reset:
             profile.verification_status = PsychologistProfile.VERIFICATION_PENDING
-            profile.is_verified         = False
+            profile.is_verified = False
 
         if psych_dirty:
             profile.save()
@@ -424,7 +383,7 @@ def update_profile(request):
 
 
 # ---------------------------------------------------------------------------
-# Credits (mock — will be replaced by Stripe)
+# Credits (mock)
 # ---------------------------------------------------------------------------
 
 @csrf_exempt

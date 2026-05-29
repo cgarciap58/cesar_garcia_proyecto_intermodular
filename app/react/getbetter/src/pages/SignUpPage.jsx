@@ -5,20 +5,25 @@ import { signUp } from '../services'
 import { filterName, getPasswordStrength, validateSignUpValues } from '../utils/validate'
 import { useAuth } from '../context/AuthContext'
 import FormField from '../components/FormField'
+import AppDatePicker from '../components/AppDatePicker'
 
 const ROLE_OPTIONS = (t) => [
   { value: 'patient',      label: t('signUp.rolePatient') },
   { value: 'psychologist', label: t('signUp.rolePsychologist') },
 ]
 
-const COUNTRY_OPTIONS = [
-  { value: 'US', label: 'United States' },
-  { value: 'FR', label: 'France' },
-  { value: 'ES', label: 'Spain' },
+// Country options use i18n keys so labels are localised
+const COUNTRY_OPTION_KEYS = [
+  { value: 'ES', key: 'countries.ES' },
+  { value: 'US', key: 'countries.US' },
+  { value: 'FR', key: 'countries.FR' },
+  { value: 'DE', key: 'countries.DE' },
+  { value: 'GB', key: 'countries.GB' },
+  { value: 'PT', key: 'countries.PT' },
 ]
 
 const initialValues = {
-  first_name: '', last_name: '', email: '', role: '',
+  first_name: '', last_name: '', email: '', role: '', dob: '',
   password: '', confirmPassword: '', license_number: '', country_code: '',
 }
 
@@ -28,7 +33,7 @@ const SELECT_CLASS =
 
 const strengthWidthByScore = { 0: 'w-1/4', 1: 'w-1/4', 2: 'w-2/4', 3: 'w-3/4', 4: 'w-full' }
 
-function SignUpPage() {
+export default function SignUpPage() {
   const { setUser } = useAuth()
   const [values, setValues] = useState(initialValues)
   const [errors, setErrors] = useState({})
@@ -43,7 +48,6 @@ function SignUpPage() {
       ? filterName(value)
       : value
     setValues((prev) => ({ ...prev, [name]: nextValue }))
-    // Clear both the field error and the summary banner when the user edits
     setErrors((prev) => ({ ...prev, [name]: '', form: '' }))
   }
 
@@ -52,22 +56,15 @@ function SignUpPage() {
 
     const validationErrors = validateSignUpValues(values, t)
     if (Object.keys(validationErrors).length) {
-      setErrors({
-        ...validationErrors,
-        // Always inject a summary message below the submit button
-        form: t('validation.someFieldsInvalid'),
-      })
+      setErrors({ ...validationErrors, form: t('validation.someFieldsInvalid') })
       return
     }
 
     setIsSubmitting(true)
     setErrors({})
 
-    // Pass t so backend error codes are localised
     const result = await signUp(values, t)
     if (!result.ok) {
-      // Backend may return per-field errors (result.errors) with or without a
-      // form key. Ensure there is always a summary banner below the button.
       const backendErrors = result.errors ?? {}
       setErrors({
         ...backendErrors,
@@ -108,6 +105,21 @@ function SignUpPage() {
             error={errors.email} autoComplete="email"
           />
 
+          {/* Date of birth */}
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-200">
+              {t('signUp.dobLabel')}
+            </label>
+            <AppDatePicker
+              value={values.dob}
+              onChange={(iso) => {
+                setValues((prev) => ({ ...prev, dob: iso }))
+                setErrors((prev) => ({ ...prev, dob: '', form: '' }))
+              }}
+            />
+            {errors.dob ? <p className="mt-1.5 text-sm text-rose-400">{errors.dob}</p> : null}
+          </div>
+
           <div>
             <label htmlFor="role" className="mb-2 block text-sm font-medium text-slate-200">
               {t('signUp.roleLabel')}
@@ -129,8 +141,8 @@ function SignUpPage() {
                 </label>
                 <select id="country_code" name="country_code" value={values.country_code} onChange={handleChange} className={SELECT_CLASS}>
                   <option value="">{t('signUp.licenseCountryPlaceholder')}</option>
-                  {COUNTRY_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
+                  {COUNTRY_OPTION_KEYS.map((o) => (
+                    <option key={o.value} value={o.value}>{t(o.key)}</option>
                   ))}
                 </select>
                 {errors.country_code ? <p className="mt-1.5 text-sm text-rose-400">{errors.country_code}</p> : null}
@@ -176,7 +188,6 @@ function SignUpPage() {
             {isSubmitting ? t('signUp.submittingButton') : t('signUp.submitButton')}
           </button>
 
-          {/* Summary banner — always below the submit button */}
           {errors.form ? <p className="text-sm text-rose-400">{errors.form}</p> : null}
         </form>
 
@@ -188,5 +199,3 @@ function SignUpPage() {
     </main>
   )
 }
-
-export default SignUpPage

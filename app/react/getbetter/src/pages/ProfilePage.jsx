@@ -8,7 +8,6 @@ import AppDatePicker from '../components/AppDatePicker'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// Needs localization
 const TIMEZONES = [
   'UTC',
   'Europe/Madrid', 'Europe/London', 'Europe/Paris', 'Europe/Berlin',
@@ -23,33 +22,29 @@ const TIMEZONES = [
   'Africa/Cairo', 'Africa/Johannesburg',
 ]
 
-const COUNTRY_OPTIONS = [
-  { value: 'ES', label: 'Spain' },
-  { value: 'US', label: 'United States' },
-  { value: 'FR', label: 'France' },
-  { value: 'DE', label: 'Germany' },
-  { value: 'GB', label: 'United Kingdom' },
-  { value: 'PT', label: 'Portugal' },
+// Country option keys for localisation
+const COUNTRY_OPTION_KEYS = [
+  { value: 'ES', key: 'countries.ES' },
+  { value: 'US', key: 'countries.US' },
+  { value: 'FR', key: 'countries.FR' },
+  { value: 'DE', key: 'countries.DE' },
+  { value: 'GB', key: 'countries.GB' },
+  { value: 'PT', key: 'countries.PT' },
 ]
 
-// Maps backend error codes → i18n keys inside the 'profile' namespace.
-// The backend now returns machine-readable codes (e.g. "name_invalid")
-// instead of English sentences.
+// Backend error code → profile i18n key
 const BACKEND_CODE_MAP = {
-  required:                     'errors.required',
-  name_invalid:                 'errors.nameInvalid',
-  phone_invalid:                'errors.phoneInvalid',
-  dob_invalid:                  'errors.dobInvalid',
-  timezone_invalid:             'errors.timezoneInvalid',
-  current_password_incorrect:   'errors.currentPasswordIncorrect',
-  email_already_exists:         'errors.emailInUse',
-  password_too_short:           'errors.newPasswordTooShort',
-  session_duration_range:       'errors.sessionDurationRange',
-  session_price_range:          'errors.sessionPriceRange',
-  invalid_credentials:          'errors.invalidCredentials',
-  not_psychologist:             'errors.generic',
-  not_patient:                  'errors.generic',
-  profile_not_found:            'errors.generic',
+  required:                   'errors.required',
+  name_invalid:               'errors.nameInvalid',
+  phone_invalid:              'errors.phoneInvalid',
+  dob_invalid:                'errors.dobInvalid',
+  dob_too_young:              'errors.dobTooYoung',
+  timezone_invalid:           'errors.timezoneInvalid',
+  current_password_incorrect: 'errors.currentPasswordIncorrect',
+  email_already_exists:       'errors.emailInUse',
+  password_too_short:         'errors.newPasswordTooShort',
+  session_duration_range:     'errors.sessionDurationRange',
+  session_price_range:        'errors.sessionPriceRange',
 }
 
 function mapBackendErrors(rawErrors = {}, t) {
@@ -62,18 +57,6 @@ function mapBackendErrors(rawErrors = {}, t) {
 }
 
 // ─── Shared UI primitives ─────────────────────────────────────────────────────
-
-function SectionCard({ title, subtitle, children }) {
-  return (
-    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
-      <div className="mb-5">
-        <h2 className="text-base font-semibold text-white">{title}</h2>
-        {subtitle && <p className="text-xs text-slate-500 mt-1">{subtitle}</p>}
-      </div>
-      {children}
-    </div>
-  )
-}
 
 function Field({ label, error, children, hint }) {
   return (
@@ -98,10 +81,7 @@ function TextInput({ value, onChange, placeholder, disabled, error, type = 'text
   if (disabled) return <input type={type} value={value} disabled className={INPUT_DISABLED} />
   return (
     <input
-      type={type}
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
+      type={type} value={value} onChange={onChange} placeholder={placeholder}
       className={error ? INPUT_ERROR : INPUT_NORMAL}
     />
   )
@@ -109,11 +89,7 @@ function TextInput({ value, onChange, placeholder, disabled, error, type = 'text
 
 function SelectInput({ value, onChange, options, error }) {
   return (
-    <select
-      value={value}
-      onChange={onChange}
-      className={error ? INPUT_ERROR : INPUT_NORMAL}
-    >
+    <select value={value} onChange={onChange} className={error ? INPUT_ERROR : INPUT_NORMAL}>
       {options.map(({ value: v, label }) => (
         <option key={v} value={v}>{label}</option>
       ))}
@@ -134,6 +110,10 @@ function StatusBadge({ type, message }) {
     </div>
   )
 }
+
+// ─── Section nav items ────────────────────────────────────────────────────────
+
+const SECTIONS = ['personal', 'password', 'roleInfo']
 
 // ─── Client-side validation ───────────────────────────────────────────────────
 
@@ -170,8 +150,9 @@ function validate(values, t) {
 export default function ProfilePage() {
   const { user, setUser } = useAuth()
   const navigate = useNavigate()
-  const { t } = useTranslation('profile')
+  const { t, i18n } = useTranslation(['profile', 'common'])
 
+  const [activeSection, setActiveSection] = useState('personal')
   const [values, setValues] = useState({
     first_name:               user.first_name   ?? '',
     last_name:                user.last_name    ?? '',
@@ -181,7 +162,7 @@ export default function ProfilePage() {
     timezone:                 user.timezone     ?? 'UTC',
     current_password:         '',
     new_password:             '',
-    concerns:                 user.concerns     ?? '',
+    // psychologist-only
     session_duration_minutes: String(user.session_duration_minutes ?? 55),
     session_price:            String(user.session_price            ?? '1.0'),
     license_number:           user.license_number  ?? '',
@@ -192,7 +173,6 @@ export default function ProfilePage() {
   const [saving, setSaving]     = useState(false)
   const [feedback, setFeedback] = useState(null)
 
-  // ── Field change handler with per-field live filters ───────────────────────
   const handleChange = (field) => (e) => {
     const raw = e.target.value
     let next = raw
@@ -202,7 +182,6 @@ export default function ProfilePage() {
     if (errors[field]) setErrors((prev) => { const n = { ...prev }; delete n[field]; return n })
   }
 
-  // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault()
     setFeedback(null)
@@ -210,6 +189,7 @@ export default function ProfilePage() {
     const validationErrors = validate({ ...values, role: user.role }, t)
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)
+      setFeedback({ type: 'error', message: t('errors.someFieldsInvalid') })
       return
     }
 
@@ -228,11 +208,6 @@ export default function ProfilePage() {
     if (values.new_password) {
       payload.current_password = values.current_password
       payload.new_password     = values.new_password
-    }
-
-    if (user.role === 'patient') {
-      if (str(values.concerns) !== str(user.concerns ?? ''))
-        payload.concerns = str(values.concerns)
     }
 
     if (user.role === 'psychologist') {
@@ -271,7 +246,6 @@ export default function ProfilePage() {
       setFeedback({ type: 'success', message: t('success') })
       setTimeout(() => setFeedback(null), 3500)
     } else if (result.fieldErrors) {
-      // Structured backend errors: map codes → localised strings, spread into field errors
       const mapped = mapBackendErrors(result.fieldErrors, t)
       setErrors(mapped)
       setFeedback({ type: 'error', message: t('errors.someFieldsInvalid') })
@@ -280,8 +254,7 @@ export default function ProfilePage() {
     }
   }
 
-  const isPsych   = user.role === 'psychologist'
-  const isPatient = user.role === 'patient'
+  const isPsych = user.role === 'psychologist'
 
   const verificationBadgeStyle = {
     pending:  'bg-amber-500/15 border-amber-500/30 text-amber-400',
@@ -289,19 +262,22 @@ export default function ProfilePage() {
     rejected: 'bg-rose-500/15 border-rose-500/30 text-rose-400',
   }
 
+  // Sections available for this user's role
+  const visibleSections = SECTIONS.filter((s) => s !== 'roleInfo' || isPsych)
+
   return (
     <main className="min-h-screen bg-slate-950 pt-20 pb-16 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-3xl mx-auto">
 
-        <div className="flex items-center gap-4 pt-4">
+        {/* Page header */}
+        <div className="flex items-center gap-4 pt-4 mb-8">
           <button
             onClick={() => navigate('/dashboard')}
             className="text-slate-400 hover:text-white transition-colors"
             aria-label="Back"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </button>
           <div>
@@ -310,80 +286,121 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+        <div className="flex gap-6">
 
-          {/* ── Personal information ── */}
-          <SectionCard title={t('sections.personal')} subtitle={t('sections.personalSubtitle')}>
-            <div className="space-y-4">
+          {/* ── Section sidebar nav ── */}
+          <nav className="flex-shrink-0 w-44">
+            <ul className="space-y-1">
+              {visibleSections.map((section) => (
+                <li key={section}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveSection(section)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                      activeSection === section
+                        ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                    }`}
+                  >
+                    {t(`sections.${section}`)}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
-              <Field label={t('fields.email')} hint={t('emailNote')}>
-                <TextInput value={user.email} disabled />
-              </Field>
+          {/* ── Active section form ── */}
+          <div className="flex-1 min-w-0">
+            <form onSubmit={handleSubmit} noValidate>
+              <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label={t('fields.firstName')} error={errors.first_name}>
-                  <TextInput value={values.first_name} onChange={handleChange('first_name')} error={errors.first_name} />
-                </Field>
-                <Field label={t('fields.lastName')} error={errors.last_name}>
-                  <TextInput value={values.last_name} onChange={handleChange('last_name')} error={errors.last_name} />
-                </Field>
-              </div>
+                {/* ── Personal information ── */}
+                {activeSection === 'personal' && (
+                  <>
+                    <div>
+                      <h2 className="text-base font-semibold text-white">{t('sections.personal')}</h2>
+                      <p className="text-xs text-slate-500 mt-1">{t('sections.personalSubtitle')}</p>
+                    </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label={t('fields.dob')}>
-                  <AppDatePicker
-                    dobMode
-                    value={values.dob}
-                    onChange={(iso) => setValues((prev) => ({ ...prev, dob: iso }))}
-                  />
-                </Field>
-                <Field label={t('fields.city')}>
-                  <TextInput value={values.city} onChange={handleChange('city')} placeholder={t('placeholders.city')} />
-                </Field>
-              </div>
+                    <Field label={t('fields.email')} hint={t('emailNote')}>
+                      <TextInput value={user.email} disabled />
+                    </Field>
 
-              <Field label={t('fields.phone')} error={errors.phone_number}>
-                <TextInput
-                  value={values.phone_number}
-                  onChange={handleChange('phone_number')}
-                  placeholder={t('placeholders.phone')}
-                  error={errors.phone_number}
-                />
-              </Field>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Field label={t('fields.firstName')} error={errors.first_name}>
+                        <TextInput value={values.first_name} onChange={handleChange('first_name')} error={errors.first_name} />
+                      </Field>
+                      <Field label={t('fields.lastName')} error={errors.last_name}>
+                        <TextInput value={values.last_name} onChange={handleChange('last_name')} error={errors.last_name} />
+                      </Field>
+                    </div>
 
-            </div>
-          </SectionCard>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Field label={t('fields.dob')} error={errors.dob}>
+                        <AppDatePicker
+                          value={values.dob}
+                          onChange={(iso) => {
+                            setValues((prev) => ({ ...prev, dob: iso }))
+                            if (errors.dob) setErrors((prev) => { const n = { ...prev }; delete n.dob; return n })
+                          }}
+                        />
+                      </Field>
+                      <Field label={t('fields.city')}>
+                        <TextInput value={values.city} onChange={handleChange('city')} placeholder={t('placeholders.city')} />
+                      </Field>
+                    </div>
 
-          {/* ── Timezone ── */}
-          <SectionCard title={t('sections.timezone')} subtitle={t('sections.timezoneSubtitle')}>
-            <Field label={t('fields.timezone')}>
-              <SelectInput
-                value={values.timezone}
-                onChange={handleChange('timezone')}
-                options={TIMEZONES.map((tz) => ({ value: tz, label: tz }))}
-              />
-            </Field>
-          </SectionCard>
+                    <Field label={t('fields.phone')} error={errors.phone_number}>
+                      <TextInput
+                        value={values.phone_number}
+                        onChange={handleChange('phone_number')}
+                        placeholder={t('placeholders.phone')}
+                        error={errors.phone_number}
+                      />
+                    </Field>
 
-          {/* ── Role-specific settings ── */}
-          {(isPsych || isPatient) && (
-            <SectionCard title={t('sections.roleInfo')} subtitle={t('sections.roleInfoSubtitle')}>
-              <div className="space-y-4">
-
-                {isPatient && (
-                  <Field label={t('fields.concerns')}>
-                    <textarea
-                      value={values.concerns}
-                      onChange={handleChange('concerns')}
-                      placeholder={t('fields.concernsPlaceholder')}
-                      rows={3}
-                      className={`${INPUT_NORMAL} resize-none`}
-                    />
-                  </Field>
+                    <Field label={t('fields.timezone')}>
+                      <SelectInput
+                        value={values.timezone}
+                        onChange={handleChange('timezone')}
+                        options={TIMEZONES.map((tz) => ({ value: tz, label: tz }))}
+                      />
+                    </Field>
+                  </>
                 )}
 
-                {isPsych && (
+                {/* ── Change password ── */}
+                {activeSection === 'password' && (
                   <>
+                    <div>
+                      <h2 className="text-base font-semibold text-white">{t('sections.password')}</h2>
+                      <p className="text-xs text-slate-500 mt-1">{t('sections.passwordSubtitle')}</p>
+                    </div>
+
+                    <Field label={t('fields.currentPassword')} error={errors.current_password}>
+                      <TextInput type="password" value={values.current_password}
+                        onChange={handleChange('current_password')}
+                        placeholder={t('placeholders.currentPassword')}
+                        error={errors.current_password} />
+                    </Field>
+                    <Field label={t('fields.newPassword')} error={errors.new_password}>
+                      <TextInput type="password" value={values.new_password}
+                        onChange={handleChange('new_password')}
+                        placeholder={t('placeholders.newPassword')}
+                        error={errors.new_password} />
+                    </Field>
+                  </>
+                )}
+
+                {/* ── Role settings (psychologist only) ── */}
+                {activeSection === 'roleInfo' && isPsych && (
+                  <>
+                    <div>
+                      <h2 className="text-base font-semibold text-white">{t('sections.roleInfo')}</h2>
+                      <p className="text-xs text-slate-500 mt-1">{t('sections.roleInfoSubtitle')}</p>
+                    </div>
+
+                    {/* Verification badge */}
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-slate-400">{t('verification.label')}:</span>
                       <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full border
@@ -411,7 +428,10 @@ export default function ProfilePage() {
                         <SelectInput
                           value={values.country_code}
                           onChange={handleChange('country_code')}
-                          options={[{ value: '', label: '—' }, ...COUNTRY_OPTIONS]}
+                          options={[
+                            { value: '', label: '—' },
+                            ...COUNTRY_OPTION_KEYS.map((o) => ({ value: o.value, label: t(o.key, { ns: 'common' }) })),
+                          ]}
                         />
                       </Field>
                     </div>
@@ -424,38 +444,24 @@ export default function ProfilePage() {
                 )}
 
               </div>
-            </SectionCard>
-          )}
 
-          {/* ── Change password ── */}
-          <SectionCard title={t('sections.password')} subtitle={t('sections.passwordSubtitle')}>
-            <div className="space-y-4">
-              <Field label={t('fields.currentPassword')} error={errors.current_password}>
-                <TextInput type="password" value={values.current_password}
-                  onChange={handleChange('current_password')} placeholder={t('placeholders.currentPassword')}
-                  error={errors.current_password} />
-              </Field>
-              <Field label={t('fields.newPassword')} error={errors.new_password}>
-                <TextInput type="password" value={values.new_password}
-                  onChange={handleChange('new_password')} placeholder={t('placeholders.newPassword')}
-                  error={errors.new_password} />
-              </Field>
-            </div>
-          </SectionCard>
+              {/* Submit + feedback — always visible below the section card */}
+              <div className="mt-4 space-y-3">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="w-full rounded-lg bg-blue-500 hover:bg-blue-400 disabled:bg-blue-500/50
+                    px-4 py-2.5 text-sm font-semibold text-white transition-colors"
+                >
+                  {saving ? t('actions.saving') : t('actions.save')}
+                </button>
 
-          {/* ── Submit + feedback ── */}
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full rounded-lg bg-blue-500 hover:bg-blue-400 disabled:bg-blue-500/50
-              px-4 py-2.5 text-sm font-semibold text-white transition-colors"
-          >
-            {saving ? t('actions.saving') : t('actions.save')}
-          </button>
+                {feedback && <StatusBadge type={feedback.type} message={feedback.message} />}
+              </div>
+            </form>
+          </div>
 
-          {feedback && <StatusBadge type={feedback.type} message={feedback.message} />}
-
-        </form>
+        </div>
       </div>
     </main>
   )

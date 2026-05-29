@@ -1,24 +1,33 @@
 {
   "appName": "GetBetter",
   "nav": {
-    "dashboard": "Dashboard",
-    "profile": "Profile",
-    "logOut": "Log out",
+    "home":         "Home",
+    "dashboard":    "Dashboard",
+    "profile":      "Profile",
+    "logOut":       "Log out",
     "testimonials": "Testimonials",
-    "signIn": "Sign in"
+    "signIn":       "Sign in"
+  },
+  "countries": {
+    "ES": "Spain",
+    "US": "United States",
+    "FR": "France",
+    "DE": "Germany",
+    "GB": "United Kingdom",
+    "PT": "Portugal"
   },
   "actions": {
-    "save": "Save",
-    "cancel": "Cancel",
+    "save":    "Save",
+    "cancel":  "Cancel",
     "confirm": "Confirm",
-    "delete": "Delete",
-    "close": "Close"
+    "delete":  "Delete",
+    "close":   "Close"
   },
   "status": {
-    "loading": "Loading...",
-    "saving": "Saving...",
+    "loading":   "Loading...",
+    "saving":    "Saving...",
     "confirmed": "Confirmed",
-    "pending": "Pending",
+    "pending":   "Pending",
     "cancelled": "Cancelled"
   },
   "errors": {
@@ -26,26 +35,20 @@
   },
   "landing": {
     "hero": {
-      "headline": "Mental health support that helps you",
+      "headline":       "Mental health support that helps you",
       "headlineAccent": "get better",
-      "subtitle": "Connect with licensed psychologists and take control of your emotional wellbeing.",
-      "cta": "Get started"
+      "subtitle":       "Connect with licensed psychologists and take control of your emotional wellbeing.",
+      "cta":            "Get started"
     },
     "testimonials": {
       "heading": "What users say",
       "items": [
-        {
-          "quote": "GetBetter helped me find the right therapist in two days.",
-          "author": "Patient, New York"
-        },
-        {
-          "quote": "My online practice grew with better discovery and booking.",
-          "author": "Psychologist, California"
-        }
+        { "quote": "GetBetter helped me find the right therapist in two days.", "author": "Patient, New York" },
+        { "quote": "My online practice grew with better discovery and booking.",  "author": "Psychologist, California" }
       ]
     },
     "footer": {
-      "rights": "© 2026 GetBetter. All rights reserved.",
+      "rights":  "© 2026 GetBetter. All rights reserved.",
       "tagline": "Made to connect patients and psychologists."
     }
   }

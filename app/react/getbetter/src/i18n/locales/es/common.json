@@ -1,24 +1,33 @@
 {
   "appName": "GetBetter",
   "nav": {
-    "dashboard": "Inicio",
-    "profile": "Perfil",
-    "logOut": "Cerrar sesión",
+    "home":         "Inicio",
+    "dashboard":    "Panel",
+    "profile":      "Perfil",
+    "logOut":       "Cerrar sesión",
     "testimonials": "Testimonios",
-    "signIn": "Iniciar sesión"
+    "signIn":       "Iniciar sesión"
+  },
+  "countries": {
+    "ES": "España",
+    "US": "Estados Unidos",
+    "FR": "Francia",
+    "DE": "Alemania",
+    "GB": "Reino Unido",
+    "PT": "Portugal"
   },
   "actions": {
-    "save": "Guardar",
-    "cancel": "Cancelar",
+    "save":    "Guardar",
+    "cancel":  "Cancelar",
     "confirm": "Confirmar",
-    "delete": "Eliminar",
-    "close": "Cerrar"
+    "delete":  "Eliminar",
+    "close":   "Cerrar"
   },
   "status": {
-    "loading": "Cargando...",
-    "saving": "Guardando...",
+    "loading":   "Cargando...",
+    "saving":    "Guardando...",
     "confirmed": "Confirmada",
-    "pending": "Pendiente",
+    "pending":   "Pendiente",
     "cancelled": "Cancelada"
   },
   "errors": {
@@ -26,26 +35,20 @@
   },
   "landing": {
     "hero": {
-      "headline": "Apoyo en salud mental para que te",
+      "headline":       "Apoyo en salud mental para que te",
       "headlineAccent": "pongas bien",
-      "subtitle": "Conecta con psicólogos colegiados y toma el control de tu bienestar emocional.",
-      "cta": "Comenzar"
+      "subtitle":       "Conecta con psicólogos colegiados y toma el control de tu bienestar emocional.",
+      "cta":            "Comenzar"
     },
     "testimonials": {
       "heading": "Lo que dicen nuestros usuarios",
       "items": [
-        {
-          "quote": "GetBetter me ayudó a encontrar al terapeuta adecuado en dos días.",
-          "author": "Paciente, Madrid"
-        },
-        {
-          "quote": "Mi consulta online creció gracias a una mejor visibilidad y reservas.",
-          "author": "Psicóloga, Barcelona"
-        }
+        { "quote": "GetBetter me ayudó a encontrar al terapeuta adecuado en dos días.", "author": "Paciente, Madrid" },
+        { "quote": "Mi consulta online creció gracias a una mejor visibilidad y reservas.", "author": "Psicóloga, Barcelona" }
       ]
     },
     "footer": {
-      "rights": "© 2026 GetBetter. Todos los derechos reservados.",
+      "rights":  "© 2026 GetBetter. Todos los derechos reservados.",
       "tagline": "Conectando pacientes y psicólogos."
     }
   }

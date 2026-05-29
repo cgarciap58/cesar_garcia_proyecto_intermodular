@@ -1,0 +1,1 @@
+- Copy DB script to secure database to my own local host
