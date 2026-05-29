@@ -46,10 +46,8 @@ function SignIn() {
     }
     setIsSubmitting(true)
     setErrors({})
-    const result = await signIn({
-      email: values.email.trim().toLowerCase(),
-      password: values.password,
-    })
+    // Pass t so backend error codes (e.g. invalid_credentials) are localised
+    const result = await signIn({ email: values.email.trim().toLowerCase(), password: values.password }, t)
     if (!result.ok) {
       setErrors(result.errors)
       setIsSubmitting(false)
@@ -89,7 +87,7 @@ function SignIn() {
             {isSubmitting ? t('signIn.submittingButton') : t('signIn.submitButton')}
           </button>
 
-          {/* Form-level error (e.g. wrong credentials) sits below the submit button per spec */}
+          {/* Form-level error (e.g. wrong credentials) — below submit button */}
           {errors.form ? <p className="text-sm text-rose-400">{errors.form}</p> : null}
         </form>
 

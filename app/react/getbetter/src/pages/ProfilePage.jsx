@@ -8,7 +8,7 @@ import AppDatePicker from '../components/AppDatePicker'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// Mirror of ALLOWED_TIMEZONES in Django views.py
+// Needs localization
 const TIMEZONES = [
   'UTC',
   'Europe/Madrid', 'Europe/London', 'Europe/Paris', 'Europe/Berlin',
@@ -32,23 +32,33 @@ const COUNTRY_OPTIONS = [
   { value: 'PT', label: 'Portugal' },
 ]
 
-// Maps raw backend error strings to i18n keys in profile.errors.
-// Extend this table whenever Django returns new error strings.
-const BACKEND_ERROR_KEYS = {
-  'Current password is incorrect':                 'errors.currentPasswordIncorrect',
-  'That email is already in use':                  'errors.emailInUse',
-  'first_name cannot be blank':                    'errors.firstNameRequired',
-  'last_name cannot be blank':                     'errors.lastNameRequired',
-  'This field can only contain letters and hyphens.': 'errors.nameInvalid',
-  'dob must be a valid date (YYYY-MM-DD)':         'errors.dobInvalid',
-  'New password must be at least 8 characters':    'errors.newPasswordTooShort',
-  'session_duration_minutes must be an integer between 15 and 180': 'errors.sessionDurationRange',
-  'session_price must be between 0.5 and 5.0 in steps of 0.5':     'errors.sessionPriceRange',
+// Maps backend error codes → i18n keys inside the 'profile' namespace.
+// The backend now returns machine-readable codes (e.g. "name_invalid")
+// instead of English sentences.
+const BACKEND_CODE_MAP = {
+  required:                     'errors.required',
+  name_invalid:                 'errors.nameInvalid',
+  phone_invalid:                'errors.phoneInvalid',
+  dob_invalid:                  'errors.dobInvalid',
+  timezone_invalid:             'errors.timezoneInvalid',
+  current_password_incorrect:   'errors.currentPasswordIncorrect',
+  email_already_exists:         'errors.emailInUse',
+  password_too_short:           'errors.newPasswordTooShort',
+  session_duration_range:       'errors.sessionDurationRange',
+  session_price_range:          'errors.sessionPriceRange',
+  invalid_credentials:          'errors.invalidCredentials',
+  not_psychologist:             'errors.generic',
+  not_patient:                  'errors.generic',
+  profile_not_found:            'errors.generic',
 }
 
-function localiseBackendError(raw, t) {
-  const key = BACKEND_ERROR_KEYS[raw]
-  return key ? t(key) : raw
+function mapBackendErrors(rawErrors = {}, t) {
+  const mapped = {}
+  for (const [field, code] of Object.entries(rawErrors)) {
+    const key = BACKEND_CODE_MAP[code]
+    mapped[field] = key ? t(key) : code
+  }
+  return mapped
 }
 
 // ─── Shared UI primitives ─────────────────────────────────────────────────────
@@ -125,35 +135,27 @@ function StatusBadge({ type, message }) {
   )
 }
 
-// ─── Validation ───────────────────────────────────────────────────────────────
+// ─── Client-side validation ───────────────────────────────────────────────────
 
 function validate(values, t) {
   const errors = {}
 
-  // First name — uses shared NAME_RE (includes space + apostrophe)
   const fn = (values.first_name || '').trim()
-  if (!fn)                    errors.first_name = t('errors.firstNameRequired')
-  else if (!NAME_RE.test(fn)) errors.first_name = t('errors.firstNameInvalid')
+  if (!fn)                    errors.first_name = t('errors.required')
+  else if (!NAME_RE.test(fn)) errors.first_name = t('errors.nameInvalid')
 
-  // Last name
   const ln = (values.last_name || '').trim()
-  if (!ln)                    errors.last_name  = t('errors.lastNameRequired')
-  else if (!NAME_RE.test(ln)) errors.last_name  = t('errors.lastNameInvalid')
+  if (!ln)                    errors.last_name  = t('errors.required')
+  else if (!NAME_RE.test(ln)) errors.last_name  = t('errors.nameInvalid')
 
-  // Phone — optional, but if filled must only contain digits/+/-
   const ph = (values.phone_number || '').trim()
   if (ph && !PHONE_RE.test(ph)) errors.phone_number = t('errors.phoneInvalid')
 
-  // Date of birth — AppDatePicker stores ISO (YYYY-MM-DD); no extra check needed
-  // (the picker itself prevents invalid dates). Field is optional.
-
-  // Password change
   if (values.new_password) {
     if (values.new_password.length < 8) errors.new_password     = t('errors.newPasswordTooShort')
     if (!values.current_password)       errors.current_password = t('errors.currentPasswordRequired')
   }
 
-  // Psychologist-specific
   if (values.role === 'psychologist') {
     const dur = parseInt(values.session_duration_minutes, 10)
     if (isNaN(dur) || dur < 15 || dur > 180)
@@ -170,7 +172,6 @@ export default function ProfilePage() {
   const navigate = useNavigate()
   const { t } = useTranslation('profile')
 
-  // Initialise form from AuthContext user — guaranteed non-null by ProtectedRoute
   const [values, setValues] = useState({
     first_name:               user.first_name   ?? '',
     last_name:                user.last_name    ?? '',
@@ -180,9 +181,7 @@ export default function ProfilePage() {
     timezone:                 user.timezone     ?? 'UTC',
     current_password:         '',
     new_password:             '',
-    // patient-only
     concerns:                 user.concerns     ?? '',
-    // psychologist-only
     session_duration_minutes: String(user.session_duration_minutes ?? 55),
     session_price:            String(user.session_price            ?? '1.0'),
     license_number:           user.license_number  ?? '',
@@ -191,16 +190,15 @@ export default function ProfilePage() {
 
   const [errors, setErrors]     = useState({})
   const [saving, setSaving]     = useState(false)
-  const [feedback, setFeedback] = useState(null) // { type, message }
+  const [feedback, setFeedback] = useState(null)
 
-  // ── Field change handler with per-field live keystroke filters ─────────────
+  // ── Field change handler with per-field live filters ───────────────────────
   const handleChange = (field) => (e) => {
     const raw = e.target.value
     let next = raw
     if (field === 'first_name' || field === 'last_name') next = filterName(raw)
     if (field === 'phone_number')                        next = filterPhone(raw)
     setValues((prev) => ({ ...prev, [field]: next }))
-    // Clear that field's inline error on change
     if (errors[field]) setErrors((prev) => { const n = { ...prev }; delete n[field]; return n })
   }
 
@@ -217,16 +215,15 @@ export default function ProfilePage() {
 
     setSaving(true)
 
-    // Build payload — only send fields that changed (keeps PATCH minimal)
     const payload = {}
     const str = (v) => (v ?? '').trim()
 
-    if (str(values.first_name)   !== str(user.first_name))        payload.first_name    = str(values.first_name)
-    if (str(values.last_name)    !== str(user.last_name))         payload.last_name     = str(values.last_name)
-    if (str(values.dob)          !== str(user.dob ?? ''))         payload.dob           = str(values.dob) || null
-    if (str(values.city)         !== str(user.city ?? ''))        payload.city          = str(values.city)
-    if (str(values.phone_number) !== str(user.phone_number ?? '')) payload.phone_number = str(values.phone_number)
-    if (values.timezone          !== user.timezone)               payload.timezone      = values.timezone
+    if (str(values.first_name)   !== str(user.first_name))         payload.first_name    = str(values.first_name)
+    if (str(values.last_name)    !== str(user.last_name))          payload.last_name     = str(values.last_name)
+    if (str(values.dob)          !== str(user.dob ?? ''))          payload.dob           = str(values.dob) || null
+    if (str(values.city)         !== str(user.city ?? ''))         payload.city          = str(values.city)
+    if (str(values.phone_number) !== str(user.phone_number ?? '')) payload.phone_number  = str(values.phone_number)
+    if (values.timezone          !== user.timezone)                payload.timezone      = values.timezone
 
     if (values.new_password) {
       payload.current_password = values.current_password
@@ -250,7 +247,6 @@ export default function ProfilePage() {
         payload.country_code = str(values.country_code)
     }
 
-    // Nothing changed — skip the network call
     if (Object.keys(payload).length === 0) {
       setSaving(false)
       setFeedback({ type: 'success', message: t('success') })
@@ -274,14 +270,15 @@ export default function ProfilePage() {
       }))
       setFeedback({ type: 'success', message: t('success') })
       setTimeout(() => setFeedback(null), 3500)
+    } else if (result.fieldErrors) {
+      // Structured backend errors: map codes → localised strings, spread into field errors
+      const mapped = mapBackendErrors(result.fieldErrors, t)
+      setErrors(mapped)
+      setFeedback({ type: 'error', message: t('errors.someFieldsInvalid') })
     } else {
-      // Translate raw backend error string into the active language
-      const localised = localiseBackendError(result.error || '', t)
-      setFeedback({ type: 'error', message: localised || t('errors.generic') })
+      setFeedback({ type: 'error', message: t('errors.generic') })
     }
   }
-
-  // ── Render ─────────────────────────────────────────────────────────────────
 
   const isPsych   = user.role === 'psychologist'
   const isPatient = user.role === 'patient'
@@ -296,7 +293,6 @@ export default function ProfilePage() {
     <main className="min-h-screen bg-slate-950 pt-20 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto space-y-6">
 
-        {/* ── Page header ── */}
         <div className="flex items-center gap-4 pt-4">
           <button
             onClick={() => navigate('/dashboard')}
@@ -317,47 +313,32 @@ export default function ProfilePage() {
         <form onSubmit={handleSubmit} className="space-y-6" noValidate>
 
           {/* ── Personal information ── */}
-          <SectionCard
-            title={t('sections.personal')}
-            subtitle={t('sections.personalSubtitle')}
-          >
+          <SectionCard title={t('sections.personal')} subtitle={t('sections.personalSubtitle')}>
             <div className="space-y-4">
 
-              {/* Email — read-only */}
               <Field label={t('fields.email')} hint={t('emailNote')}>
                 <TextInput value={user.email} disabled />
               </Field>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label={t('fields.firstName')} error={errors.first_name}>
-                  <TextInput
-                    value={values.first_name}
-                    onChange={handleChange('first_name')}
-                    error={errors.first_name}
-                  />
+                  <TextInput value={values.first_name} onChange={handleChange('first_name')} error={errors.first_name} />
                 </Field>
                 <Field label={t('fields.lastName')} error={errors.last_name}>
-                  <TextInput
-                    value={values.last_name}
-                    onChange={handleChange('last_name')}
-                    error={errors.last_name}
-                  />
+                  <TextInput value={values.last_name} onChange={handleChange('last_name')} error={errors.last_name} />
                 </Field>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label={t('fields.dob')}>
                   <AppDatePicker
+                    dobMode
                     value={values.dob}
                     onChange={(iso) => setValues((prev) => ({ ...prev, dob: iso }))}
                   />
                 </Field>
                 <Field label={t('fields.city')}>
-                  <TextInput
-                    value={values.city}
-                    onChange={handleChange('city')}
-                    placeholder={t('placeholders.city')}
-                  />
+                  <TextInput value={values.city} onChange={handleChange('city')} placeholder={t('placeholders.city')} />
                 </Field>
               </div>
 
@@ -374,10 +355,7 @@ export default function ProfilePage() {
           </SectionCard>
 
           {/* ── Timezone ── */}
-          <SectionCard
-            title={t('sections.timezone')}
-            subtitle={t('sections.timezoneSubtitle')}
-          >
+          <SectionCard title={t('sections.timezone')} subtitle={t('sections.timezoneSubtitle')}>
             <Field label={t('fields.timezone')}>
               <SelectInput
                 value={values.timezone}
@@ -389,13 +367,9 @@ export default function ProfilePage() {
 
           {/* ── Role-specific settings ── */}
           {(isPsych || isPatient) && (
-            <SectionCard
-              title={t('sections.roleInfo')}
-              subtitle={t('sections.roleInfoSubtitle')}
-            >
+            <SectionCard title={t('sections.roleInfo')} subtitle={t('sections.roleInfoSubtitle')}>
               <div className="space-y-4">
 
-                {/* Patient: concerns */}
                 {isPatient && (
                   <Field label={t('fields.concerns')}>
                     <textarea
@@ -408,47 +382,30 @@ export default function ProfilePage() {
                   </Field>
                 )}
 
-                {/* Psychologist: session settings + license */}
                 {isPsych && (
                   <>
-                    {/* Verification badge */}
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-slate-400">{t('verification.label')}:</span>
-                      <span
-                        className={`text-xs font-medium px-2.5 py-0.5 rounded-full border
-                          ${verificationBadgeStyle[user.verification_status] ?? verificationBadgeStyle.pending}`}
-                      >
+                      <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full border
+                        ${verificationBadgeStyle[user.verification_status] ?? verificationBadgeStyle.pending}`}>
                         {t(`verification.${user.verification_status ?? 'pending'}`)}
                       </span>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Field
-                        label={t('fields.sessionDuration')}
-                        error={errors.session_duration_minutes}
-                      >
-                        <TextInput
-                          type="number"
-                          value={values.session_duration_minutes}
-                          onChange={handleChange('session_duration_minutes')}
-                          error={errors.session_duration_minutes}
-                        />
+                      <Field label={t('fields.sessionDuration')} error={errors.session_duration_minutes}>
+                        <TextInput type="number" value={values.session_duration_minutes}
+                          onChange={handleChange('session_duration_minutes')} error={errors.session_duration_minutes} />
                       </Field>
-                      <Field label={t('fields.sessionPrice')}>
-                        <TextInput
-                          type="number"
-                          value={values.session_price}
-                          onChange={handleChange('session_price')}
-                        />
+                      <Field label={t('fields.sessionPrice')} error={errors.session_price}>
+                        <TextInput type="number" value={values.session_price}
+                          onChange={handleChange('session_price')} error={errors.session_price} />
                       </Field>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Field label={t('fields.licenseNumber')}>
-                        <TextInput
-                          value={values.license_number}
-                          onChange={handleChange('license_number')}
-                        />
+                        <TextInput value={values.license_number} onChange={handleChange('license_number')} />
                       </Field>
                       <Field label={t('fields.countryCode')}>
                         <SelectInput
@@ -459,7 +416,6 @@ export default function ProfilePage() {
                       </Field>
                     </div>
 
-                    {/* Warn that touching license/country resets verification */}
                     {(values.license_number !== (user.license_number ?? '') ||
                       values.country_code   !== (user.country_code   ?? '')) && (
                       <StatusBadge type="warning" message={t('verification.warning')} />
@@ -472,34 +428,17 @@ export default function ProfilePage() {
           )}
 
           {/* ── Change password ── */}
-          <SectionCard
-            title={t('sections.password')}
-            subtitle={t('sections.passwordSubtitle')}
-          >
+          <SectionCard title={t('sections.password')} subtitle={t('sections.passwordSubtitle')}>
             <div className="space-y-4">
-              <Field
-                label={t('fields.currentPassword')}
-                error={errors.current_password}
-              >
-                <TextInput
-                  type="password"
-                  value={values.current_password}
-                  onChange={handleChange('current_password')}
-                  placeholder={t('placeholders.currentPassword')}
-                  error={errors.current_password}
-                />
+              <Field label={t('fields.currentPassword')} error={errors.current_password}>
+                <TextInput type="password" value={values.current_password}
+                  onChange={handleChange('current_password')} placeholder={t('placeholders.currentPassword')}
+                  error={errors.current_password} />
               </Field>
-              <Field
-                label={t('fields.newPassword')}
-                error={errors.new_password}
-              >
-                <TextInput
-                  type="password"
-                  value={values.new_password}
-                  onChange={handleChange('new_password')}
-                  placeholder={t('placeholders.newPassword')}
-                  error={errors.new_password}
-                />
+              <Field label={t('fields.newPassword')} error={errors.new_password}>
+                <TextInput type="password" value={values.new_password}
+                  onChange={handleChange('new_password')} placeholder={t('placeholders.newPassword')}
+                  error={errors.new_password} />
               </Field>
             </div>
           </SectionCard>
@@ -514,10 +453,7 @@ export default function ProfilePage() {
             {saving ? t('actions.saving') : t('actions.save')}
           </button>
 
-          {/* Feedback banner sits below the submit button per spec */}
-          {feedback && (
-            <StatusBadge type={feedback.type} message={feedback.message} />
-          )}
+          {feedback && <StatusBadge type={feedback.type} message={feedback.message} />}
 
         </form>
       </div>

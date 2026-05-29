@@ -1,66 +1,39 @@
 Urgent & important:
-- [ ] Fix /profile page not loading, possibly due to broken JS regarding reactjs-datepicker
 
-- [ ] Frontend bugs refactor (validation formulas should live in a single place):
-    - [ ] Every name and last name input field (signin, profile) should allow typing of:
-        - [X] Uppercase and lowercase letters
-        - [X] Vowels with accents "ÁÉÍÓÚáéíóú"
-        - [X] Hyphen "-", space " ", apostrophe "'"
-    - [ ] Every email input field (signin, profile) should allow typing of:
-        - [ ] Uppercase and lowercase letters
-        - [ ] Numbers
-        - [ ] Special characters "@", ".", "_", "-"
-    - [ ] Every phone input field (signin, profile) should allow typing of:
-        - [ ] Numbers
-        - [ ] Special characters "+", "-"
-    - [ ] Every date input field (signin, profile) should allow typing of:
-        - [ ] Numbers
-        - [ ] Special characters "/", "-"
-        - [ ] Dates should use DD/MM/YYYY format with reactjs-datepicker
-        - [ ] Dates in the database should be stored as date type
+- [ ] Frontend & backend data structure bugs:
 
-    - Error handling should follow these principles:
-        - [ ] If any validation fails, an error message should be displayed exactly below the submit button
-        - [ ] Each specific error should be displayed under its pertaining field
-        - [ ] All errors must be localized, including those coming from the backend
+    - [ ] Age:
+        - DOB should be asked in sign up form. Users under the age of 16 should be denied access.
+        - In both /profile and /signup. Don't block users from entering any DOB, in the DOB field, it makes the UI too clunky. Limit it to invalidating and returning the error message.
+        - [ ] Localize contry selection names in dropdown.
 
-- [ ] Backend validation for all input fields.
-    - [ ] Never trust front-end validation as it can be bypassed. Everything should be validated.
-    - [ ] No hard-coded validation error messages in backend.
-    - [ ] Validation errors should return type of validation error, then pass it through i18n on frontend.
+    - [ ] Navbar after logging
+        - Navbar after logging should show:
+            - [X] Logo on left (goes to "/")
+            - On the right:
+                - [ ] Home (goes to "/")
+                - [ ] Dashboard
+                - [ ] Profile
+                - [ ] Log out
+                - [X] Language switcher
 
-    - [ ] Every name and last name input field (signin, profile) should allow:
-        - [ ] Uppercase and lowercase letters
-        - [ ] Vowels with accents "ÁÉÍÓÚáéíóú"
-        - [ ] Hyphen "-", space " ", apostrophe "'"
-    - [ ] Every email input field (signin, profile) should allow:
-        - [ ] Uppercase and lowercase letters
-        - [ ] Numbers
-        - [ ] Special characters "@", ".", "_", "-"
-    - [ ] Phone input field (signin, profile) should allow:
-        - [ ] Country code prefix (e.g., +34)
-        - [ ] Numbers
-    - [ ] Every date input field (signin, profile) should allow:
-        - [ ] Numbers
-        - [ ] Special characters "/", "-"
-        - [ ] Dates should use DD/MM/YYYY format with reactjs-datepicker
-        - [ ] Dates in the database should be stored as date type
+    - [ ] /profile better UI
+        - Currently, /profile shows everything in the same "page".
+        - [ ] Move UTC timezone to "personal information" section (under phone number).
+        - [ ] Remove "User concerns" section entirely. Remove "User concerns" as a field in the backend/db as well.
+        - [ ] Remaining sections should not be stacked one on top of each other. Create a sidebar in /profile and only show the selected section. Users thought they must input/change their password for profile info to be saved, this is not the case.
+        - [ ] Rename "ProfileSideBar" to "DashboardSideBar" for clarity and differentiation.
 
-    - Error handling should follow these principles:
-        - [ ] If any validation fails, an error message should be displayed exactly below the submit button
-        - [ ] If anything fails during backend verification, create an array of errors and pass them to ReactJS. ReactJS should display "Some fields are invalid" message (localised) below submit button, as well as the specific error messages (localized) below each specific invalid field.
-        - [ ] Each specific error should be displayed under its pertaining field
-        - [ ] All errors must be localized, including those coming from the backend
 
+
+- Other changes:
+    - [ ] 
 
 - [ ] S3 integration for file storage
-- [ ] i18n support for English and Spanish
+- [ ] i18n support for English and Spanish (ongoing — auth + profile namespaces done)
 
 Important:
 - [ ] 
 
 Optional:
-
 - Add data scaffolding for Patients' data browsing history (future API, won't be implemented in demo)
-- Add demo data of patient's browser history (future API, won't be implemented in demo)
-- Divide /profile by adding a sidebar on the left side with links to different sections (like 3 sub-pages inside that page)

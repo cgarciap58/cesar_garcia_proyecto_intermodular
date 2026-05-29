@@ -7,8 +7,8 @@ import { useAuth } from '../context/AuthContext'
 import FormField from '../components/FormField'
 
 const ROLE_OPTIONS = (t) => [
-  { value: 'patient',       label: t('signUp.rolePatient') },
-  { value: 'psychologist',  label: t('signUp.rolePsychologist') },
+  { value: 'patient',      label: t('signUp.rolePatient') },
+  { value: 'psychologist', label: t('signUp.rolePsychologist') },
 ]
 
 const COUNTRY_OPTIONS = [
@@ -39,30 +39,44 @@ function SignUpPage() {
 
   const handleChange = (event) => {
     const { name, value } = event.target
-    // Apply live keystroke filter for name fields using the shared helper
     const nextValue = (name === 'first_name' || name === 'last_name')
       ? filterName(value)
       : value
     setValues((prev) => ({ ...prev, [name]: nextValue }))
+    // Clear both the field error and the summary banner when the user edits
     setErrors((prev) => ({ ...prev, [name]: '', form: '' }))
   }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-    // Pass t so all validation messages come out localised
+
     const validationErrors = validateSignUpValues(values, t)
     if (Object.keys(validationErrors).length) {
-      setErrors(validationErrors)
+      setErrors({
+        ...validationErrors,
+        // Always inject a summary message below the submit button
+        form: t('validation.someFieldsInvalid'),
+      })
       return
     }
+
     setIsSubmitting(true)
     setErrors({})
-    const result = await signUp(values)
+
+    // Pass t so backend error codes are localised
+    const result = await signUp(values, t)
     if (!result.ok) {
-      setErrors({ ...result.errors })
+      // Backend may return per-field errors (result.errors) with or without a
+      // form key. Ensure there is always a summary banner below the button.
+      const backendErrors = result.errors ?? {}
+      setErrors({
+        ...backendErrors,
+        form: backendErrors.form ?? t('validation.someFieldsInvalid'),
+      })
       setIsSubmitting(false)
       return
     }
+
     const me = await fetch('/api/auth/me/', { credentials: 'include' }).then((r) => r.json())
     setUser(me)
     navigate('/dashboard')
@@ -95,7 +109,9 @@ function SignUpPage() {
           />
 
           <div>
-            <label htmlFor="role" className="mb-2 block text-sm font-medium text-slate-200">{t('signUp.roleLabel')}</label>
+            <label htmlFor="role" className="mb-2 block text-sm font-medium text-slate-200">
+              {t('signUp.roleLabel')}
+            </label>
             <select id="role" name="role" value={values.role} onChange={handleChange} className={SELECT_CLASS}>
               <option value="">{t('signUp.rolePlaceholder')}</option>
               {ROLE_OPTIONS(t).map((o) => (
@@ -108,7 +124,9 @@ function SignUpPage() {
           {values.role === 'psychologist' ? (
             <>
               <div>
-                <label htmlFor="country_code" className="mb-2 block text-sm font-medium text-slate-200">{t('signUp.licenseCountryLabel')}</label>
+                <label htmlFor="country_code" className="mb-2 block text-sm font-medium text-slate-200">
+                  {t('signUp.licenseCountryLabel')}
+                </label>
                 <select id="country_code" name="country_code" value={values.country_code} onChange={handleChange} className={SELECT_CLASS}>
                   <option value="">{t('signUp.licenseCountryPlaceholder')}</option>
                   {COUNTRY_OPTIONS.map((o) => (
@@ -158,7 +176,7 @@ function SignUpPage() {
             {isSubmitting ? t('signUp.submittingButton') : t('signUp.submitButton')}
           </button>
 
-          {/* Form-level error sits below the submit button per spec */}
+          {/* Summary banner — always below the submit button */}
           {errors.form ? <p className="text-sm text-rose-400">{errors.form}</p> : null}
         </form>
 
