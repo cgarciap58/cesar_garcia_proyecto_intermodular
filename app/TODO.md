@@ -62,4 +62,5 @@ Important:
 Optional:
 
 - Add data scaffolding for Patients' data browsing history (future API, won't be implemented in demo)
-- Add 
+- Add demo data of patient's browser history (future API, won't be implemented in demo)
+- Divide /profile by adding a sidebar on the left side with links to different sections (like 3 sub-pages inside that page)
