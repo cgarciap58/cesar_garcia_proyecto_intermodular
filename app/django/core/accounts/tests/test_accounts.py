@@ -1,27 +1,23 @@
 """
-tests/test_accounts.py
-──────────────────────
-Tests for all accounts endpoints:
-  POST /api/auth/register/
-  POST /api/auth/login/
-  GET  /api/auth/me/
-  POST /api/auth/logout/
-  PATCH /api/auth/profile/
-  POST /api/auth/credits/add/
+accounts/tests/test_accounts.py
+────────────────────────────────
+Tests for all accounts endpoints.
+
+Run:
+  python manage.py test core.accounts        # all accounts tests
+  python manage.py test core.accounts.tests.test_accounts
 """
 
 import json
 
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
+from django.test import TestCase
 
 from core.accounts.models import PatientProfile, PsychologistProfile
-from .factories import make_patient, make_psychologist
+from core.accounts.tests.factories import make_patient, make_psychologist
 
 User = get_user_model()
 
-
-# ── helpers ───────────────────────────────────────────────────────────────────
 
 def post_json(client, url, data):
     return client.post(url, json.dumps(data), content_type="application/json")
@@ -103,7 +99,7 @@ class RegisterTests(TestCase):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Login / logout
+# Login / Logout
 # ─────────────────────────────────────────────────────────────────────────────
 
 class LoginLogoutTests(TestCase):
@@ -169,8 +165,7 @@ class UpdateProfileTests(TestCase):
 
     def test_update_email_requires_current_password(self):
         self.client.force_login(self.patient)
-        r = patch_json(self.client, "/api/auth/profile/",
-                       {"email": "new@test.com"})
+        r = patch_json(self.client, "/api/auth/profile/", {"email": "new@test.com"})
         self.assertEqual(r.status_code, 422)
         self.assertIn("current_password", r.json()["errors"])
 

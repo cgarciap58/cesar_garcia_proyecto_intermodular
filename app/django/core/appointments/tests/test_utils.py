@@ -1,41 +1,21 @@
 """
-tests/test_utils.py
-────────────────────
-Unit tests for pure helper functions that don't need HTTP.
-Fast, no DB required for most of them.
+appointments/tests/test_utils.py
+──────────────────────────────────
+Unit tests for pure appointment helpers.
+
+Run:
+  python manage.py test core.appointments.tests.test_utils
 """
 
-import math
 from datetime import date, timedelta
 
 from django.test import SimpleTestCase, TestCase
 from django.utils import timezone
 
-from core.accounts.utils import is_old_enough
 from core.appointments.utils import compute_status, credit_cost, generate_meet_link
 from core.appointments.models import Appointment, AvailableSlot
-from .factories import make_patient, make_psychologist, make_slot, make_appointment
+from core.accounts.tests.factories import make_patient, make_psychologist, make_slot, make_appointment
 
-
-# ── is_old_enough ─────────────────────────────────────────────────────────────
-
-class IsOldEnoughTests(SimpleTestCase):
-
-    def test_exactly_16_is_allowed(self):
-        today  = date.today()
-        dob_16 = date(today.year - 16, today.month, today.day)
-        self.assertTrue(is_old_enough(dob_16))
-
-    def test_15_years_old_is_rejected(self):
-        today  = date.today()
-        dob_15 = date(today.year - 15, today.month, today.day)
-        self.assertFalse(is_old_enough(dob_15))
-
-    def test_adult_is_allowed(self):
-        self.assertTrue(is_old_enough(date(1990, 1, 1)))
-
-
-# ── credit_cost ───────────────────────────────────────────────────────────────
 
 class CreditCostTests(SimpleTestCase):
 
@@ -52,11 +32,8 @@ class CreditCostTests(SimpleTestCase):
         self.assertEqual(credit_cost(111), 3)
 
     def test_30_minutes_costs_1_credit(self):
-        # ceil(30/55) = 1
         self.assertEqual(credit_cost(30), 1)
 
-
-# ── compute_status ────────────────────────────────────────────────────────────
 
 class ComputeStatusTests(TestCase):
 
@@ -79,16 +56,13 @@ class ComputeStatusTests(TestCase):
         self.assertEqual(compute_status(appt), 'confirmed')
 
     def test_in_progress_when_started(self):
-        appt = self._appt_with_start(-10)  # started 10 min ago
+        appt = self._appt_with_start(-10)
         self.assertEqual(compute_status(appt), 'in_progress')
 
     def test_done_when_past_end(self):
-        # Start 2 hours ago; 55-min session → ended 65 min ago
         appt = self._appt_with_start(-120)
         self.assertEqual(compute_status(appt), 'done')
 
-
-# ── generate_meet_link ────────────────────────────────────────────────────────
 
 class GenerateMeetLinkTests(SimpleTestCase):
 

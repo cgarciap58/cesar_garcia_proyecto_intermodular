@@ -20,7 +20,6 @@ media/
 
 # Environment - ignore it when we are done bugfixing
 .app.base.env
-.app.local.env
 .app.aws.env
 .env.runtime
 .topologia-aws.env

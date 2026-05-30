@@ -1,8 +1,8 @@
 """
-tests/factories.py
-──────────────────
-Lightweight test-fixture helpers.
-No third-party factory library required — just plain Django ORM calls.
+accounts/tests/factories.py
+────────────────────────────
+Lightweight test-fixture helpers shared by accounts and appointments tests.
+No third-party factory library required — plain Django ORM calls.
 """
 
 from datetime import timedelta
@@ -24,13 +24,8 @@ def _uid():
     return _counter
 
 
-def make_patient(
-    email=None,
-    password="testpass123",
-    first_name="Patient",
-    last_name="User",
-    credits=10,
-):
+def make_patient(email=None, password="testpass123", first_name="Patient",
+                 last_name="User", credits=10):
     n     = _uid()
     email = email or f"patient{n}@test.com"
     user  = User.objects.create_user(
@@ -42,14 +37,9 @@ def make_patient(
     return user
 
 
-def make_psychologist(
-    email=None,
-    password="testpass123",
-    first_name="Dr",
-    last_name="Psych",
-    session_duration_minutes=55,
-    session_price="1.0",
-):
+def make_psychologist(email=None, password="testpass123", first_name="Dr",
+                      last_name="Psych", session_duration_minutes=55,
+                      session_price="1.0"):
     n     = _uid()
     email = email or f"psych{n}@test.com"
     user  = User.objects.create_user(
@@ -67,7 +57,8 @@ def make_psychologist(
     return user
 
 
-def make_slot(psychologist_user, delta_hours=24, duration_minutes=55, status=AvailableSlot.SLOT_OPEN):
+def make_slot(psychologist_user, delta_hours=24, duration_minutes=55,
+              status=AvailableSlot.SLOT_OPEN):
     return AvailableSlot.objects.create(
         psychologist=psychologist_user.psychologist_profile,
         start_time=timezone.now() + timedelta(hours=delta_hours),
