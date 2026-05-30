@@ -31,31 +31,6 @@ sudo apt install -y nginx certbot python3-certbot-nginx curl
 echo "[4] Limpiando página por defecto..."
 sudo rm -f /var/www/html/index.nginx-debian.html
 
-cat <<EOF | sudo tee /var/www/html/index.html
-<!DOCTYPE html>
-<html>
-<head>
-<title>LB OK</title>
-<style>
-body{
-font-family:Arial;
-background:#111;
-color:#0f0;
-text-align:center;
-padding-top:100px;
-}
-h1{font-size:48px;}
-h2{font-size:28px;}
-</style>
-</head>
-<body>
-<h1>Servidor LB funcionando</h1>
-<h2>Si estás viendo esto, seguramente hay un problema en la web. ¡Mal admin, mal!</h2>
-<p>$DOMAIN</p>
-</body>
-</html>
-EOF
-
 echo "[5] Configurando nginx virtualhost..."
 
 sudo rm -f /etc/nginx/sites-enabled/default
