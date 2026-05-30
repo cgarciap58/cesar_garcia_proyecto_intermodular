@@ -146,9 +146,12 @@ function SlotChip({ slot, timezone, locale, deletingId, onDelete, t }) {
       ? 'border-amber-500/40 bg-amber-500/15 text-amber-400'
       : 'border-slate-700 bg-slate-800/60 text-slate-300'
 
+  const startLabel = formatTimeInTz(slot.start_time, timezone, locale)
+  const endLabel   = formatTimeInTz(slot.end_time,   timezone, locale)
+
   return (
     <div className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-colors ${chipClass}`}>
-      <span>{formatTimeInTz(slot.start_time, timezone, locale)}</span>
+      <span>{startLabel}–{endLabel}</span>
       <span className="text-xs opacity-60">{slot.duration_minutes}m</span>
 
       {isConfirmed && (
@@ -235,10 +238,19 @@ export default function SlotsPage() {
 
       while (h * 60 + m + duration <= endMinutes) {
         const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-        result.push({ dateStr, timeStr, isoUtc: localToUtcIso(dateStr, timeStr, timezone) })
-        const total = h * 60 + m + duration
-        h = Math.floor(total / 60)
-        m = total % 60
+        // Compute end time string for preview display
+        const totalEnd = h * 60 + m + duration
+        const endH     = Math.floor(totalEnd / 60)
+        const endM     = totalEnd % 60
+        const endTimeStr = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`
+        result.push({
+          dateStr,
+          timeStr,
+          endTimeStr,
+          isoUtc: localToUtcIso(dateStr, timeStr, timezone),
+        })
+        h = endH
+        m = endM
       }
     }
     return result
@@ -262,19 +274,22 @@ export default function SlotsPage() {
         setRuleStatus({ type: 'error', message: result.error })
       }
     } else {
-      const previewUtcSet = new Set(previewSlots.map((s) => new Date(s.isoUtc).getTime()))
-      const toDelete = slots.filter(
-        (s) => s.status === 'open' && previewUtcSet.has(new Date(s.start_time).getTime())
-      )
-      let deleted = 0, failed = 0
-      for (const slot of toDelete) {
-        const result = await deleteSlot(slot.id)
-        if (result.ok) { deleted++; setSlots((prev) => prev.filter((s) => s.id !== slot.id)) }
+      // remove mode — match slots by UTC start_time
+      const isoSet = new Set(previewSlots.map((s) => s.isoUtc))
+      const toDelete = slots.filter((s) => {
+        const norm = new Date(s.start_time).toISOString()
+        return isoSet.has(norm)
+      })
+      let removed = 0; let failed = 0
+      for (const s of toDelete) {
+        const res = await deleteSlot(s.id)
+        if (res.ok) { removed++; setSlots((prev) => prev.filter((x) => x.id !== s.id)) }
         else failed++
       }
       setRuleStatus({
-        type: deleted > 0 ? 'success' : 'error',
-        message: t('slots.removed', { count: deleted }) + (failed ? t('slots.couldNotDelete', { count: failed }) : ''),
+        type: removed > 0 ? 'success' : 'error',
+        message: (removed > 0 ? t('slots.removed', { count: removed }) : '')
+               + (failed  > 0 ? t('slots.couldNotDelete', { count: failed }) : ''),
       })
     }
     setApplyingRule(false)
@@ -284,22 +299,23 @@ export default function SlotsPage() {
     setDeletingId(slotId)
     const result = await deleteSlot(slotId)
     if (result.ok) setSlots((prev) => prev.filter((s) => s.id !== slotId))
-    else setRuleStatus({ type: 'error', message: result.error })
     setDeletingId(null)
   }, [])
 
+  // Group upcoming slots by local date
   const slotsByDate = useMemo(() => {
-    const map        = new Map()
-    const todayLocal = utcToLocalDate(new Date().toISOString(), timezone)
-    for (const slot of slots) {
-      const dateLocal = utcToLocalDate(slot.start_time, timezone)
-      if (dateLocal < todayLocal) continue
-      if (!map.has(dateLocal)) map.set(dateLocal, [])
-      map.get(dateLocal).push(slot)
+    const now  = new Date()
+    const map  = new Map()
+    const upcoming = slots
+      .filter((s) => s.status !== 'deleted' && new Date(s.end_time) > now)
+      .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
+
+    for (const slot of upcoming) {
+      const dateStr = utcToLocalDate(slot.start_time, timezone)
+      if (!map.has(dateStr)) map.set(dateStr, [])
+      map.get(dateStr).push(slot)
     }
-    for (const [, daySlots] of map)
-      daySlots.sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
-    return new Map([...map.entries()].sort())
+    return map
   }, [slots, timezone])
 
   const applyLabel = applyingRule
@@ -368,9 +384,9 @@ export default function SlotsPage() {
                 className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                   ruleMode === mode
                     ? mode === 'add'
-                      ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400'
-                      : 'bg-rose-500/20    border border-rose-500/40    text-rose-400'
-                    : 'border border-slate-700 text-slate-400 hover:text-slate-200'
+                      ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
+                      : 'bg-rose-500/20    border border-rose-500/40    text-rose-300'
+                    : 'bg-slate-800/60 border border-slate-700 text-slate-400 hover:text-slate-200'
                 }`}
               >
                 {mode === 'add' ? t('slots.addSlots') : t('slots.removeSlots')}
@@ -379,23 +395,19 @@ export default function SlotsPage() {
           </div>
 
           {/* Days of week */}
-          <div>
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">
+          <div className="mb-4">
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
               {t('slots.daysOfWeek')}
             </p>
             <div className="flex flex-wrap gap-2">
               {days.map((day, i) => (
                 <button
                   key={i}
-                  onClick={() => setDayMask((prev) => {
-                    const next = [...prev]; next[i] = !next[i]; return next
-                  })}
-                  className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  onClick={() => setDayMask((prev) => prev.map((v, j) => j === i ? !v : v))}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                     dayMask[i]
-                      ? ruleMode === 'add'
-                        ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400'
-                        : 'bg-rose-500/20    border border-rose-500/40    text-rose-400'
-                      : 'border border-slate-700 text-slate-400 hover:text-slate-200'
+                      ? 'bg-blue-500/20 border border-blue-500/40 text-blue-300'
+                      : 'bg-slate-800/60 border border-slate-700 text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   {day}
@@ -405,17 +417,17 @@ export default function SlotsPage() {
           </div>
 
           {/* Time range */}
-          <div className="mt-5 grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 mb-4">
             {[
               { label: t('slots.fromTime'), value: startTime, onChange: setStartTime },
-              { label: t('slots.untilTime'), value: endTime,   onChange: setEndTime },
+              { label: t('slots.untilTime'), value: endTime,   onChange: setEndTime   },
             ].map(({ label, value, onChange }) => (
               <div key={label}>
-                <label className="block text-xs font-medium text-slate-400 mb-1">{label}</label>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">{label}</label>
                 <select
                   value={value}
                   onChange={(e) => onChange(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-400/30 focus:border-blue-400"
+                  className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-400/30"
                 >
                   {TIME_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
@@ -450,7 +462,7 @@ export default function SlotsPage() {
               <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
                 {previewSlots.slice(0, 20).map((s) => (
                   <span key={s.isoUtc} className="rounded-md border border-slate-700 bg-slate-800/60 px-2 py-1 text-xs text-slate-300">
-                    {formatPreviewDate(s.dateStr, i18n.language)} {s.timeStr}
+                    {formatPreviewDate(s.dateStr, i18n.language)} {s.timeStr}–{s.endTimeStr}
                   </span>
                 ))}
                 {previewSlots.length > 20 && (

@@ -108,6 +108,7 @@ No other transitions are valid. The API returns `409` if an invalid transition i
 - **Previous sessions** label: `"Previous sessions with Dr. {lastName}"` (translation key: `patient.previousSessionsWith`).
 - For `done` appointments: shows session notes from psychologist (`patient_notes` field) under "Notes from your psychologist".
 - For `confirmed`/`in_progress`: shows "Go to session" / "Join now — session in progress" button → opens `SessionModal`.
+- **Time display:** shows `{startTime} – {endTime} · {duration} min` (e.g. `09:00 – 09:55 · 55 min`). Both start and end time are shown.
 
 ---
 
@@ -141,6 +142,7 @@ When a psychologist confirms one `pending_request`, all other pending requests o
 - **Previous sessions** label: `"Previous sessions with {firstName} {lastName}"` (translation key: `psychologist.previousSessionsWith`). **Both `firstName` and `lastName` must be passed to the translation function.**
 - For `done` appointments: shows session notes (`patient_notes`) and private notes (`private_notes`) in separate cards.
 - For `confirmed`/`in_progress`: shows "Go to session" / "Join now — session in progress" button → opens `SessionModal`.
+- **Time display:** shows `{startTime} – {endTime} · {duration} min` (e.g. `09:00 – 09:55 · 55 min`). Both start and end time are shown.
 
 ---
 
@@ -177,8 +179,8 @@ Opened from `AppointmentDetail` when status is `confirmed` or `in_progress`.
 
 - Two panels: "Session duration override" and "Recurring schedule".
 - **Duration override:** changes duration for all newly created slots (not the profile default). Must be 15–180 minutes.
-- **Recurring schedule:** select days of week + time window + date range → previews N slots to add or remove. Apply button executes the batch. Reports created/skipped or removed/could-not-delete counts.
-- **Upcoming slots:** list of open and confirmed slots from today. Confirmed slots are locked (cannot be deleted until the appointment is cancelled).
+- **Recurring schedule:** select days of week + time window + date range → previews N slots to add or remove. Each preview chip shows `{date} {startTime}–{endTime}`. Apply button executes the batch. Reports created/skipped or removed/could-not-delete counts.
+- **Upcoming slots:** list of open and confirmed slots from today, grouped by local date. Each slot chip shows `{startTime}–{endTime}` and duration (e.g. `09:00–09:55 55m`). Confirmed slots are locked (cannot be deleted until the appointment is cancelled).
 
 ---
 

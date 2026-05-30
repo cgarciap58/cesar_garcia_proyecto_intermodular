@@ -58,6 +58,8 @@ export default function AppointmentDetail({
                 </h3>
                 <p className="text-slate-400 text-sm mt-0.5">
                   {formatTime(appointment.slot.start_time, i18n.language)}
+                  {' – '}
+                  {formatTime(appointment.slot.end_time, i18n.language)}
                   {' · '}
                   {appointment.slot.duration_minutes} min
                 </p>
