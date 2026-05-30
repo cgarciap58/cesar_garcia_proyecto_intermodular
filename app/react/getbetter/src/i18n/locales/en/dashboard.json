@@ -28,7 +28,7 @@
     "emptyAppointments":      "No patients yet",
     "showRejected":           "Show {{count}} rejected request(s)",
     "hideRejected":           "Hide rejected requests",
-    "showCancelled":          "Show {{count}} cancelled / done",
+    "showResolved":          "Show {{count}} cancelled / done",
     "hideCancelled":          "Hide cancelled & done",
     "manageSlots":            "Manage slots",
     "sessionNotes":           "Session notes",

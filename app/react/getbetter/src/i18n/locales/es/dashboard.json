@@ -28,7 +28,7 @@
     "emptyAppointments":      "Sin pacientes aún",
     "showRejected":           "Mostrar {{count}} solicitud(es) rechazada(s)",
     "hideRejected":           "Ocultar solicitudes rechazadas",
-    "showCancelled":          "Mostrar {{count}} canceladas / finalizadas",
+    "showResolved":          "Mostrar {{count}} canceladas / finalizadas",
     "hideCancelled":          "Ocultar canceladas y finalizadas",
     "manageSlots":            "Gestionar franjas",
     "sessionNotes":           "Notas de sesión",

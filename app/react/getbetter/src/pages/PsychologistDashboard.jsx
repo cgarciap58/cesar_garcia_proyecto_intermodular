@@ -26,7 +26,7 @@ export default function PsychologistDashboard() {
   const [actionLoading, setActionLoading] = useState(false)
   const [actionError, setActionError]     = useState(null)
   const [showRejected, setShowRejected]   = useState(false)
-  const [showCancelled, setShowCancelled] = useState(false)
+  const [showResolved, setshowResolved] = useState(false)
   const [rejectionNotice, setRejectionNotice] = useState(null)
 
   const psychologistActions = [
@@ -182,15 +182,15 @@ export default function PsychologistDashboard() {
 
             {!loading && resolvedGroup.length > 0 && (
               <div>
-                <button onClick={() => setShowCancelled((v) => !v)}
+                <button onClick={() => setshowResolved((v) => !v)}
                   className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition-colors">
-                  <svg className={`w-3.5 h-3.5 transition-transform ${showCancelled ? 'rotate-90' : ''}`}
+                  <svg className={`w-3.5 h-3.5 transition-transform ${showResolved ? 'rotate-90' : ''}`}
                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                   {t('psychologist.showResolved', { count: resolvedGroup.length })}
                 </button>
-                {showCancelled && (
+                {showResolved && (
                   <div className="mt-2">
                     <AppointmentsPanel appointments={resolvedGroup} role="psychologist"
                       selectedId={selectedAppointment?.id} onSelect={handleSelect} />
@@ -208,18 +208,23 @@ export default function PsychologistDashboard() {
                   lastName:       selectedAppointment.patient.last_name,
                   profilePicture: selectedAppointment.patient.profile_picture,
                 }}
-                previousLabel={t('psychologist.previousSessionsWith', { lastName: selectedAppointment.patient.last_name })}
+                previousLabel={t('psychologist.previousSessionsWith', {
+                  firstName: selectedAppointment.patient.first_name,
+                  lastName:  selectedAppointment.patient.last_name,
+                })}
                 previousUserId={selectedAppointment.patient.id}
                 role="psychologist"
                 notes={
                   selStatus === 'done' ? (
-                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="mt-4 space-y-3">
                       <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-4">
                         <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
                           {t('psychologist.sessionNotes')}
                         </p>
                         <p className="text-slate-200 text-sm leading-relaxed">
-                          {selectedAppointment.patient_notes || <span className="italic text-slate-600">{t('psychologist.noSessionNotes')}</span>}
+                          {selectedAppointment.patient_notes || (
+                            <span className="italic text-slate-600">{t('psychologist.noSessionNotes')}</span>
+                          )}
                         </p>
                       </div>
                       <div className="rounded-xl bg-slate-800/60 border border-amber-500/20 p-4">
@@ -227,7 +232,9 @@ export default function PsychologistDashboard() {
                           {t('psychologist.privateNotes')}
                         </p>
                         <p className="text-slate-200 text-sm leading-relaxed">
-                          {selectedAppointment.private_notes || <span className="italic text-slate-600">{t('psychologist.noPrivateNotes')}</span>}
+                          {selectedAppointment.private_notes || (
+                            <span className="italic text-slate-600">{t('psychologist.noPrivateNotes')}</span>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -238,7 +245,7 @@ export default function PsychologistDashboard() {
                     {selStatus === 'pending_request' && (
                       <>
                         <button onClick={handleConfirm} disabled={actionLoading}
-                          className="rounded-lg bg-emerald-500/15 border border-emerald-500/40 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/25 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                          className="rounded-lg bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                           {actionLoading ? t('psychologist.confirmingAppointment') : t('psychologist.confirmAppointment')}
                         </button>
                         <button onClick={handleReject} disabled={actionLoading}

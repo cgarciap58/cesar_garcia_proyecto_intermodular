@@ -9,15 +9,14 @@ Urgent & important:
     - [ ] Add the same validation that "First Name" has to the "City" field.
 
 - [ ] Remaining / follow-up:
-    <!-- - [ ] seed_demo.py still seeds `concerns` — update to not set it (will error after migration).
+    - [ ] seed_demo.py still seeds `concerns` — update to not set it (will error after migration).
     - [ ] admin.py still shows `concerns` in PatientProfileAdmin list_display — remove it. Does it though?-->
-    <!-- - [ ] Backend validation for signup: email format check (currently trusts the client). Does it though?  -->
+    - [ ] Backend validation for signup: email format check (currently trusts the client). Does it though? 
 
-<!-- - [ ] S3 integration for file storage
-- [ ] i18n support for English and Spanish (ongoing — auth + profile + common namespaces updated)
 
 Important:
-- [ ]
+    - [ ] S3 integration for file storage
+    - [ ] 
 
 Optional:
-- Add data scaffolding for Patients' data browsing history (future API, won't be implemented in demo) -->
+- Add data scaffolding for Patients' data browsing history (future API, won't be implemented in demo)
