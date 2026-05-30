@@ -1,0 +1,44 @@
+# Todas las máquinas son Debian 12
+# Este es un archivo de ejemplo para el repositorio, no contiene valores
+# Path a la clave privada de AWS -- no está en el repositorio por motivos de seguridad
+KEY_PATH=./labsuser.pem
+
+# Usuarios
+USUARIO_ROOT_EC2= 
+
+
+
+# IP elástica "inmutable"
+
+# Subnet DMZ, instancias - IP privada
+# 10.0.0.0/26
+
+LB_IP=
+
+LB_IP_PUB=
+
+# Dominio
+
+DOMAIN=
+
+# Subnet App, instancias - IP privada
+
+# EC2 con app docker compose
+APP_IP_1=
+APP_IP_2=
+
+# Redis
+REDIS_IP=
+
+
+# Subnet DB, instancias - IP privada
+DB_IP=
+
+# Subnet Bastion, instancias - IP privada
+
+BASTION_IP=
+
+BASTION_IP_PUB=
+
+
+
