@@ -22,7 +22,7 @@ media/
 .app.base.env
 .app.aws.env
 .env.runtime
-.topologia-aws.env
+.aws-map.env
 # Deployment
 */labsuser.pem
 

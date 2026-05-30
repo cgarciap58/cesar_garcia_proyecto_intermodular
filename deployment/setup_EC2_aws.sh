@@ -18,10 +18,10 @@ fi
 
 # cat ../app/.app.base.env > .env.runtime
 # cat ../app/.app.aws.env >> .env.runtime
-# cat ./topologia-aws.env >> .env.runtime
+# cat ./aws-map.env >> .env.runtime
 
 # source ./.env.runtime
-source ./.topologia-aws.env
+source ./.aws-map.env
 
 eval "$(ssh-agent -s)"
 ssh-add "$KEY_PATH"
