@@ -52,7 +52,9 @@ export default function AppointmentCard({ appointment, role, isSelected, onClick
         {formatShortDate(appointment.slot.start_time, i18n.language)}
       </p>
       <p className="text-slate-400 text-xs mt-0.5">
-        {formatTime(appointment.slot.start_time, i18n.language)} - {formatTime(appointment.slot.end_time, i18n.language)}
+        {formatTime(appointment.slot.start_time, i18n.language)}
+        {' – '}
+        {formatTime(appointment.slot.end_time, i18n.language)}
       </p>
 
       <div className="flex items-center gap-1.5 mt-3">

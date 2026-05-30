@@ -63,12 +63,18 @@ def _slot_has_active_requests(slot):
 # ─── Serialisers ─────────────────────────────────────────────────────────────
 
 def slot_to_dict(slot):
+    """
+    Serialise a slot.  end_time is computed from start_time + duration_minutes
+    and included as a convenience field — it is NOT stored in the DB.
+    """
     pending_count = slot.appointments.filter(
         status=Appointment.STATUS_PENDING_REQUEST
     ).count()
+    end_time = slot.start_time + timedelta(minutes=slot.duration_minutes)
     return {
         'id':                    slot.id,
         'start_time':            slot.start_time.isoformat(),
+        'end_time':              end_time.isoformat(),          # computed, read-only
         'duration_minutes':      slot.duration_minutes,
         'status':                slot.status,
         'pending_request_count': pending_count,
@@ -164,8 +170,6 @@ def slots_list(request):
         duration = profile.session_duration_minutes
         created, errors = [], []
 
-        # Load all existing non-deleted slots once; we extend this list as we
-        # create new ones so intra-batch overlaps are also caught.
         existing = list(
             AvailableSlot.objects.filter(
                 psychologist=profile,
@@ -179,9 +183,6 @@ def slots_list(request):
                 errors.append(f'Invalid datetime: {raw}')
                 continue
 
-            # Interval: [dt, dt + duration)
-            # Overlaps existing [ex_start, ex_start + ex_dur) when:
-            #   dt < ex_start + ex_dur  AND  dt + duration > ex_start
             new_end = dt + timedelta(minutes=duration)
             overlap = any(
                 dt < (ex_start + timedelta(minutes=ex_dur)) and new_end > ex_start
@@ -198,7 +199,7 @@ def slots_list(request):
                 status           = AvailableSlot.SLOT_OPEN,
             )
             created.append(slot_to_dict(slot))
-            existing.append((dt, duration))   # guard intra-batch overlaps
+            existing.append((dt, duration))
 
         return JsonResponse({'created': created, 'errors': errors}, status=201)
 
@@ -253,6 +254,7 @@ def available_slots(request):
 
     Patient-facing. Returns all future open slots grouped by psychologist.
     Pending-request count is intentionally omitted from patient view.
+    end_time is included for display convenience.
     """
     user = require_auth(request)
     if not user:
@@ -282,9 +284,11 @@ def available_slots(request):
                 'is_verified':              psych.is_verified,
                 'slots':                    [],
             }
+        end_time = slot.start_time + timedelta(minutes=slot.duration_minutes)
         psychologists[pid]['slots'].append({
             'id':               slot.id,
             'start_time':       slot.start_time.isoformat(),
+            'end_time':         end_time.isoformat(),
             'duration_minutes': slot.duration_minutes,
         })
 
@@ -300,7 +304,6 @@ def appointments_list(request):
     if not user:
         return JsonResponse({'error': 'Not authenticated'}, status=401)
 
-    # ── GET ──────────────────────────────────────────────────────────────────
     if request.method == 'GET':
         if user.role == 'patient':
             try:
@@ -328,7 +331,6 @@ def appointments_list(request):
 
         return JsonResponse({'error': 'Invalid role'}, status=403)
 
-    # ── POST — patient requests a slot ────────────────────────────────────────
     if request.method == 'POST':
         if user.role != 'patient':
             return JsonResponse({'error': 'Only patients can request appointments'}, status=403)
@@ -357,29 +359,22 @@ def appointments_list(request):
 
         cost = credit_cost(slot.duration_minutes)
         if patient_profile.credits < cost:
-            return JsonResponse({
-                'error':             'Insufficient credits',
-                'credits_required':  cost,
-                'credits_available': patient_profile.credits,
-            }, status=402)
+            return JsonResponse({'error': 'Insufficient credits'}, status=402)
 
-        if Appointment.objects.filter(
-            slot=slot,
-            patient=patient_profile,
+        already = Appointment.objects.filter(
+            slot=slot, patient=patient_profile,
             status__in=[Appointment.STATUS_PENDING_REQUEST, Appointment.STATUS_CONFIRMED],
-        ).exists():
-            return JsonResponse(
-                {'error': 'You already have an active request for this slot.'},
-                status=409,
-            )
+        ).exists()
+        if already:
+            return JsonResponse({'error': 'already_requested'}, status=409)
 
         with transaction.atomic():
             patient_profile.credits -= cost
             patient_profile.save(update_fields=['credits'])
+
             appt = Appointment.objects.create(
-                slot    = slot,
-                patient = patient_profile,
-                status  = Appointment.STATUS_PENDING_REQUEST,
+                slot=slot, patient=patient_profile,
+                status=Appointment.STATUS_PENDING_REQUEST,
             )
 
         return JsonResponse(
@@ -392,7 +387,6 @@ def appointments_list(request):
 @require_http_methods(['PATCH'])
 def appointment_confirm(request, appointment_id):
     """
-    Psychologist confirms one pending_request.
     All OTHER pending_request appointments on the same slot are rejected
     and their credits refunded. Response includes the confirmed appointment
     AND a 'rejected_appointments' list so the frontend can update all
@@ -432,8 +426,6 @@ def appointment_confirm(request, appointment_id):
             new_bal = _refund(other)
             other.status = Appointment.STATUS_REJECTED
             other.save(update_fields=['status', 'updated_at'])
-            # Include patient_credits so the OTHER patient's UI can also update
-            # if they happen to be polling (or we push via websockets later).
             rejected_dicts.append(
                 appointment_to_dict(other, 'psychologist', patient_credits=new_bal)
             )
@@ -459,7 +451,7 @@ def appointment_reject(request, appointment_id):
     if not user:
         return JsonResponse({'error': 'Not authenticated'}, status=401)
     if user.role != 'psychologist':
-        return JsonResponse({'error': 'Only psychologists can reject appointment requests'}, status=403)
+        return JsonResponse({'error': 'Only psychologists can reject appointments'}, status=403)
 
     try:
         appt = Appointment.objects.select_related('slot', 'patient').get(
@@ -471,7 +463,7 @@ def appointment_reject(request, appointment_id):
 
     if appt.status != Appointment.STATUS_PENDING_REQUEST:
         return JsonResponse(
-            {'error': f'Only pending requests can be rejected (current: {appt.status})'},
+            {'error': f'Cannot reject an appointment with status: {appt.status}'},
             status=409,
         )
 
@@ -480,25 +472,18 @@ def appointment_reject(request, appointment_id):
         appt.status = Appointment.STATUS_REJECTED
         appt.save(update_fields=['status', 'updated_at'])
 
-        if not _slot_has_active_requests(appt.slot):
-            if appt.slot.status != AvailableSlot.SLOT_OPEN:
-                appt.slot.status = AvailableSlot.SLOT_OPEN
-                appt.slot.save(update_fields=['status'])
-
     return JsonResponse(appointment_to_dict(appt, 'psychologist', patient_credits=new_bal))
 
 
 @csrf_exempt
 @require_http_methods(['PATCH'])
 def appointment_withdraw(request, appointment_id):
-    """
-    Patient withdraws their own pending_request. Credits refunded. Slot unaffected.
-    """
+    """Patient withdraws their own pending request. Credits refunded."""
     user = require_auth(request)
     if not user:
         return JsonResponse({'error': 'Not authenticated'}, status=401)
     if user.role != 'patient':
-        return JsonResponse({'error': 'Only patients can withdraw their requests'}, status=403)
+        return JsonResponse({'error': 'Only patients can withdraw appointments'}, status=403)
 
     try:
         appt = Appointment.objects.select_related('slot', 'patient').get(
@@ -510,68 +495,58 @@ def appointment_withdraw(request, appointment_id):
 
     if appt.status != Appointment.STATUS_PENDING_REQUEST:
         return JsonResponse(
-            {'error': f'Only pending requests can be withdrawn (current: {appt.status})'},
+            {'error': f'Cannot withdraw an appointment with status: {appt.status}'},
             status=409,
         )
 
     with transaction.atomic():
-        new_balance = _refund(appt)
+        new_bal = _refund(appt)
         appt.status = Appointment.STATUS_WITHDRAWN
         appt.save(update_fields=['status', 'updated_at'])
 
-    return JsonResponse(appointment_to_dict(appt, 'patient', patient_credits=new_balance))
+        if not _slot_has_active_requests(appt.slot):
+            appt.slot.status = AvailableSlot.SLOT_OPEN
+            appt.slot.save(update_fields=['status'])
+
+    return JsonResponse(appointment_to_dict(appt, 'patient', patient_credits=new_bal))
 
 
 @csrf_exempt
 @require_http_methods(['PATCH'])
 def appointment_cancel(request, appointment_id):
     """
-    Cancel a confirmed appointment (either role).
-      confirmed   → cancelled + refund
-      in_progress → cancelled, no refund
-      done / cancelled / rejected / withdrawn → 409
-      pending_request → 409 (use withdraw/reject)
-    Slot reverts to 'open'.
+    Either party can cancel a confirmed appointment.
+    Credits refunded only if the session has NOT started yet.
     """
     user = require_auth(request)
     if not user:
         return JsonResponse({'error': 'Not authenticated'}, status=401)
 
-    if user.role == 'patient':
-        try:
+    try:
+        if user.role == 'patient':
             appt = Appointment.objects.select_related('slot', 'patient').get(
-                id=appointment_id,
-                patient=user.patient_profile,
+                id=appointment_id, patient=user.patient_profile,
             )
-        except Appointment.DoesNotExist:
-            return JsonResponse({'error': 'Appointment not found'}, status=404)
-
-    elif user.role == 'psychologist':
-        try:
+        elif user.role == 'psychologist':
             appt = Appointment.objects.select_related('slot', 'patient').get(
-                id=appointment_id,
-                slot__psychologist=user.psychologist_profile,
+                id=appointment_id, slot__psychologist=user.psychologist_profile,
             )
-        except Appointment.DoesNotExist:
-            return JsonResponse({'error': 'Appointment not found'}, status=404)
-    else:
-        return JsonResponse({'error': 'Invalid role'}, status=403)
+        else:
+            return JsonResponse({'error': 'Invalid role'}, status=403)
+    except Appointment.DoesNotExist:
+        return JsonResponse({'error': 'Appointment not found'}, status=404)
 
     effective = compute_status(appt)
-
-    TERMINAL = {'done', 'cancelled', 'rejected', 'withdrawn'}
-    if effective in TERMINAL:
-        return JsonResponse({'error': f'Appointment is already {effective}.'}, status=409)
-    if effective == 'pending_request':
+    if effective not in ('confirmed', 'in_progress'):
         return JsonResponse(
-            {'error': 'Use the withdraw endpoint to cancel a pending request.'},
+            {'error': f'Cannot cancel an appointment with status: {effective}'},
             status=409,
         )
 
-    new_balance = None
+    new_bal = None
     with transaction.atomic():
-        if effective == 'confirmed':
-            new_balance = _refund(appt)
+        if effective != 'in_progress':
+            new_bal = _refund(appt)
 
         appt.status = Appointment.STATUS_CANCELLED
         appt.save(update_fields=['status', 'updated_at'])
@@ -580,43 +555,26 @@ def appointment_cancel(request, appointment_id):
         appt.slot.save(update_fields=['status'])
 
     return JsonResponse(
-        appointment_to_dict(appt, user.role, patient_credits=new_balance)
+        appointment_to_dict(appt, user.role, patient_credits=new_bal)
     )
 
 
-# ─── Appointment history ──────────────────────────────────────────────────────
-
 @require_http_methods(['GET'])
 def appointment_history(request):
-    """
-    GET /api/appointments/history/?with=<user_id>
-    Returns up to 3 past 'done' confirmed appointments with a given counterpart.
-    """
     user = require_auth(request)
     if not user:
         return JsonResponse({'error': 'Not authenticated'}, status=401)
-
-    with_user_id = request.GET.get('with')
-    if not with_user_id:
-        return JsonResponse({'error': 'Missing ?with=<user_id> parameter'}, status=400)
 
     now = timezone.now()
 
     if user.role == 'patient':
         try:
-            patient_profile = user.patient_profile
+            profile = user.patient_profile
         except PatientProfile.DoesNotExist:
             return JsonResponse({'error': 'Patient profile not found'}, status=404)
-        try:
-            psych_user    = get_user_model().objects.get(id=with_user_id, role='psychologist')
-            psych_profile = psych_user.psychologist_profile
-        except Exception:
-            return JsonResponse({'error': 'Psychologist not found'}, status=404)
-
         candidates = (
             Appointment.objects
-            .filter(patient=patient_profile, slot__psychologist=psych_profile,
-                    status=Appointment.STATUS_CONFIRMED)
+            .filter(patient=profile, status=Appointment.STATUS_CONFIRMED)
             .select_related('slot__psychologist__user', 'patient__user')
             .order_by('-slot__start_time')
         )
@@ -628,19 +586,12 @@ def appointment_history(request):
 
     if user.role == 'psychologist':
         try:
-            psych_profile = user.psychologist_profile
+            profile = user.psychologist_profile
         except PsychologistProfile.DoesNotExist:
             return JsonResponse({'error': 'Psychologist profile not found'}, status=404)
-        try:
-            patient_user    = get_user_model().objects.get(id=with_user_id, role='patient')
-            patient_profile = patient_user.patient_profile
-        except Exception:
-            return JsonResponse({'error': 'Patient not found'}, status=404)
-
         candidates = (
             Appointment.objects
-            .filter(patient=patient_profile, slot__psychologist=psych_profile,
-                    status=Appointment.STATUS_CONFIRMED)
+            .filter(slot__psychologist=profile, status=Appointment.STATUS_CONFIRMED)
             .select_related('slot__psychologist__user', 'patient__user')
             .order_by('-slot__start_time')
         )
@@ -652,7 +603,8 @@ def appointment_history(request):
 
     return JsonResponse({'error': 'Invalid role'}, status=403)
 
-# ─── Link generation ────────────────────────────────────────────────────── 
+
+# ─── Link generation ──────────────────────────────────────────────────────────
 
 def generate_meet_link():
     code = uuid.uuid4().hex
@@ -666,12 +618,6 @@ def maybe_attach_meet_link(appt):
       - stored status is confirmed
       - no link exists yet
       - start_time is within 30 minutes (or already in progress)
-
-    Race-safe: uses SELECT FOR UPDATE so two concurrent requests
-    on the same appointment cannot both write a link.
-
-    Must be called OUTSIDE any existing transaction.
-    Returns the appt object (refreshed if a link was generated).
     """
     if appt.status != Appointment.STATUS_CONFIRMED:
         return appt
@@ -683,19 +629,18 @@ def maybe_attach_meet_link(appt):
     if minutes_until > MEET_LINK_WINDOW_MINUTES:
         return appt
 
-    # Atomic: re-fetch with row lock, re-check, then write.
-    # If another request beat us to it, we'll see meet_link already set.
     with transaction.atomic():
         locked = (
             Appointment.objects
             .select_for_update()
             .get(id=appt.id)
         )
-        if locked.meet_link:          # other host already wrote it
+        if locked.meet_link:
             return locked
         locked.meet_link = generate_meet_link()
         locked.save(update_fields=['meet_link', 'updated_at'])
         return locked
+
 
 @require_http_methods(['GET'])
 def appointment_detail(request, appointment_id):

@@ -42,18 +42,14 @@ export default function PsychologistDashboard() {
   }, [])
 
   const applyUpdate = useCallback((updated) => {
-    setAppointments((prev) => {
-      const next = prev.map((a) => a.id === updated.id ? updated : a)
-      return sortByTime(next)
-    })
+    setAppointments((prev) => sortByTime(prev.map((a) => a.id === updated.id ? updated : a)))
     setSelected(updated)
   }, [])
 
   const applyBatch = useCallback((updatedList) => {
     setAppointments((prev) => {
-      const map = Object.fromEntries(updatedList.map((a) => [a.id, a]))
-      const next = prev.map((a) => map[a.id] ?? a)
-      return sortByTime(next)
+      const map  = Object.fromEntries(updatedList.map((a) => [a.id, a]))
+      return sortByTime(prev.map((a) => map[a.id] ?? a))
     })
   }, [])
 
@@ -92,14 +88,18 @@ export default function PsychologistDashboard() {
     setActionLoading(false)
   }
 
+  // Second click on the same card deselects (hides detail panel)
   const handleSelect = useCallback(async (appt) => {
+    if (selected?.id === appt.id) {
+      setSelected(null)
+      return
+    }
     setSelected(appt)
     setActionError(null)
     const result = await getAppointment(appt.id)
     if (result.ok) {
-      setAppointments((prev) =>
-        sortByTime(prev.map((a) => a.id === result.data.id ? result.data : a))
-      )
+      setAppointments((prev) => sortByTime(prev.map((a) => a.id === result.data.id ? result.data : a)))
+      setSelected(result.data)
     }
   }, [selected])
 
@@ -127,10 +127,7 @@ export default function PsychologistDashboard() {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-amber-300">{t('psychologist.autoRejectedTitle')}</p>
               <p className="text-xs text-amber-400/80 mt-0.5">
-                {t('psychologist.autoRejectedBody', {
-                  names: rejectionNotice.names.join(', '),
-                  count: rejectionNotice.names.length,
-                })}
+                {t('psychologist.autoRejectedBody', { names: rejectionNotice.names.join(', '), count: rejectionNotice.names.length })}
               </p>
             </div>
             <button onClick={() => setRejectionNotice(null)} className="flex-shrink-0 text-amber-500/60 hover:text-amber-300 transition-colors" aria-label="Dismiss">
@@ -142,6 +139,7 @@ export default function PsychologistDashboard() {
         )}
 
         <div className="flex gap-4 items-start">
+
           <DashboardSidebar
             user={user}
             namePrefix="Dr."
@@ -149,7 +147,9 @@ export default function PsychologistDashboard() {
             actions={psychologistActions}
           />
 
+          {/* ── Appointments + detail (stacked vertically) ── */}
           <div className="flex-1 min-w-0 space-y-3">
+
             <AppointmentsPanel
               title={t('psychologist.appointmentsTitle')}
               appointments={active}
@@ -198,72 +198,68 @@ export default function PsychologistDashboard() {
                 )}
               </div>
             )}
-          </div>
 
-          {selectedAppointment && (
-            <AppointmentDetail
-              appointment={selectedAppointment}
-              counterpart={{
-                firstName:      selectedAppointment.patient.first_name,
-                lastName:       selectedAppointment.patient.last_name,
-                profilePicture: selectedAppointment.patient.profile_picture,
-              }}
-              previousLabel={t('psychologist.previousSessionsWith', {
-                lastName: selectedAppointment.patient.last_name,
-              })}
-              previousUserId={selectedAppointment.patient.id}
-              role="psychologist"
-              notes={
-                selStatus === 'done' ? (
-                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-4">
-                      <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
-                        {t('psychologist.sessionNotes')}
-                      </p>
-                      <p className="text-slate-200 text-sm leading-relaxed">
-                        {selectedAppointment.patient_notes || (
-                          <span className="italic text-slate-600">{t('psychologist.noSessionNotes')}</span>
-                        )}
-                      </p>
+            {/* Detail panel — below the appointment boxes */}
+            {selectedAppointment && (
+              <AppointmentDetail
+                appointment={selectedAppointment}
+                counterpart={{
+                  firstName:      selectedAppointment.patient.first_name,
+                  lastName:       selectedAppointment.patient.last_name,
+                  profilePicture: selectedAppointment.patient.profile_picture,
+                }}
+                previousLabel={t('psychologist.previousSessionsWith', { lastName: selectedAppointment.patient.last_name })}
+                previousUserId={selectedAppointment.patient.id}
+                role="psychologist"
+                notes={
+                  selStatus === 'done' ? (
+                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-4">
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
+                          {t('psychologist.sessionNotes')}
+                        </p>
+                        <p className="text-slate-200 text-sm leading-relaxed">
+                          {selectedAppointment.patient_notes || <span className="italic text-slate-600">{t('psychologist.noSessionNotes')}</span>}
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-slate-800/60 border border-amber-500/20 p-4">
+                        <p className="text-xs font-medium text-amber-500/70 uppercase tracking-wider mb-2">
+                          {t('psychologist.privateNotes')}
+                        </p>
+                        <p className="text-slate-200 text-sm leading-relaxed">
+                          {selectedAppointment.private_notes || <span className="italic text-slate-600">{t('psychologist.noPrivateNotes')}</span>}
+                        </p>
+                      </div>
                     </div>
-                    <div className="rounded-xl bg-slate-800/60 border border-amber-500/20 p-4">
-                      <p className="text-xs font-medium text-amber-500/70 uppercase tracking-wider mb-2">
-                        {t('psychologist.privateNotes')}
-                      </p>
-                      <p className="text-slate-200 text-sm leading-relaxed">
-                        {selectedAppointment.private_notes || (
-                          <span className="italic text-slate-600">{t('psychologist.noPrivateNotes')}</span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                ) : null
-              }
-              actions={
-                <div className="mt-5 flex items-center gap-3 flex-wrap">
-                  {selStatus === 'pending_request' && (
-                    <>
-                      <button onClick={handleConfirm} disabled={actionLoading}
-                        className="rounded-lg bg-emerald-500/15 border border-emerald-500/40 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/25 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                        {actionLoading ? t('psychologist.confirmingAppointment') : t('psychologist.confirmAppointment')}
-                      </button>
-                      <button onClick={handleReject} disabled={actionLoading}
+                  ) : null
+                }
+                actions={
+                  <div className="mt-5 flex items-center gap-3 flex-wrap">
+                    {selStatus === 'pending_request' && (
+                      <>
+                        <button onClick={handleConfirm} disabled={actionLoading}
+                          className="rounded-lg bg-emerald-500/15 border border-emerald-500/40 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/25 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                          {actionLoading ? t('psychologist.confirmingAppointment') : t('psychologist.confirmAppointment')}
+                        </button>
+                        <button onClick={handleReject} disabled={actionLoading}
+                          className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-400 hover:bg-rose-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                          {actionLoading ? t('psychologist.rejectingRequest') : t('psychologist.rejectRequest')}
+                        </button>
+                      </>
+                    )}
+                    {selStatus === 'confirmed' && (
+                      <button onClick={handleCancel} disabled={actionLoading}
                         className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-400 hover:bg-rose-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                        {actionLoading ? t('psychologist.rejectingRequest') : t('psychologist.rejectRequest')}
+                        {actionLoading ? t('psychologist.cancellingAppointment') : t('psychologist.cancelAppointment')}
                       </button>
-                    </>
-                  )}
-                  {selStatus === 'confirmed' && (
-                    <button onClick={handleCancel} disabled={actionLoading}
-                      className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-400 hover:bg-rose-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                      {actionLoading ? t('psychologist.cancellingAppointment') : t('psychologist.cancelAppointment')}
-                    </button>
-                  )}
-                  {actionError && <p className="text-rose-400 text-sm">{actionError}</p>}
-                </div>
-              }
-            />
-          )}
+                    )}
+                    {actionError && <p className="text-rose-400 text-sm">{actionError}</p>}
+                  </div>
+                }
+              />
+            )}
+
+          </div>
         </div>
       </div>
     </main>
