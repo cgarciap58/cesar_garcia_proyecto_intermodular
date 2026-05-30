@@ -4,17 +4,3 @@
   "US": "Estados Unidos"
 }
 
-// Needs localization
-// const TIMEZONES = [
-//   'UTC',
-//   'Europe/Madrid', 'Europe/London', 'Europe/Paris', 'Europe/Berlin',
-//   'Europe/Rome', 'Europe/Amsterdam', 'Europe/Lisbon', 'Europe/Warsaw',
-//   'America/New_York', 'America/Chicago', 'America/Denver',
-//   'America/Los_Angeles', 'America/Toronto', 'America/Vancouver',
-//   'America/Sao_Paulo', 'America/Argentina/Buenos_Aires', 'America/Mexico_City',
-//   'Asia/Tokyo', 'Asia/Seoul', 'Asia/Shanghai', 'Asia/Kolkata',
-//   'Asia/Dubai', 'Asia/Singapore',
-//   'Australia/Sydney', 'Australia/Melbourne',
-//   'Pacific/Auckland',
-//   'Africa/Cairo', 'Africa/Johannesburg',
-// ]

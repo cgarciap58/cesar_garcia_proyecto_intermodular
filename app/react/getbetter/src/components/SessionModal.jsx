@@ -178,7 +178,8 @@ export default function SessionModal({ appointment, counterpart, onClose }) {
             />
           </div>
 
-          {/* Go Now button */}
+          {/* Go Now button. */}
+          {/* TODO: Should be blocked if 30+ min left for appointment */}
           <button
             onClick={handleGoNow}
             className="w-full flex items-center justify-center gap-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 px-5 py-3.5 text-white font-semibold text-sm transition-colors shadow-lg shadow-blue-900/40"
