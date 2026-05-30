@@ -67,3 +67,6 @@ venv/
 # utilidades
 push.sh
 reset.sh
+
+# DB backups
+/backups
