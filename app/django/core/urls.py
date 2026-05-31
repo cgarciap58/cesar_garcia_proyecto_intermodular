@@ -1,15 +1,15 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, re_path
 
 from .views import session_test, test_api
 
 from .accounts.views import (
-    register_user, 
-    login_user, 
-    get_user, 
-    logout_user, 
+    register_user,
+    login_user,
+    get_user,
+    logout_user,
     update_profile,
-    upload_profile_picture, 
+    upload_profile_picture,
     add_credits,
 )
 
@@ -20,7 +20,7 @@ from .appointments.views import (
     appointment_history, appointment_detail,
 )
 
-from .s3.views import test_upload, test_list, test_read
+from .s3.views import test_upload, test_list, test_read, serve_media
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,13 +30,19 @@ urlpatterns = [
     path('test/s3/list/', test_list),
     path('test/s3/read/', test_read),
 
+    # ── Media proxy ───────────────────────────────────────────────────────────
+    # Serves private S3 objects through Django so the bucket stays locked down.
+    # Only authenticated requests are served; only paths under allowed prefixes
+    # (e.g. profiles/) are reachable.  Nginx already forwards /api/* to Django.
+    re_path(r'^api/media/(?P<path>.+)$', serve_media),
+
     # ── Auth ──────────────────────────────────────────────────────────────────
-    path('api/auth/me/',          get_user),
-    path('api/auth/register/',    register_user),
-    path('api/auth/login/',       login_user),
-    path('api/auth/logout/',      logout_user),
-    path('api/auth/profile/',     update_profile),
-    path('api/auth/credits/add/', add_credits),
+    path('api/auth/me/',              get_user),
+    path('api/auth/register/',        register_user),
+    path('api/auth/login/',           login_user),
+    path('api/auth/logout/',          logout_user),
+    path('api/auth/profile/',         update_profile),
+    path('api/auth/credits/add/',     add_credits),
     path('api/auth/profile/picture/', upload_profile_picture),
 
     # ── Slots ─────────────────────────────────────────────────────────────────
@@ -54,6 +60,4 @@ urlpatterns = [
     path('api/appointments/<int:appointment_id>/cancel/',   appointment_cancel),
     path('api/appointments/<int:appointment_id>/',          appointment_detail),
     path('api/appointments/',                               appointments_list),
-
-
 ]

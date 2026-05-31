@@ -45,6 +45,22 @@ def field_errors(errors_dict: dict, status: int = 422) -> JsonResponse:
     return JsonResponse({"errors": errors_dict}, status=status)
 
 
+def picture_url(user) -> str | None:
+    """
+    Return the Django proxy URL for a user's profile picture, or None.
+
+    We never expose the raw S3 URL to the browser — the bucket is private
+    and objects would return 403.  All image requests go through Django at
+    /api/media/<path>, which fetches from S3 server-side and streams the
+    response back.  Nginx already forwards /api/* to Django so no extra
+    routing is needed.
+    """
+    if not user.profile_picture:
+        return None
+    # user.profile_picture.name is the storage key, e.g. "profiles/7.png"
+    return f"/api/media/{user.profile_picture.name}"
+
+
 # ── User serializer ───────────────────────────────────────────────────────────
 
 def user_payload(user) -> dict:
@@ -64,7 +80,7 @@ def user_payload(user) -> dict:
         'city':            user.city,
         'phone_number':    user.phone_number,
         'timezone':        user.timezone,
-        'profile_picture': user.profile_picture.url if user.profile_picture else None,
+        'profile_picture': picture_url(user),
     }
 
     if user.role == 'patient':

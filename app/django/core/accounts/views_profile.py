@@ -297,4 +297,6 @@ def upload_profile_picture(request):
     user.profile_picture = path
     user.save(update_fields=["profile_picture"])
 
-    return JsonResponse({"profile_picture_url": default_storage.url(path)})
+    # Return the Django proxy URL, not the direct S3 URL.
+    # The browser must never talk to S3 directly — the bucket is private.
+    return JsonResponse({"profile_picture_url": f"/api/media/{path}"})
