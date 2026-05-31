@@ -13,6 +13,11 @@ from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
+import imghdr
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+
+
 from .models import PatientProfile, PsychologistProfile
 from .utils import (
     ALLOWED_TIMEZONES,
@@ -206,3 +211,52 @@ def add_credits(request):
     profile.credits += CREDITS_PER_PURCHASE
     profile.save()
     return JsonResponse({"credits": profile.credits, "added": CREDITS_PER_PURCHASE})
+
+
+
+# Max 5 MB
+MAX_AVATAR_BYTES = 5 * 1024 * 1024
+ALLOWED_IMAGE_TYPES = {'rgb', 'gif', 'pbm', 'pgm', 'ppm', 'tiff', 'rast',
+                       'xbm', 'jpeg', 'png', 'bmp', 'webp'}
+
+
+# Subida de imágenes de perfil
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def upload_profile_picture(request):
+    if not request.user.is_authenticated:
+        return err("not_authenticated", 401)
+
+    file = request.FILES.get("profile_picture")
+    if not file:
+        return err("no_file", 400)
+
+    if file.size > MAX_AVATAR_BYTES:
+        return err("file_too_large", 400)
+
+    # Read first 512 bytes to check magic bytes \u2014 this is the real image check
+    header = file.read(512)
+    file.seek(0)
+    image_type = imghdr.what(None, h=header)
+    if image_type not in ALLOWED_IMAGE_TYPES:
+        return err("not_an_image", 400)
+
+    # Delete old picture from S3 if it exists
+    user = request.user
+    if user.profile_picture:
+        try:
+            default_storage.delete(user.profile_picture.name)
+        except Exception:
+            pass  # don't block the upload if delete fails
+
+    # Save to S3 under profiles/<user_id>.<ext>
+    ext = image_type if image_type != 'jpeg' else 'jpg'
+    path = f"profiles/{user.id}.{ext}"
+    default_storage.save(path, ContentFile(file.read()))
+
+    # Store the path in the DB
+    user.profile_picture = path
+    user.save(update_fields=["profile_picture"])
+
+    return JsonResponse({"profile_picture_url": default_storage.url(path)})

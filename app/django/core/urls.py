@@ -4,8 +4,15 @@ from django.urls import path
 from .views import session_test, test_api
 
 from .accounts.views import (
-    register_user, login_user, get_user, update_profile, logout_user, add_credits,
+    register_user, 
+    login_user, 
+    get_user, 
+    logout_user, 
+    update_profile,
+    upload_profile_picture, 
+    add_credits,
 )
+
 from .appointments.views import (
     slots_list, slot_detail, available_slots,
     appointments_list,
@@ -30,6 +37,7 @@ urlpatterns = [
     path('api/auth/logout/',      logout_user),
     path('api/auth/profile/',     update_profile),
     path('api/auth/credits/add/', add_credits),
+    path('api/auth/profile/picture/', upload_profile_picture),
 
     # ── Slots ─────────────────────────────────────────────────────────────────
     # available/ must be registered BEFORE the generic slots/ path
