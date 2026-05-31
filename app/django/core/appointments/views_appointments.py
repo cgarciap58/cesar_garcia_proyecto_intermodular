@@ -201,7 +201,7 @@ def appointment_history(request):
             .order_by('-slot__start_time')[:3]
         )
         return JsonResponse({
-            'appointments': [appointment_to_dict(a, 'patient') for a in appts]
+            'history': [appointment_to_dict(a, 'patient') for a in appts]
         })
 
     if user.role == 'psychologist':
@@ -226,7 +226,7 @@ def appointment_history(request):
             .order_by('-slot__start_time')[:3]
         )
         return JsonResponse({
-            'appointments': [appointment_to_dict(a, 'psychologist') for a in appts]
+            'history': [appointment_to_dict(a, 'psychologist') for a in appts]
         })
 
     return JsonResponse({'error': 'Invalid role'}, status=403)

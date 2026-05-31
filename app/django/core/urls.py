@@ -13,10 +13,13 @@ from .appointments.views import (
     appointment_history, appointment_detail,
 )
 
+from .s3.views import test_upload
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/test/', test_api),
     path('django-debug/session-test/', session_test),
+    path('test/s3', test_upload),
 
     # ── Auth ──────────────────────────────────────────────────────────────────
     path('api/auth/me/',          get_user),
@@ -41,4 +44,6 @@ urlpatterns = [
     path('api/appointments/<int:appointment_id>/cancel/',   appointment_cancel),
     path('api/appointments/<int:appointment_id>/',          appointment_detail),
     path('api/appointments/',                               appointments_list),
+
+
 ]

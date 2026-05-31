@@ -92,7 +92,7 @@ export default function SessionModal({ appointment, counterpart, onClose }) {
 
   const { firstName, lastName, namePrefix, profilePicture } = counterpart
   const displayName = [namePrefix, firstName, lastName].filter(Boolean).join(' ')
-  const initials    = `${firstName[0]}${lastName[0]}`
+  const initials    = `${firstName?.[0] ?? ''}${lastName?.[0] ?? ''}`
   const meetLink    = appointment.meet_link || getMockMeetLink(appointment.id)
 
   // Close on Escape

@@ -43,8 +43,8 @@ export default function AppointmentDetail({
             </div>
             <p className="text-xs text-slate-400 text-center leading-tight">
               {namePrefix
-                ? <>{namePrefix} {firstName}<br />{lastName}</>
-                : <>{firstName}<br />{lastName}</>
+                ? <>{namePrefix} {firstName ?? ''}<br />{lastName ?? ''}</>
+                : <>{firstName ?? ''}<br />{lastName ?? ''}</>
               }
             </p>
           </div>
