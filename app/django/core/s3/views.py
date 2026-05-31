@@ -18,7 +18,7 @@ def _s3_client():
 
 def test_upload(request):
     try:
-        path = default_storage.save("test/prueba.txt", ContentFile(b"Hola desde Django"))
+        path = default_storage.save("prueba.txt", ContentFile(b"Hola desde Django"))
         url = default_storage.url(path)
         return HttpResponse(f"✅ default_storage SAVE OK<br>path: {path}<br>url: {url}")
     except Exception:
@@ -39,7 +39,7 @@ def test_list(request):
 def test_read(request):
     try:
         s3 = _s3_client()
-        obj = s3.get_object(Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key="test/prueba.txt")
+        obj = s3.get_object(Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key="test/test-connectivity.txt")
         content = obj['Body'].read().decode('utf-8')
         return HttpResponse(f"✅ Content of test/prueba.txt:<br>{content}")
     except Exception:
