@@ -22,11 +22,11 @@ const TIMEZONES = [
   'Africa/Cairo', 'Africa/Johannesburg',
 ]
 
-// Country option keys for localisation
+// Country option keys for localisation — labels resolved from the 'countries' namespace
 const COUNTRY_OPTION_KEYS = [
-  { value: 'ES', key: 'countries.ES' },
-  { value: 'US', key: 'countries.US' },
-  { value: 'FR', key: 'countries.FR' },
+  { value: 'ES', key: 'ES' },
+  { value: 'US', key: 'US' },
+  { value: 'FR', key: 'FR' },
 ]
 
 // Backend error code → profile i18n key
@@ -244,6 +244,7 @@ export default function ProfilePage() {
   const { user, setUser } = useAuth()
   const navigate = useNavigate()
   const { t, i18n } = useTranslation(['profile', 'common'])
+  const { t: tCountries } = useTranslation('countries')
 
   const [activeSection, setActiveSection] = useState('personal')
   const [values, setValues] = useState({
@@ -519,7 +520,7 @@ export default function ProfilePage() {
                       <SelectInput
                         value={values.country_code}
                         onChange={handleChange('country_code')}
-                        options={COUNTRY_OPTION_KEYS.map(({ value, key }) => ({ value, label: t(key, { ns: 'common' }) }))}
+                        options={COUNTRY_OPTION_KEYS.map(({ value, key }) => ({ value, label: tCountries(`countries.${key}`) }))}
                         error={errors.country_code}
                       />
                     </Field>

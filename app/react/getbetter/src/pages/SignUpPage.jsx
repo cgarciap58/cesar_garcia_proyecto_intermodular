@@ -12,11 +12,11 @@ const ROLE_OPTIONS = (t) => [
   { value: 'psychologist', label: t('signUp.rolePsychologist') },
 ]
 
-// Country options — values are IANA codes, keys resolve in the 'common' namespace
+// Country options — labels are resolved from the 'countries' namespace
 const COUNTRY_OPTION_KEYS = [
-  { value: 'ES', key: 'countries.ES' },
-  { value: 'US', key: 'countries.US' },
-  { value: 'FR', key: 'countries.FR' },
+  { value: 'ES', key: 'ES' },
+  { value: 'US', key: 'US' },
+  { value: 'FR', key: 'FR' },
 ]
 
 const initialValues = {
@@ -36,9 +36,8 @@ export default function SignUpPage() {
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = useNavigate()
-  // Load both namespaces; use tCommon for keys that live in 'common'
   const { t } = useTranslation('auth')
-  const { t: tCommon } = useTranslation('common')
+  const { t: tCountries } = useTranslation('countries')
   const passwordStrength = getPasswordStrength(values.password)
 
   const handleChange = (event) => {
@@ -141,7 +140,7 @@ export default function SignUpPage() {
                 <select id="country_code" name="country_code" value={values.country_code} onChange={handleChange} className={SELECT_CLASS}>
                   <option value="">{t('signUp.licenseCountryPlaceholder')}</option>
                   {COUNTRY_OPTION_KEYS.map((o) => (
-                    <option key={o.value} value={o.value}>{tCommon(o.key)}</option>
+                    <option key={o.value} value={o.value}>{tCountries(`countries.${o.key}`)}</option>
                   ))}
                 </select>
                 {errors.country_code ? <p className="mt-1.5 text-sm text-rose-400">{errors.country_code}</p> : null}

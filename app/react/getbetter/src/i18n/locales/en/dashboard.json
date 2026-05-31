@@ -45,7 +45,8 @@
     "previousSessionsWith":   "Previous sessions with {{firstName}} {{lastName}}",
     "autoRejectedTitle":      "Other requests automatically rejected",
     "autoRejectedBody_one":   "{{names}} was rejected and their credits refunded.",
-    "autoRejectedBody_other": "{{names}} were rejected and their credits refunded."
+    "autoRejectedBody_other": "{{names}} were rejected and their credits refunded.",
+    "slotsLockedTooltip":     "Slots management requires psychologist validation. Please fill out your licence number and await validation by staff."
   },
   "session": {
     "title":                  "Upcoming session",

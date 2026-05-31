@@ -45,7 +45,8 @@
     "previousSessionsWith":   "Sesiones anteriores con {{firstName}} {{lastName}}",
     "autoRejectedTitle":      "Otras solicitudes rechazadas automáticamente",
     "autoRejectedBody_one":   "{{names}} fue rechazado/a y se le devolvieron los créditos.",
-    "autoRejectedBody_other": "{{names}} fueron rechazados/as y se les devolvieron los créditos."
+    "autoRejectedBody_other": "{{names}} fueron rechazados/as y se les devolvieron los créditos.",
+    "slotsLockedTooltip":     "La gestión de franjas requiere validación del psicólogo. Por favor, completa tu número de licencia y espera la validación por parte del personal."
   },
   "session": {
     "title":                  "Sesión próxima",
