@@ -37,15 +37,15 @@ function LanguageSwitcher() {
   )
 }
 
-const NAV_LINK_CLASS = 'text-gray-300 hover:text-white text-sm lg:text-base transition-colors'
+const NAV_LINK_CLASS    = 'text-gray-300 hover:text-white text-sm lg:text-base transition-colors'
 const MOBILE_LINK_CLASS = 'block text-center text-gray-300 hover:text-white transition-colors'
 
 export default function Navbar() {
   const [mobileMenuIsOpen, setMobileMenuIsOpen] = useState(false)
   const { user, logout } = useAuth()
-  const navigate  = useNavigate()
-  const location  = useLocation()
-  const { t }     = useTranslation('common')
+  const navigate         = useNavigate()
+  const location         = useLocation()
+  const { t }            = useTranslation('common')
 
   const close = () => setMobileMenuIsOpen(false)
 
@@ -55,14 +55,28 @@ export default function Navbar() {
     navigate('/')
   }
 
-  // Testimonials: plain hash anchor when already on "/", otherwise navigate
+  // Logo / "Home" — smooth-scroll to top when already on "/", navigate otherwise.
+  const handleHome = (e) => {
+    e?.preventDefault?.()
+    if (location.pathname === '/') {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } else {
+      navigate('/')
+    }
+    close()
+  }
+
+  // Testimonials — smooth-scroll when on "/", navigate with hash otherwise.
   const handleTestimonials = (e) => {
     if (location.pathname === '/') {
-      // Let the browser follow the href="#testimonials" naturally
-      return
+      // Already on home: prevent default anchor jump and use smooth scroll instead
+      e.preventDefault()
+      document.getElementById('testimonials')?.scrollIntoView({ behavior: 'smooth' })
+    } else {
+      e.preventDefault()
+      navigate('/#testimonials')
     }
-    e.preventDefault()
-    navigate('/#testimonials')
+    close()
   }
 
   if (user === undefined) return null
@@ -72,10 +86,10 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-14 sm:h-16 md:h-20">
 
-          {/* Logo — always goes to "/" */}
+          {/* Logo */}
           <div
             className="flex items-center space-x-1 cursor-pointer"
-            onClick={() => navigate('/')}
+            onClick={handleHome}
           >
             <img src={hero} alt={t('appName')} className="w-4 h-4 sm:w-10 sm:h-10" />
             <span className="text-lg sm:text-xl md:text-2xl font-medium">
@@ -88,14 +102,14 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-6 lg:space-x-8">
             {user ? (
               <>
-                <NavLink to="/"          className={NAV_LINK_CLASS}>{t('nav.home')}</NavLink>
+                <a href="/" onClick={handleHome} className={NAV_LINK_CLASS}>{t('nav.home')}</a>
                 <NavLink to="/dashboard" className={NAV_LINK_CLASS}>{t('nav.dashboard')}</NavLink>
                 <NavLink to="/profile"   className={NAV_LINK_CLASS}>{t('nav.profile')}</NavLink>
                 <button onClick={handleLogout} className={NAV_LINK_CLASS}>{t('nav.logOut')}</button>
               </>
             ) : (
               <>
-                <NavLink to="/" className={NAV_LINK_CLASS}>{t('nav.home')}</NavLink>
+                <a href="/" onClick={handleHome} className={NAV_LINK_CLASS}>{t('nav.home')}</a>
                 <a
                   href="#testimonials"
                   onClick={handleTestimonials}
@@ -124,17 +138,22 @@ export default function Navbar() {
         <div className="px-4 py-4 space-y-3 md:hidden bg-slate-900/95 backdrop-blur-lg border-t border-slate-800">
           {user ? (
             <>
-              <NavLink to="/"          className={MOBILE_LINK_CLASS} onClick={close}>{t('nav.home')}</NavLink>
+              <a href="/" onClick={handleHome} className={MOBILE_LINK_CLASS}>{t('nav.home')}</a>
               <NavLink to="/dashboard" className={MOBILE_LINK_CLASS} onClick={close}>{t('nav.dashboard')}</NavLink>
               <NavLink to="/profile"   className={MOBILE_LINK_CLASS} onClick={close}>{t('nav.profile')}</NavLink>
-              <button onClick={handleLogout} className="block w-full text-center text-gray-300 hover:text-white transition-colors">{t('nav.logOut')}</button>
+              <button
+                onClick={handleLogout}
+                className="block w-full text-center text-gray-300 hover:text-white transition-colors"
+              >
+                {t('nav.logOut')}
+              </button>
             </>
           ) : (
             <>
-              <NavLink to="/" className={MOBILE_LINK_CLASS} onClick={close}>{t('nav.home')}</NavLink>
+              <a href="/" onClick={handleHome} className={MOBILE_LINK_CLASS}>{t('nav.home')}</a>
               <a
                 href="#testimonials"
-                onClick={(e) => { handleTestimonials(e); close() }}
+                onClick={handleTestimonials}
                 className={MOBILE_LINK_CLASS}
               >
                 {t('nav.testimonials')}

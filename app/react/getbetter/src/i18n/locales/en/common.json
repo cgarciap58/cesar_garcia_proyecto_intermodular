@@ -8,14 +8,6 @@
     "testimonials": "Testimonials",
     "signIn":       "Sign in"
   },
-  "countries": {
-    "ES": "Spain",
-    "US": "United States",
-    "FR": "France",
-    "DE": "Germany",
-    "GB": "United Kingdom",
-    "PT": "Portugal"
-  },
   "actions": {
     "save":    "Save",
     "cancel":  "Cancel",
@@ -32,6 +24,37 @@
   },
   "errors": {
     "generic": "Something went wrong. Please try again."
+  },
+  "timezones": {
+    "UTC":                            "UTC",
+    "Europe/Madrid":                  "Madrid (CET/CEST)",
+    "Europe/London":                  "London (GMT/BST)",
+    "Europe/Paris":                   "Paris (CET/CEST)",
+    "Europe/Berlin":                  "Berlin (CET/CEST)",
+    "Europe/Rome":                    "Rome (CET/CEST)",
+    "Europe/Amsterdam":               "Amsterdam (CET/CEST)",
+    "Europe/Lisbon":                  "Lisbon (WET/WEST)",
+    "Europe/Warsaw":                  "Warsaw (CET/CEST)",
+    "America/New_York":               "New York (ET)",
+    "America/Chicago":                "Chicago (CT)",
+    "America/Denver":                 "Denver (MT)",
+    "America/Los_Angeles":            "Los Angeles (PT)",
+    "America/Toronto":                "Toronto (ET)",
+    "America/Vancouver":              "Vancouver (PT)",
+    "America/Sao_Paulo":              "São Paulo (BRT)",
+    "America/Argentina/Buenos_Aires": "Buenos Aires (ART)",
+    "America/Mexico_City":            "Mexico City (CST/CDT)",
+    "Asia/Tokyo":                     "Tokyo (JST)",
+    "Asia/Seoul":                     "Seoul (KST)",
+    "Asia/Shanghai":                  "Shanghai (CST)",
+    "Asia/Kolkata":                   "Kolkata (IST)",
+    "Asia/Dubai":                     "Dubai (GST)",
+    "Asia/Singapore":                 "Singapore (SGT)",
+    "Australia/Sydney":               "Sydney (AEST/AEDT)",
+    "Australia/Melbourne":            "Melbourne (AEST/AEDT)",
+    "Pacific/Auckland":               "Auckland (NZST/NZDT)",
+    "Africa/Cairo":                   "Cairo (EET)",
+    "Africa/Johannesburg":            "Johannesburg (SAST)"
   },
   "landing": {
     "hero": {
