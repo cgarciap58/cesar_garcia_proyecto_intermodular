@@ -13,13 +13,15 @@ from .appointments.views import (
     appointment_history, appointment_detail,
 )
 
-from .s3.views import test_upload
+from .s3.views import test_upload, test_list, test_read
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/test/', test_api),
     path('django-debug/session-test/', session_test),
-    path('test/s3', test_upload),
+    path('test/s3/upload/', test_upload),
+    path('test/s3/list/', test_list),
+    path('test/s3/read/', test_read),
 
     # ── Auth ──────────────────────────────────────────────────────────────────
     path('api/auth/me/',          get_user),
