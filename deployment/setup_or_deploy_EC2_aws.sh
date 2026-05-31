@@ -157,7 +157,7 @@ case $maquina in
         read -rp "--> " app_num
 
         if ! [[ "$app_num" =~ ^[0-9]+$ ]] || (( app_num < 0 || app_num > ${#APP_IPS[@]} )); then
-            echo "Instancia no v�lida"
+            echo "Instancia no válida"
             exit 1
         fi
 
@@ -169,7 +169,7 @@ case $maquina in
 
         if (( app_num == 0 )) && (( opcion == 2 )); then
             echo ""
-            read -rp "Deploy a TODAS las apps. �Continuar? [y/N] " confirm
+            read -rp "Deploy a TODAS las apps. ¿Continuar? [y/N] " confirm
             [[ "$confirm" =~ ^[Yy]$ ]] || exit 0
         fi
 
@@ -215,7 +215,7 @@ case $maquina in
                         rm -f "$RUNTIME_ENV"
                         ;;
                     *)
-                        echo "Opci�n no v�lida"
+                        echo "Opción no válida"
                         exit 1
                         ;;
                 esac
@@ -258,7 +258,7 @@ case $maquina in
                     'bash -s' < "$SCRIPT_DIR/app/app_deploy.sh"
                 ;;
             *)
-                echo "Opci�n no v�lida"
+                echo "Opción no válida"
                 exit 1
                 ;;
         esac
