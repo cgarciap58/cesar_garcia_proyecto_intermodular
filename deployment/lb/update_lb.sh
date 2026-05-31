@@ -3,11 +3,11 @@
 # deployment/lb/lb_update_upstream.sh
 #
 # Actualiza SOLO el bloque upstream de nginx en un LB ya
-# configurado con SSL por certbot. No toca nada m�s.
+# configurado con SSL por certbot. No toca nada más.
 #
 # Uso: bash -s <APP_IPs_comma> [APP_PORT]
 #
-# Llamado desde setup_EC2_aws.sh opci�n "Actualizar upstream LB"
+# Llamado desde setup_EC2_aws.sh opción "Actualizar upstream LB"
 # =============================================================
 set -euo pipefail
 
@@ -27,7 +27,7 @@ fi
 NGINX_CONF="/etc/nginx/sites-available/getbetter"
 
 if [[ ! -f "$NGINX_CONF" ]]; then
-    echo "ERROR: No se encontr� $NGINX_CONF"
+    echo "ERROR: No se encontró $NGINX_CONF"
     echo "  Este script es para actualizar un LB ya configurado."
     echo "  Para configurar desde cero usa lb_setup.sh"
     exit 1

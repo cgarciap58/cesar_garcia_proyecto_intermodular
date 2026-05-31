@@ -163,7 +163,7 @@ case $maquina in
 
         echo ""
         echo "  1. Inicializar / setup"
-        echo "  2. Desplegar / deploy (no hay vuelta atr�s)"
+        echo "  2. Desplegar / deploy (no hay vuelta atrás)"
         echo ""
         read -rp "--> " opcion
 
@@ -265,7 +265,7 @@ case $maquina in
         ;;
 
     *)
-        echo "M�quina no v�lida"
+        echo "Máquina no válida"
         exit 1
         ;;
 esac

@@ -2,7 +2,7 @@
 # =============================================================
 # utils/backup_db.sh
 #
-# Hace un volcado (mysqldump) de la base de datos de producci�n
+# Hace un volcado (mysqldump) de la base de datos de producción
 # y lo guarda en backups/ con timestamp.
 #
 # Uso:
@@ -21,7 +21,7 @@
 set -euo pipefail
 
 # ------------------------------------------------------------
-# 0. Localizar ra�z del repositorio (el script vive en utils/)
+# 0. Localizar raíz del repositorio (el script vive en utils/)
 # ------------------------------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -41,7 +41,7 @@ usage() {
 }
 
 if [[ "$MODE" != "local" && "$MODE" != "cloud" ]]; then
-    echo "ERROR: Modo no v�lido. Debe ser 'local' o 'cloud'."
+    echo "ERROR: Modo no válido. Debe ser 'local' o 'cloud'."
     usage; exit 1
 fi
 
@@ -62,7 +62,7 @@ load_env() {
 }
 
 # ------------------------------------------------------------
-# 3. Cargar variables de entorno seg�n el modo
+# 3. Cargar variables de entorno según el modo
 # ------------------------------------------------------------
 echo ""
 echo "=== backup_db.sh  [modo: $MODE] ==="
@@ -107,7 +107,7 @@ if [[ "$MODE" == "local" ]]; then
     CONTAINER=$(docker ps --filter "name=mariadb" --format "{{.Names}}" | head -1)
 
     if [[ -z "$CONTAINER" ]]; then
-        echo "ERROR: No se encontr� ning�n contenedor MariaDB en ejecuci�n."
+        echo "ERROR: No se encontró ningún contenedor MariaDB en ejecución."
         echo "  Lanza primero: ./infra-local/arrancar_local.sh"
         exit 1
     fi
@@ -127,7 +127,7 @@ if [[ "$MODE" == "local" ]]; then
 
 else
 
-    # ---- CLOUD: mysqldump en el host remoto, tra�do por SSH ----
+    # ---- CLOUD: mysqldump en el host remoto, traído por SSH ----
     : "${BASTION_IP_PUB:?BASTION_IP_PUB no encontrada en deployment/.aws-map.env}"
     : "${DB_IP:?DB_IP no encontrada en deployment/.aws-map.env}"
     : "${USUARIO_ROOT_EC2:?USUARIO_ROOT_EC2 no encontrada en deployment/.aws-map.env}"
@@ -137,9 +137,9 @@ else
         KEY_PATH="$REPO_ROOT/$KEY_PATH"
     fi
 
-    echo "   Basti�n : $BASTION_IP_PUB"
+    echo "   Bastión : $BASTION_IP_PUB"
     echo "   DB host : $DB_IP"
-    echo ">> Volcando via basti�n (puede tardar unos segundos)..."
+    echo ">> Volcando via bastión (puede tardar unos segundos)..."
 
     eval "$(ssh-agent -s)" > /dev/null
     ssh-add "$KEY_PATH" 2>/dev/null
@@ -161,10 +161,10 @@ else
 fi
 
 # ------------------------------------------------------------
-# 7. Verificar que el fichero no est� vac�o
+# 7. Verificar que el fichero no está vacío
 # ------------------------------------------------------------
 if [[ ! -s "$BACKUP_FILE" ]]; then
-    echo "ERROR: El fichero de backup est� vac�o. Algo sali� mal."
+    echo "ERROR: El fichero de backup está vacío. Algo salió mal."
     rm -f "$BACKUP_FILE"
     exit 1
 fi
@@ -174,7 +174,7 @@ SIZE=$(du -sh "$BACKUP_FILE" | cut -f1)
 echo ""
 echo "=== OK: backup completado ==="
 echo "   Fichero : $BACKUP_FILE"
-echo "   Tama�o  : $SIZE"
+echo "   Tamaño  : $SIZE"
 echo ""
 echo "   Para restaurar:"
 if [[ "$MODE" == "local" ]]; then
