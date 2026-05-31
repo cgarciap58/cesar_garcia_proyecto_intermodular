@@ -467,7 +467,7 @@ export default function ProfilePage() {
                       <SelectInput
                         value={values.timezone}
                         onChange={handleChange('timezone')}
-                        options={TIMEZONES.map((tz) => ({ value: tz, label: tz }))}
+                        options={TIMEZONES.map((tz) => ({ value: tz, label: t(`timezones.${tz}`, { ns: 'common' }) }))}
                         error={errors.timezone}
                       />
                     </Field>
