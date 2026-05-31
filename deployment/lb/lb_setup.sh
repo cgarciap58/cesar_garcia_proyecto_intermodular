@@ -66,6 +66,7 @@ server {
     listen [::]:80;
     server_name ${DOMAIN};
 
+    client_max_body_size 40M;
     location / {
         proxy_pass http://backend_app;
 
@@ -110,3 +111,7 @@ for ip in "${IPS[@]}"; do
     echo "     - ${ip// /}:${APP_PORT}"
 done
 echo ""
+echo "   Verificar con:"
+echo "     curl -I https://$DOMAIN"
+echo "     sudo nginx -t"
+echo "     sudo systemctl status nginx"
