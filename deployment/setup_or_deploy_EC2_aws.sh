@@ -146,17 +146,83 @@ case $maquina in
 
         echo ""
         echo "Nodos disponibles:"
-        # Por cada nodo en el array, escribe "App + número + IP"
+        echo "  0. Todas las apps"
+
         for idx in "${!APP_IPS[@]}"; do
             num=$(( idx + 1 ))
-            echo "  $num. App $num  (${APP_IPS[$idx]})"
+            echo "  $num. App $num (${APP_IPS[$idx]})"
         done
+
         echo ""
         read -rp "--> " app_num
 
-        if ! [[ "$app_num" =~ ^[0-9]+$ ]] || (( app_num < 1 || app_num > ${#APP_IPS[@]} )); then
-            echo "Instancia no válida"
+        if ! [[ "$app_num" =~ ^[0-9]+$ ]] || (( app_num < 0 || app_num > ${#APP_IPS[@]} )); then
+            echo "Instancia no v�lida"
             exit 1
+        fi
+
+        echo ""
+        echo "  1. Inicializar / setup"
+        echo "  2. Desplegar / deploy (no hay vuelta atr�s)"
+        echo ""
+        read -rp "--> " opcion
+
+        if (( app_num == 0 )) && (( opcion == 2 )); then
+            echo ""
+            read -rp "Deploy a TODAS las apps. �Continuar? [y/N] " confirm
+            [[ "$confirm" =~ ^[Yy]$ ]] || exit 0
+        fi
+
+        if (( app_num == 0 )); then
+
+            for idx in "${!APP_IPS[@]}"; do
+
+                num=$(( idx + 1 ))
+                IP="${APP_IPS[$idx]}"
+
+                BASE_DOMAIN="${APP_BASE_HOSTNAME#*.}"
+                NODE_HOSTNAME="app-${num}.${BASE_DOMAIN}"
+
+                echo ""
+                echo "========================================"
+                echo "Nodo: $NODE_HOSTNAME ($IP)"
+                echo "========================================"
+
+                case $opcion in
+                    1)
+                        ssh -J "${USUARIO_ROOT_EC2}@${BASTION_IP_PUB}" \
+                            "${USUARIO_ROOT_EC2}@${IP}" \
+                            "bash -s -- $NODE_HOSTNAME $IP" \
+                            < "$SCRIPT_DIR/app/app_setup.sh"
+                        ;;
+                    2)
+                        RUNTIME_ENV=$(mktemp)
+
+                        cat "$REPO_ROOT/app/.app.base.env" > "$RUNTIME_ENV"
+                        cat "$REPO_ROOT/app/.app.aws.env"  >> "$RUNTIME_ENV"
+                        echo "DB_HOST=$DB_IP"                      >> "$RUNTIME_ENV"
+                        echo "REDIS_HOST=$REDIS_IP"                >> "$RUNTIME_ENV"
+                        echo "DJANGO_ALLOWED_HOSTS=$LB_IP,$DOMAIN" >> "$RUNTIME_ENV"
+
+                        scp -o "ProxyJump=${USUARIO_ROOT_EC2}@${BASTION_IP_PUB}" \
+                            "$RUNTIME_ENV" \
+                            "${USUARIO_ROOT_EC2}@${IP}:/tmp/.env.runtime"
+
+                        ssh -J "${USUARIO_ROOT_EC2}@${BASTION_IP_PUB}" \
+                            "${USUARIO_ROOT_EC2}@${IP}" \
+                            'bash -s' < "$SCRIPT_DIR/app/app_deploy.sh"
+
+                        rm -f "$RUNTIME_ENV"
+                        ;;
+                    *)
+                        echo "Opci�n no v�lida"
+                        exit 1
+                        ;;
+                esac
+
+            done
+
+            exit 0
         fi
 
         IP="${APP_IPS[$((app_num - 1))]}"
@@ -165,10 +231,6 @@ case $maquina in
 
         echo ""
         echo "  Nodo    : $NODE_HOSTNAME ($IP)"
-        echo "  1. Inicializar / setup"
-        echo "  2. Desplegar / deploy  (no hay vuelta atrás)"
-        echo ""
-        read -rp "--> " opcion
 
         case $opcion in
             1)
@@ -196,14 +258,14 @@ case $maquina in
                     'bash -s' < "$SCRIPT_DIR/app/app_deploy.sh"
                 ;;
             *)
-                echo "Opción no válida"
+                echo "Opci�n no v�lida"
                 exit 1
                 ;;
         esac
         ;;
 
     *)
-        echo "Máquina no válida"
+        echo "M�quina no v�lida"
         exit 1
         ;;
 esac
