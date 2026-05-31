@@ -173,6 +173,7 @@ if USE_S3:
     AWS_SECRET_ACCESS_KEY = env("aws_secret_access_key")
     AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME")
     AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME")
+    AWS_SESSION_TOKEN = env("aws_session_token")
 
     AWS_QUERYSTRING_AUTH = False
     AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com"
