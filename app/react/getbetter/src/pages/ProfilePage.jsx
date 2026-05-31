@@ -176,7 +176,7 @@ function AvatarUpload({ user, setUser, t }) {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/gif,image/webp"
+            accept="image/*"
             className="hidden"
             onChange={handleFileChange}
           />
