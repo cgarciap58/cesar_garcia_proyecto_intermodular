@@ -70,8 +70,8 @@ export default function PsychologistDashboard() {
       applyUpdate(result.data)
       const rejected = result.data.rejected_appointments ?? []
       if (rejected.length > 0) {
-        const names = rejected.map((a) => a.patient?.first_name).filter(Boolean)
-        setRejectionNotice({ names })
+        applyBatch(rejected)
+        setRejectionNotice({ names: rejected.map((a) => a.patient.first_name) })
       }
     } else {
       setActionError(result.error)
@@ -97,6 +97,7 @@ export default function PsychologistDashboard() {
     setActionLoading(false)
   }
 
+  // Second click on the same card deselects (hides detail panel)
   const handleSelect = useCallback(async (appt) => {
     if (selected?.id === appt.id) {
       setSelected(null)
@@ -106,7 +107,7 @@ export default function PsychologistDashboard() {
     setActionError(null)
     const result = await getAppointment(appt.id)
     if (result.ok) {
-      setAppointments((prev) => prev.map((a) => a.id === result.data.id ? result.data : a))
+      setAppointments((prev) => sortByTime(prev.map((a) => a.id === result.data.id ? result.data : a)))
       setSelected(result.data)
     }
   }, [selected])
@@ -224,28 +225,60 @@ export default function PsychologistDashboard() {
                 previousUserId={selectedAppointment.patient.id}
                 role="psychologist"
                 notes={
-                  selStatus === 'done' ?
-                  { patient: selectedAppointment.patient_notes, private: selectedAppointment.private_notes }
-                  : null
+                  selStatus === 'done' ? (
+                    <div className="mt-4 space-y-3">
+                      <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-4">
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
+                          {t('psychologist.sessionNotes')}
+                        </p>
+                        <p className="text-slate-200 text-sm leading-relaxed">
+                          {selectedAppointment.patient_notes || (
+                            <span className="italic text-slate-600">{t('psychologist.noSessionNotes')}</span>
+                          )}
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-slate-800/60 border border-amber-500/20 p-4">
+                        <p className="text-xs font-medium text-amber-500/70 uppercase tracking-wider mb-2">
+                          {t('psychologist.privateNotes')}
+                        </p>
+                        <p className="text-slate-200 text-sm leading-relaxed">
+                          {selectedAppointment.private_notes || (
+                            <span className="italic text-slate-600">{t('psychologist.noPrivateNotes')}</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  ) : null
                 }
-                noteLabels={{
-                  patient:  t('psychologist.sessionNotes'),
-                  private:  t('psychologist.privateNotes'),
-                  noPatient: t('psychologist.noSessionNotes'),
-                  noPrivate: t('psychologist.noPrivateNotes'),
-                }}
                 actions={
-                  selStatus === 'pending_request' ? [
-                    { label: actionLoading ? t('psychologist.confirmingAppointment') : t('psychologist.confirmAppointment'),
-                      onClick: handleConfirm, disabled: actionLoading, variant: 'primary' },
-                    { label: actionLoading ? t('psychologist.rejectingRequest') : t('psychologist.rejectRequest'),
-                      onClick: handleReject, disabled: actionLoading, variant: 'secondary' },
-                  ] : selStatus === 'confirmed' || selStatus === 'in_progress' ? [
-                    { label: actionLoading ? t('psychologist.cancellingAppointment') : t('psychologist.cancelAppointment'),
-                      onClick: handleCancel, disabled: actionLoading, variant: 'secondary' },
-                  ] : []
+                  <div className="mt-5 flex items-center gap-3 flex-wrap">
+                    {selStatus === 'pending_request' && (
+                      <>
+                        <button onClick={handleConfirm} disabled={actionLoading}
+                          className="rounded-lg bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                          {actionLoading ? t('psychologist.confirmingAppointment') : t('psychologist.confirmAppointment')}
+                        </button>
+                        <button onClick={handleReject} disabled={actionLoading}
+                          className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-400 hover:bg-rose-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                          {actionLoading ? t('psychologist.rejectingRequest') : t('psychologist.rejectRequest')}
+                        </button>
+                      </>
+                    )}
+                    {selStatus === 'confirmed' && (
+                      <button onClick={handleCancel} disabled={actionLoading}
+                        className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-400 hover:bg-rose-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        {actionLoading ? t('psychologist.cancellingAppointment') : t('psychologist.cancelAppointment')}
+                      </button>
+                    )}
+                    {selStatus === 'in_progress' && (
+                      <button onClick={handleCancel} disabled={actionLoading}
+                        className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-400 hover:bg-rose-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        {actionLoading ? t('psychologist.cancellingAppointment') : t('psychologist.cancelAppointment')}
+                      </button>
+                    )}
+                    {actionError && <p className="text-rose-400 text-sm">{actionError}</p>}
+                  </div>
                 }
-                actionError={actionError}
               />
             )}
 
