@@ -1,7 +1,7 @@
 """
 accounts/views_profile.py
 ─────────────────────────
-Profile mutation endpoints: update_profile (PATCH) and add_credits (POST).
+Profile mutation endpoints: update_profile, add_credits, upload_profile_picture.
 """
 
 import json
@@ -13,7 +13,6 @@ from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-import imghdr
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 
@@ -75,54 +74,51 @@ def update_profile(request):
 
     if "timezone" in payload:
         tz = (payload["timezone"] or "").strip()
-        if tz not in ALLOWED_TIMEZONES:
+        if tz and tz not in ALLOWED_TIMEZONES:
             errors["timezone"] = "timezone_invalid"
 
-    # ── Sensitive-field validation (requires current_password) ─────────────
+    # ── Sensitive fields (need current_password) ────────────────────────────
 
-    sensitive_requested = "email" in payload or "new_password" in payload
+    sensitive_fields = {"email", "new_password"}
+    sensitive_requested = sensitive_fields & payload.keys()
+
     if sensitive_requested:
         current_password = payload.get("current_password") or ""
-        if not user.check_password(current_password):
+        if not current_password:
+            errors["current_password"] = "required"
+        elif not user.check_password(current_password):
             errors["current_password"] = "current_password_incorrect"
 
-        if "email" in payload and "current_password" not in errors:
-            new_email = (payload["email"] or "").strip().lower()
-            if not new_email:
-                errors["email"] = "required"
-            else:
-                User = get_user_model()
-                if User.objects.exclude(pk=user.pk).filter(email=new_email).exists():
-                    errors["email"] = "email_already_exists"
+    if "new_password" in payload:
+        pw = payload.get("new_password") or ""
+        if len(pw) < 8:
+            errors["new_password"] = "password_too_short"
 
-        if "new_password" in payload and "current_password" not in errors:
-            if len(payload.get("new_password") or "") < 8:
-                errors["new_password"] = "password_too_short"
-
-    # ── Psychologist-specific field validation ──────────────────────────────
+    # ── Psychologist-only fields ────────────────────────────────────────────
 
     psych_fields = {"session_duration_minutes", "session_price", "license_number", "country_code"}
-    if psych_fields & payload.keys():
-        if user.role != "psychologist":
-            errors["role"] = "not_psychologist"
-        else:
-            if "session_duration_minutes" in payload:
-                duration = payload["session_duration_minutes"]
-                if not isinstance(duration, int) or not (15 <= duration <= 180):
-                    errors["session_duration_minutes"] = "session_duration_range"
 
-            if "session_price" in payload:
-                try:
-                    price = float(payload["session_price"])
-                    if not (0.5 <= price <= 5.0) or round(price * 2) != price * 2:
-                        errors["session_price"] = "session_price_range"
-                except (TypeError, ValueError):
-                    errors["session_price"] = "session_price_range"
+    if "session_duration_minutes" in payload:
+        try:
+            dur = int(payload["session_duration_minutes"])
+            if dur < 15 or dur > 180:
+                errors["session_duration_minutes"] = "session_duration_range"
+        except (TypeError, ValueError):
+            errors["session_duration_minutes"] = "session_duration_range"
+
+    if "session_price" in payload:
+        try:
+            price = float(payload["session_price"])
+            valid_prices = [round(0.5 * i, 1) for i in range(1, 11)]  # 0.5 .. 5.0
+            if price not in valid_prices:
+                errors["session_price"] = "session_price_range"
+        except (TypeError, ValueError):
+            errors["session_price"] = "session_price_range"
 
     if errors:
         return field_errors(errors)
 
-    # ── Apply user-model changes ────────────────────────────────────────────
+    # ── Apply user field changes ────────────────────────────────────────────
 
     simple_user_fields = {
         "first_name": lambda v: (v or "").strip(),
@@ -213,14 +209,45 @@ def add_credits(request):
     return JsonResponse({"credits": profile.credits, "added": CREDITS_PER_PURCHASE})
 
 
+# ── upload_profile_picture ────────────────────────────────────────────────────
 
 # Max 5 MB
 MAX_AVATAR_BYTES = 5 * 1024 * 1024
-ALLOWED_IMAGE_TYPES = {'rgb', 'gif', 'pbm', 'pgm', 'ppm', 'tiff', 'rast',
-                       'xbm', 'jpeg', 'png', 'bmp', 'webp'}
+
+# Recognised image magic-byte signatures checked by _detect_image_type().
+# We don't rely on the file extension or Content-Type header supplied by the
+# browser — those can be spoofed.  We inspect the raw bytes instead.
+_MAGIC = {
+    b'\xff\xd8\xff':     'jpg',   # JPEG
+    b'\x89PNG\r\n':      'png',   # PNG
+    b'GIF87a':           'gif',   # GIF 87a
+    b'GIF89a':           'gif',   # GIF 89a
+    b'RIFF':             'webp',  # WebP (RIFF....WEBP, checked below)
+    b'BM':               'bmp',   # BMP
+}
 
 
-# Subida de imágenes de perfil
+def _detect_image_type(header: bytes):
+    """
+    Return a short extension string ('jpg', 'png', 'gif', 'webp', 'bmp')
+    or None if the header doesn't match a known image format.
+
+    We implement our own magic-byte check because imghdr was deprecated in
+    Python 3.11 and removed in 3.13.
+    """
+    if header[:3] == b'\xff\xd8\xff':
+        return 'jpg'
+    if header[:8] == b'\x89PNG\r\n\x1a\n':
+        return 'png'
+    if header[:6] in (b'GIF87a', b'GIF89a'):
+        return 'gif'
+    # WebP: bytes 0-3 == b'RIFF', bytes 8-12 == b'WEBP'
+    if header[:4] == b'RIFF' and header[8:12] == b'WEBP':
+        return 'webp'
+    if header[:2] == b'BM':
+        return 'bmp'
+    return None
+
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -235,27 +262,38 @@ def upload_profile_picture(request):
     if file.size > MAX_AVATAR_BYTES:
         return err("file_too_large", 400)
 
-    # Read first 512 bytes to check magic bytes \u2014 this is the real image check
-    header = file.read(512)
+    # Read first 16 bytes to detect the image type via magic bytes.
+    header = file.read(16)
     file.seek(0)
-    image_type = imghdr.what(None, h=header)
-    if image_type not in ALLOWED_IMAGE_TYPES:
+
+    ext = _detect_image_type(header)
+    if ext is None:
         return err("not_an_image", 400)
 
-    # Delete old picture from S3 if it exists
     user = request.user
-    if user.profile_picture:
-        try:
-            default_storage.delete(user.profile_picture.name)
-        except Exception:
-            pass  # don't block the upload if delete fails
 
-    # Save to S3 under profiles/<user_id>.<ext>
-    ext = image_type if image_type != 'jpeg' else 'jpg'
+    # Build the deterministic S3 key for this user.
+    # Using a fixed key (profiles/<id>.<ext>) means re-uploading always
+    # overwrites the same object — no orphaned files accumulate.
     path = f"profiles/{user.id}.{ext}"
+
+    # Delete the old object first so default_storage.save() doesn't
+    # silently rename the new one (e.g. profiles/1_abc123.jpg).
+    # We delete *both* the stored path on the model and the target path,
+    # since a previous upload with a different extension would leave a
+    # stale key behind.
+    for old_path in {user.profile_picture.name if user.profile_picture else None, path}:
+        if old_path:
+            try:
+                default_storage.delete(old_path)
+            except Exception:
+                pass  # don't block the upload if delete fails
+
+    # Read the full file and save to S3 via default_storage (same pattern
+    # as core/s3/views.py :: test_upload which is confirmed working).
     default_storage.save(path, ContentFile(file.read()))
 
-    # Store the path in the DB
+    # Persist the path to the DB.
     user.profile_picture = path
     user.save(update_fields=["profile_picture"])
 

@@ -33,3 +33,25 @@ export const addCredits = async () => {
   if (!response.ok) return { ok: false, error: payload.error || 'Failed to add credits' }
   return { ok: true, data: payload }
 }
+
+// POST /api/auth/profile/picture/
+// Sends the file as multipart/form-data — DO NOT set Content-Type manually;
+// the browser sets it (with the correct boundary) when using FormData.
+// Success: { profile_picture_url: "https://..." }
+// Error:   { ok: false, error: "error_code" }
+export const uploadProfilePicture = async (file) => {
+  const formData = new FormData()
+  formData.append('profile_picture', file)
+
+  const response = await fetch(buildUrl('/api/auth/profile/picture/'), {
+    method: 'POST',
+    credentials: 'include',
+    // No Content-Type header — let the browser set multipart/form-data + boundary
+    body: formData,
+  })
+  const payload = await parseResponse(response)
+  if (!response.ok) {
+    return { ok: false, error: payload.error || 'upload_failed' }
+  }
+  return { ok: true, data: payload }
+}

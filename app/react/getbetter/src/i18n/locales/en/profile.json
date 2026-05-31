@@ -31,6 +31,19 @@
     "currentPassword": "Required to change password",
     "newPassword":     "Min. 8 characters"
   },
+  "avatar": {
+    "label":         "Profile picture",
+    "hint":          "JPG, PNG, GIF or WebP · max 5 MB",
+    "changeButton":  "Change photo",
+    "uploading":     "Uploading…",
+    "success":       "Photo updated.",
+    "errors": {
+      "no_file":        "No file selected.",
+      "file_too_large": "File exceeds the 5 MB limit.",
+      "not_an_image":   "Only image files are accepted (JPG, PNG, GIF, WebP).",
+      "upload_failed":  "Upload failed. Please try again."
+    }
+  },
   "actions": {
     "save":   "Save changes",
     "saving": "Saving…"

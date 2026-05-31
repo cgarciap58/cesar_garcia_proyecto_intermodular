@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
-import { updateProfile } from '../services/profile'
+import { updateProfile, uploadProfilePicture } from '../services/profile'
 import { NAME_RE, PHONE_RE, filterName, filterPhone } from '../utils/validate'
 import AppDatePicker from '../components/AppDatePicker'
 
@@ -111,6 +111,102 @@ function StatusBadge({ type, message }) {
   )
 }
 
+// ─── AvatarUpload ─────────────────────────────────────────────────────────────
+//
+// Self-contained widget: shows the current avatar (or initials fallback),
+// a hidden <input type="file">, and a "Change photo" button.
+// On file selection it immediately POSTs to /api/auth/profile/picture/,
+// updates AuthContext on success, and shows inline feedback.
+
+function AvatarUpload({ user, setUser, t }) {
+  const fileInputRef   = useRef(null)
+  const [uploading, setUploading] = useState(false)
+  const [avatarFeedback, setAvatarFeedback] = useState(null) // { type, message }
+
+  const initials = `${user?.first_name?.[0] ?? ''}${user?.last_name?.[0] ?? ''}`
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0]
+    // Reset the input so re-selecting the same file triggers onChange again
+    e.target.value = ''
+    if (!file) return
+
+    setUploading(true)
+    setAvatarFeedback(null)
+
+    const result = await uploadProfilePicture(file)
+    setUploading(false)
+
+    if (result.ok) {
+      // Update the user in AuthContext so the avatar refreshes everywhere
+      // (DashboardSidebar, Navbar, etc.) without a page reload.
+      setUser((prev) => ({ ...prev, profile_picture: result.data.profile_picture_url }))
+      setAvatarFeedback({ type: 'success', message: t('avatar.success') })
+    } else {
+      const errorKey = `avatar.errors.${result.error}`
+      const message  = t(errorKey, { defaultValue: t('avatar.errors.upload_failed') })
+      setAvatarFeedback({ type: 'error', message })
+    }
+
+    // Auto-dismiss feedback after 3.5 s
+    setTimeout(() => setAvatarFeedback(null), 3500)
+  }
+
+  return (
+    <div>
+      <p className="block text-sm font-medium text-slate-300 mb-3">{t('avatar.label')}</p>
+
+      <div className="flex items-center gap-5">
+        {/* Avatar preview */}
+        <div className="w-20 h-20 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center overflow-hidden flex-shrink-0">
+          {user?.profile_picture ? (
+            <img
+              src={user.profile_picture}
+              alt="Profile"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span className="text-2xl font-semibold text-slate-400">{initials}</span>
+          )}
+        </div>
+
+        {/* Upload controls */}
+        <div className="flex flex-col gap-2">
+          {/* Hidden real file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+
+          {/* Visible button that triggers the hidden input */}
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => fileInputRef.current?.click()}
+            className="rounded-lg border border-slate-600 hover:border-slate-400 bg-slate-800/60 hover:bg-slate-800
+                       px-4 py-2 text-sm font-medium text-slate-300 hover:text-white
+                       transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {uploading ? t('avatar.uploading') : t('avatar.changeButton')}
+          </button>
+
+          <p className="text-xs text-slate-500">{t('avatar.hint')}</p>
+        </div>
+      </div>
+
+      {/* Inline feedback directly under the avatar row */}
+      {avatarFeedback && (
+        <div className="mt-3">
+          <StatusBadge type={avatarFeedback.type} message={avatarFeedback.message} />
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Section nav items ────────────────────────────────────────────────────────
 
 const SECTIONS = ['personal', 'password', 'roleInfo']
@@ -168,25 +264,24 @@ export default function ProfilePage() {
     license_number:           user.license_number  ?? '',
     country_code:             user.country_code    ?? '',
   })
-
-  const [errors, setErrors]     = useState({})
-  const [saving, setSaving]     = useState(false)
-  const [feedback, setFeedback] = useState(null)
+  const [errors,   setErrors]   = useState({})
+  const [saving,   setSaving]   = useState(false)
+  const [feedback, setFeedback] = useState(null)  // { type, message }
 
   const handleChange = (field) => (e) => {
     const raw = e.target.value
-    let next = raw
-    if (field === 'first_name' || field === 'last_name') next = filterName(raw)
-    if (field === 'phone_number')                        next = filterPhone(raw)
-    setValues((prev) => ({ ...prev, [field]: next }))
+    let val = raw
+    if (field === 'first_name' || field === 'last_name') val = filterName(raw)
+    if (field === 'phone_number') val = filterPhone(raw)
+    setValues((prev) => ({ ...prev, [field]: val }))
     if (errors[field]) setErrors((prev) => { const n = { ...prev }; delete n[field]; return n })
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setFeedback(null)
+  const str = (v) => String(v ?? '')
 
-    const validationErrors = validate({ ...values, role: user.role }, t)
+  async function handleSubmit(e) {
+    e.preventDefault()
+    const validationErrors = validate(values, t)
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)
       setFeedback({ type: 'error', message: t('errors.someFieldsInvalid') })
@@ -194,16 +289,15 @@ export default function ProfilePage() {
     }
 
     setSaving(true)
+    setFeedback(null)
 
+    // Build a delta — only send changed fields
     const payload = {}
-    const str = (v) => (v ?? '').trim()
 
-    if (str(values.first_name)   !== str(user.first_name))         payload.first_name    = str(values.first_name)
-    if (str(values.last_name)    !== str(user.last_name))          payload.last_name     = str(values.last_name)
-    if (str(values.dob)          !== str(user.dob ?? ''))          payload.dob           = str(values.dob) || null
-    if (str(values.city)         !== str(user.city ?? ''))         payload.city          = str(values.city)
-    if (str(values.phone_number) !== str(user.phone_number ?? '')) payload.phone_number  = str(values.phone_number)
-    if (values.timezone          !== user.timezone)                payload.timezone      = values.timezone
+    const userFields = ['first_name', 'last_name', 'city', 'phone_number', 'timezone', 'dob']
+    for (const f of userFields) {
+      if (str(values[f]) !== str(user[f] ?? '')) payload[f] = values[f]
+    }
 
     if (values.new_password) {
       payload.current_password = values.current_password
@@ -211,9 +305,8 @@ export default function ProfilePage() {
     }
 
     if (user.role === 'psychologist') {
-      const dur = parseInt(values.session_duration_minutes, 10)
-      if (dur !== user.session_duration_minutes)
-        payload.session_duration_minutes = dur
+      if (str(values.session_duration_minutes) !== str(user.session_duration_minutes ?? ''))
+        payload.session_duration_minutes = parseInt(values.session_duration_minutes, 10)
       if (str(values.session_price) !== str(user.session_price ?? ''))
         payload.session_price = parseFloat(values.session_price)
       if (str(values.license_number) !== str(user.license_number ?? ''))
@@ -322,6 +415,11 @@ export default function ProfilePage() {
                       <p className="text-xs text-slate-500 mt-1">{t('sections.personalSubtitle')}</p>
                     </div>
 
+                    {/* ── Avatar upload ── */}
+                    <AvatarUpload user={user} setUser={setUser} t={t} />
+
+                    <hr className="border-slate-800" />
+
                     <Field label={t('fields.email')} hint={t('emailNote')}>
                       <TextInput value={user.email} disabled />
                     </Field>
@@ -339,14 +437,20 @@ export default function ProfilePage() {
                       <Field label={t('fields.dob')} error={errors.dob}>
                         <AppDatePicker
                           value={values.dob}
-                          onChange={(iso) => {
-                            setValues((prev) => ({ ...prev, dob: iso }))
+                          onChange={(val) => {
+                            setValues((prev) => ({ ...prev, dob: val }))
                             if (errors.dob) setErrors((prev) => { const n = { ...prev }; delete n.dob; return n })
                           }}
+                          error={errors.dob}
                         />
                       </Field>
-                      <Field label={t('fields.city')}>
-                        <TextInput value={values.city} onChange={handleChange('city')} placeholder={t('placeholders.city')} />
+                      <Field label={t('fields.city')} error={errors.city}>
+                        <TextInput
+                          value={values.city}
+                          onChange={handleChange('city')}
+                          placeholder={t('placeholders.city')}
+                          error={errors.city}
+                        />
                       </Field>
                     </div>
 
@@ -359,17 +463,18 @@ export default function ProfilePage() {
                       />
                     </Field>
 
-                    <Field label={t('fields.timezone')}>
+                    <Field label={t('fields.timezone')} error={errors.timezone}>
                       <SelectInput
                         value={values.timezone}
                         onChange={handleChange('timezone')}
                         options={TIMEZONES.map((tz) => ({ value: tz, label: tz }))}
+                        error={errors.timezone}
                       />
                     </Field>
                   </>
                 )}
 
-                {/* ── Change password ── */}
+                {/* ── Password ── */}
                 {activeSection === 'password' && (
                   <>
                     <div>
@@ -409,54 +514,61 @@ export default function ProfilePage() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Field label={t('fields.sessionDuration')} error={errors.session_duration_minutes}>
-                        <TextInput type="number" value={values.session_duration_minutes}
-                          onChange={handleChange('session_duration_minutes')} error={errors.session_duration_minutes} />
-                      </Field>
-                      <Field label={t('fields.sessionPrice')} error={errors.session_price}>
-                        <TextInput type="number" value={values.session_price}
-                          onChange={handleChange('session_price')} error={errors.session_price} />
-                      </Field>
-                    </div>
+                    <Field label={t('fields.licenseNumber')} error={errors.license_number}>
+                      <TextInput value={values.license_number} onChange={handleChange('license_number')} error={errors.license_number} />
+                    </Field>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Field label={t('fields.licenseNumber')}>
-                        <TextInput value={values.license_number} onChange={handleChange('license_number')} />
-                      </Field>
-                      <Field label={t('fields.countryCode')}>
-                        <SelectInput
-                          value={values.country_code}
-                          onChange={handleChange('country_code')}
-                          options={[
-                            { value: '', label: '—' },
-                            ...COUNTRY_OPTION_KEYS.map((o) => ({ value: o.value, label: t(o.key, { ns: 'common' }) })),
-                          ]}
-                        />
-                      </Field>
-                    </div>
+                    <Field label={t('fields.countryCode')} error={errors.country_code}>
+                      <SelectInput
+                        value={values.country_code}
+                        onChange={handleChange('country_code')}
+                        options={COUNTRY_OPTION_KEYS.map(({ value, key }) => ({ value, label: t(key, { ns: 'common' }) }))}
+                        error={errors.country_code}
+                      />
+                    </Field>
 
-                    {(values.license_number !== (user.license_number ?? '') ||
-                      values.country_code   !== (user.country_code   ?? '')) && (
+                    {(user.verification_status === 'pending' || user.verification_status === 'rejected') && (
                       <StatusBadge type="warning" message={t('verification.warning')} />
                     )}
+
+                    <Field label={t('fields.sessionDuration')} error={errors.session_duration_minutes}>
+                      <TextInput
+                        type="number"
+                        value={values.session_duration_minutes}
+                        onChange={handleChange('session_duration_minutes')}
+                        error={errors.session_duration_minutes}
+                      />
+                    </Field>
+
+                    <Field label={t('fields.sessionPrice')} error={errors.session_price}>
+                      <SelectInput
+                        value={values.session_price}
+                        onChange={handleChange('session_price')}
+                        options={[0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0].map((v) => ({
+                          value: String(v),
+                          label: String(v),
+                        }))}
+                        error={errors.session_price}
+                      />
+                    </Field>
                   </>
                 )}
 
-              </div>
-
-              {/* Submit + feedback — always visible below the section card */}
-              <div className="mt-4 space-y-3">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="w-full rounded-lg bg-blue-500 hover:bg-blue-400 disabled:bg-blue-500/50
-                    px-4 py-2.5 text-sm font-semibold text-white transition-colors"
-                >
-                  {saving ? t('actions.saving') : t('actions.save')}
-                </button>
-
+                {/* ── Feedback + submit (shown for all sections) ── */}
                 {feedback && <StatusBadge type={feedback.type} message={feedback.message} />}
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="rounded-lg bg-blue-500 hover:bg-blue-400 disabled:bg-blue-500/50
+                               px-5 py-2.5 text-sm font-semibold text-white transition-colors
+                               disabled:cursor-not-allowed"
+                  >
+                    {saving ? t('actions.saving') : t('actions.save')}
+                  </button>
+                </div>
+
               </div>
             </form>
           </div>
