@@ -5,6 +5,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 import boto3
+import botocore.exceptions
 import traceback
 
 
@@ -20,11 +21,10 @@ def _s3_client():
 
 # ── Media proxy ───────────────────────────────────────────────────────────────
 
-# Allowed prefixes — only serve files from these S3 key prefixes.
-# This prevents the proxy from being used to read arbitrary bucket contents.
+# Only serve files from these S3 key prefixes — prevents the proxy from
+# being used to read arbitrary bucket contents.
 _ALLOWED_PREFIXES = ('profiles/',)
 
-# MIME type map for the content types we store.
 _MIME_TYPES = {
     'jpg':  'image/jpeg',
     'jpeg': 'image/jpeg',
@@ -48,42 +48,48 @@ def serve_media(request, path):
       - Must be logged in (401 otherwise).
       - Only paths under _ALLOWED_PREFIXES are served (404 otherwise).
       - Path traversal attempts (containing '..') are rejected.
+
+    Caching:
+      - Cache-Control: no-store so the browser never caches profile pictures.
+        This is intentional: it prevents a stale image from showing after a
+        re-upload, and prevents one user's picture from leaking into another
+        user's session via the browser cache.
     """
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
-    # Reject any path traversal attempt.
     if '..' in path:
         return HttpResponse(status=400)
 
-    # Only serve from allowed prefixes.
     if not any(path.startswith(prefix) for prefix in _ALLOWED_PREFIXES):
         return HttpResponse(status=404)
 
-    # If S3 is not configured (local dev), fall back to Django's default
-    # storage (local filesystem) so the proxy works in all environments.
+    # Local dev fallback (S3 not configured).
     if not getattr(settings, 'USE_S3', False):
         try:
             f = default_storage.open(path)
             ext = path.rsplit('.', 1)[-1].lower()
             content_type = _MIME_TYPES.get(ext, 'application/octet-stream')
-            return StreamingHttpResponse(f, content_type=content_type)
+            response = StreamingHttpResponse(f, content_type=content_type)
+            response['Cache-Control'] = 'no-store'
+            return response
         except FileNotFoundError:
             return HttpResponse(status=404)
 
-    # Fetch from S3 using boto3 (same credentials used everywhere else).
+    # Fetch from S3.
     try:
         s3  = _s3_client()
         obj = s3.get_object(Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=path)
-    except s3.exceptions.NoSuchKey:
-        return HttpResponse(status=404)
+    except botocore.exceptions.ClientError as e:
+        if e.response['Error']['Code'] in ('NoSuchKey', '404'):
+            return HttpResponse(status=404)
+        return HttpResponse(status=502)
     except Exception:
         return HttpResponse(status=502)
 
     ext          = path.rsplit('.', 1)[-1].lower()
     content_type = _MIME_TYPES.get(ext, obj['ContentType'])
 
-    # Stream in 64 KB chunks — avoids loading the whole image into memory.
     body = obj['Body']
 
     def _stream():
@@ -95,9 +101,9 @@ def serve_media(request, path):
 
     response = StreamingHttpResponse(_stream(), content_type=content_type)
     response['Content-Length'] = obj['ContentLength']
-    # Cache in the browser for 10 minutes — pictures don't change often, but
-    # we don't want stale avatars to linger after an upload.
-    response['Cache-Control'] = 'private, max-age=600'
+    # no-store: never cache — prevents stale avatars after re-upload and
+    # cross-account picture bleed via the browser cache.
+    response['Cache-Control'] = 'no-store'
     return response
 
 

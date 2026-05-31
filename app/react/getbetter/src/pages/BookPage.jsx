@@ -69,14 +69,14 @@ function StatusBadge({ type, message }) {
 function PsychologistCard({ psych, credits, timezone, locale, onBooked }) {
   const { t } = useTranslation('book')
 
-  const [expanded, setExpanded]       = useState(false)
+  const [expanded, setExpanded]           = useState(false)
   const [bookingSlotId, setBookingSlotId] = useState(null)
-  const [status, setStatus]           = useState(null)   // { type, message }
-  const [slots, setSlots]             = useState(psych.slots)
+  const [status, setStatus]               = useState(null)
+  const [slots, setSlots]                 = useState(psych.slots)
 
-  const cost      = creditCost(psych.session_duration_minutes)
-  const canAfford = credits >= cost
-  const initials  = `${psych.first_name[0]}${psych.last_name[0]}`
+  const cost        = creditCost(psych.session_duration_minutes)
+  const canAfford   = credits >= cost
+  const initials    = `${psych.first_name[0]}${psych.last_name[0]}`
   const slotsByDate = groupByLocalDate(slots, timezone)
 
   const handleRequest = async (slotId) => {
@@ -86,7 +86,6 @@ function PsychologistCard({ psych, credits, timezone, locale, onBooked }) {
     const result = await bookAppointment(slotId)
 
     if (result.ok) {
-      // Remove from local list so the patient doesn't double-request
       setSlots((prev) => prev.filter((s) => s.id !== slotId))
       setStatus({ type: 'success', message: t('requestSuccess') })
       onBooked(cost)
@@ -113,8 +112,12 @@ function PsychologistCard({ psych, credits, timezone, locale, onBooked }) {
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex items-center gap-4 p-5 text-left hover:bg-slate-800/30 transition-colors"
       >
-        <div className="flex-shrink-0 w-11 h-11 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
-          <span className="text-sm font-semibold text-slate-300">{initials}</span>
+        {/* Avatar — shows profile picture if available, initials otherwise */}
+        <div className="flex-shrink-0 w-11 h-11 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
+          {psych.profile_picture
+            ? <img src={psych.profile_picture} alt={`Dr. ${psych.last_name}`} className="w-full h-full object-cover" />
+            : <span className="text-sm font-semibold text-slate-300">{initials}</span>
+          }
         </div>
 
         <div className="flex-1 min-w-0">

@@ -19,6 +19,7 @@ from django.views.decorators.http import require_http_methods
 
 from .models import AvailableSlot, Appointment
 from .utils import refund, require_auth, slot_to_dict
+from core.accounts.utils import picture_url
 
 
 # ── slots_list ────────────────────────────────────────────────────────────────
@@ -162,6 +163,8 @@ def available_slots(request):
     Patient-facing.  Returns all future open slots grouped by psychologist.
     Pending-request count is intentionally omitted from the patient view.
     ``end_time`` is included for display convenience.
+    ``profile_picture`` is the Django proxy URL so the patient can display
+    the psychologist's avatar on /book without hitting S3 directly.
     """
     user = require_auth(request)
     if not user:
@@ -189,6 +192,7 @@ def available_slots(request):
                 'session_price':            str(psych.session_price),
                 'session_duration_minutes': psych.session_duration_minutes,
                 'is_verified':              psych.is_verified,
+                'profile_picture':          picture_url(psych.user),
                 'slots':                    [],
             }
         end_time = slot.start_time + timedelta(minutes=slot.duration_minutes)
