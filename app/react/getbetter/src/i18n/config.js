@@ -8,6 +8,7 @@ import enDashboard    from './locales/en/dashboard.json'
 import enAppointments from './locales/en/appointments.json'
 import enBook         from './locales/en/book.json'
 import enProfile      from './locales/en/profile.json'
+import enCountries    from './locales/en/countries.json'
 
 // ── Spanish ───────────────────────────────────────────────────────────────────
 import esCommon       from './locales/es/common.json'
@@ -16,6 +17,7 @@ import esDashboard    from './locales/es/dashboard.json'
 import esAppointments from './locales/es/appointments.json'
 import esBook         from './locales/es/book.json'
 import esProfile      from './locales/es/profile.json'
+import esCountries    from './locales/es/countries.json'
 
 i18n
   .use(initReactI18next)
@@ -28,6 +30,7 @@ i18n
         appointments: enAppointments,
         book:         enBook,
         profile:      enProfile,
+        countries:    enCountries,
       },
       es: {
         common:       esCommon,
@@ -36,6 +39,7 @@ i18n
         appointments: esAppointments,
         book:         esBook,
         profile:      esProfile,
+        countries:    esCountries,
       },
     },
 

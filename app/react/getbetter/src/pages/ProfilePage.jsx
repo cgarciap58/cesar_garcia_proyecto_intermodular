@@ -27,9 +27,6 @@ const COUNTRY_OPTION_KEYS = [
   { value: 'ES', key: 'countries.ES' },
   { value: 'US', key: 'countries.US' },
   { value: 'FR', key: 'countries.FR' },
-  { value: 'DE', key: 'countries.DE' },
-  { value: 'GB', key: 'countries.GB' },
-  { value: 'PT', key: 'countries.PT' },
 ]
 
 // Backend error code → profile i18n key

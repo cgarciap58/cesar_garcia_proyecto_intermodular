@@ -1,5 +1,10 @@
 {
+  "countries": {
   "ES": "España",
+  "US": "Estados Unidos",
   "FR": "Francia",
-  "US": "Estados Unidos"
+  "DE": "Alemania",
+  "GB": "Reino Unido",
+  "PT": "Portugal"
+  }
 }

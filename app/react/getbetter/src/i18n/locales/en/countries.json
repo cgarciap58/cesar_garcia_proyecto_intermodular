@@ -1,6 +1,11 @@
 {
-  "ES": "España",
-  "FR": "Francia",
-  "US": "Estados Unidos"
+  "countries": {
+    "ES": "Spain",
+    "US": "United States",
+    "FR": "France",
+    "DE": "Germany",
+    "GB": "United Kingdom",
+    "PT": "Portugal"
+  }
 }
 

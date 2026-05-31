@@ -8,14 +8,6 @@
     "testimonials": "Testimonios",
     "signIn":       "Iniciar sesión"
   },
-  "countries": {
-    "ES": "España",
-    "US": "Estados Unidos",
-    "FR": "Francia",
-    "DE": "Alemania",
-    "GB": "Reino Unido",
-    "PT": "Portugal"
-  },
   "actions": {
     "save":    "Guardar",
     "cancel":  "Cancelar",
