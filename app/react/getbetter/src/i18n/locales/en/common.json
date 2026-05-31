@@ -16,37 +16,6 @@
     "GB": "United Kingdom",
     "PT": "Portugal"
   },
-  "timezones": {
-    "UTC":                          "UTC",
-    "Europe/Madrid":                "Europe — Madrid",
-    "Europe/London":                "Europe — London",
-    "Europe/Paris":                 "Europe — Paris",
-    "Europe/Berlin":                "Europe — Berlin",
-    "Europe/Rome":                  "Europe — Rome",
-    "Europe/Amsterdam":             "Europe — Amsterdam",
-    "Europe/Lisbon":                "Europe — Lisbon",
-    "Europe/Warsaw":                "Europe — Warsaw",
-    "America/New_York":             "America — New York",
-    "America/Chicago":              "America — Chicago",
-    "America/Denver":               "America — Denver",
-    "America/Los_Angeles":          "America — Los Angeles",
-    "America/Toronto":              "America — Toronto",
-    "America/Vancouver":            "America — Vancouver",
-    "America/Sao_Paulo":            "America — São Paulo",
-    "America/Argentina/Buenos_Aires": "America — Buenos Aires",
-    "America/Mexico_City":          "America — Mexico City",
-    "Asia/Tokyo":                   "Asia — Tokyo",
-    "Asia/Seoul":                   "Asia — Seoul",
-    "Asia/Shanghai":                "Asia — Shanghai",
-    "Asia/Kolkata":                 "Asia — Kolkata",
-    "Asia/Dubai":                   "Asia — Dubai",
-    "Asia/Singapore":               "Asia — Singapore",
-    "Australia/Sydney":             "Australia — Sydney",
-    "Australia/Melbourne":          "Australia — Melbourne",
-    "Pacific/Auckland":             "Pacific — Auckland",
-    "Africa/Cairo":                 "Africa — Cairo",
-    "Africa/Johannesburg":          "Africa — Johannesburg"
-  },
   "actions": {
     "save":    "Save",
     "cancel":  "Cancel",
@@ -72,11 +41,18 @@
       "cta":            "Get started"
     },
     "testimonials": {
-      "heading": "What users say",
-      "items": [
-        { "quote": "GetBetter helped me find the right therapist in two days.", "author": "Patient, New York" },
-        { "quote": "My online practice grew with better discovery and booking.",  "author": "Psychologist, California" }
-      ]
+      "eyebrow":  "Real stories",
+      "heading":  "What our users say",
+      "tomas": {
+        "quote":  "GetBetter gave my practice the reach it deserved. Booking is seamless and my patients feel genuinely supported before they even walk in.",
+        "author": "Dr. Tomás Herrera",
+        "role":   "Psychologist · Valencia"
+      },
+      "lucia": {
+        "quote":  "After losing my mum I didn't know where to start. GetBetter matched me with the right person in minutes. I can't imagine getting through this year without it.",
+        "author": "Lucía F.",
+        "role":   "Patient · Valencia"
+      }
     },
     "footer": {
       "rights":  "© 2026 GetBetter. All rights reserved.",

@@ -4,7 +4,11 @@ import PreviousSessions from './PreviousSessions'
 import SessionModal from './SessionModal'
 import { formatFullDate, formatTime, STATUS_BADGE, STATUS_STYLES, FALLBACK_STYLE } from '../utils/appointmentFormatters'
 
+// Only these two statuses allow actually joining
 const SESSION_STATUSES = new Set(['confirmed', 'in_progress'])
+
+// Statuses where the button is rendered but locked/greyed out
+const SHOW_BUTTON_STATUSES = new Set(['confirmed', 'in_progress', 'pending_request', 'done'])
 
 const VIDEO_ICON = (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -27,18 +31,19 @@ export default function AppointmentDetail({
   const style        = STATUS_STYLES[appointment.status] ?? FALLBACK_STYLE
   const badgeClass   = STATUS_BADGE[appointment.status]  ?? STATUS_BADGE.pending_request
   const canJoin      = SESSION_STATUSES.has(appointment.status)
+  const showButton   = SHOW_BUTTON_STATUSES.has(appointment.status)
 
   return (
     <>
       <div className="mt-4 bg-slate-900/60 border border-slate-800 rounded-2xl p-6 animate-in slide-in-from-top duration-300">
         <div className="flex gap-6">
 
-          {/* Avatar */}
-          <div className="flex-shrink-0 flex flex-col items-center gap-2">
-            <div className="w-16 h-16 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center overflow-hidden">
+          {/* ── Avatar — ~20% of card width ─────────────────────────────── */}
+          <div className="flex-shrink-0 flex flex-col items-center gap-2 w-1/5">
+            <div className="w-full aspect-square rounded-2xl bg-slate-800 border-2 border-slate-700 flex items-center justify-center overflow-hidden">
               {profilePicture
                 ? <img src={profilePicture} alt={displayName} className="w-full h-full object-cover" />
-                : <span className="text-lg font-semibold text-slate-400">{initials}</span>
+                : <span className="text-3xl font-semibold text-slate-400">{initials}</span>
               }
             </div>
             <p className="text-xs text-slate-400 text-center leading-tight">
@@ -49,7 +54,7 @@ export default function AppointmentDetail({
             </p>
           </div>
 
-          {/* Content */}
+          {/* ── Content ──────────────────────────────────────────────────── */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div>
@@ -69,15 +74,22 @@ export default function AppointmentDetail({
               </span>
             </div>
 
-            {/* Go to session button — only for confirmed / in_progress */}
-            {canJoin && (
+            {/* ── Session button ──────────────────────────────────────────
+                Always rendered for relevant statuses, but only clickable
+                when the appointment is confirmed or in_progress.
+            ────────────────────────────────────────────────────────────── */}
+            {showButton && (
               <div className="mt-4">
                 <button
-                  onClick={() => setSessionOpen(true)}
+                  disabled={!canJoin}
+                  onClick={() => canJoin && setSessionOpen(true)}
+                  title={!canJoin ? tDash('session.notYetAvailable') : undefined}
                   className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors ${
                     appointment.status === 'in_progress'
                       ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/30'
-                      : 'bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/40 text-blue-400'
+                      : canJoin
+                        ? 'bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/40 text-blue-400'
+                        : 'bg-slate-800/60 border border-slate-700 text-slate-600 cursor-not-allowed opacity-50'
                   }`}
                 >
                   {VIDEO_ICON}

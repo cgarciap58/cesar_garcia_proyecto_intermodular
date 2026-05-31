@@ -16,37 +16,6 @@
     "GB": "Reino Unido",
     "PT": "Portugal"
   },
-  "timezones": {
-    "UTC":                          "UTC",
-    "Europe/Madrid":                "Europa — Madrid",
-    "Europe/London":                "Europa — Londres",
-    "Europe/Paris":                 "Europa — París",
-    "Europe/Berlin":                "Europa — Berlín",
-    "Europe/Rome":                  "Europa — Roma",
-    "Europe/Amsterdam":             "Europa — Ámsterdam",
-    "Europe/Lisbon":                "Europa — Lisboa",
-    "Europe/Warsaw":                "Europa — Varsovia",
-    "America/New_York":             "América — Nueva York",
-    "America/Chicago":              "América — Chicago",
-    "America/Denver":               "América — Denver",
-    "America/Los_Angeles":          "América — Los Ángeles",
-    "America/Toronto":              "América — Toronto",
-    "America/Vancouver":            "América — Vancouver",
-    "America/Sao_Paulo":            "América — São Paulo",
-    "America/Argentina/Buenos_Aires": "América — Buenos Aires",
-    "America/Mexico_City":          "América — Ciudad de México",
-    "Asia/Tokyo":                   "Asia — Tokio",
-    "Asia/Seoul":                   "Asia — Seúl",
-    "Asia/Shanghai":                "Asia — Shanghái",
-    "Asia/Kolkata":                 "Asia — Calcuta",
-    "Asia/Dubai":                   "Asia — Dubái",
-    "Asia/Singapore":               "Asia — Singapur",
-    "Australia/Sydney":             "Australia — Sídney",
-    "Australia/Melbourne":          "Australia — Melbourne",
-    "Pacific/Auckland":             "Pacífico — Auckland",
-    "Africa/Cairo":                 "África — El Cairo",
-    "Africa/Johannesburg":          "África — Johannesburgo"
-  },
   "actions": {
     "save":    "Guardar",
     "cancel":  "Cancelar",
@@ -72,11 +41,18 @@
       "cta":            "Comenzar"
     },
     "testimonials": {
-      "heading": "Lo que dicen nuestros usuarios",
-      "items": [
-        { "quote": "GetBetter me ayudó a encontrar al terapeuta adecuado en dos días.", "author": "Paciente, Madrid" },
-        { "quote": "Mi consulta online creció gracias a una mejor visibilidad y reservas.", "author": "Psicóloga, Barcelona" }
-      ]
+      "eyebrow":  "Historias reales",
+      "heading":  "Lo que dicen nuestros usuarios",
+      "tomas": {
+        "quote":  "GetBetter le dio a mi consulta la visibilidad que merecía. Las reservas son fluidas y mis pacientes llegan ya con un vínculo de confianza.",
+        "author": "Dr. Tomás Herrera",
+        "role":   "Psicólogo · Valencia"
+      },
+      "lucia": {
+        "quote":  "Tras perder a mi madre no sabía por dónde empezar. GetBetter me conectó con la persona adecuada en minutos. No sé cómo habría sobrevivido este año sin ella.",
+        "author": "Lucía F.",
+        "role":   "Paciente · Valencia"
+      }
     },
     "footer": {
       "rights":  "© 2026 GetBetter. Todos los derechos reservados.",
