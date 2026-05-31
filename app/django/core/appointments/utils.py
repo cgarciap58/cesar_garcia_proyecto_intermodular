@@ -18,6 +18,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from .models import AvailableSlot, Appointment
+from core.accounts.utils import picture_url
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
@@ -101,23 +102,31 @@ def appointment_to_dict(appointment, for_role: str, patient_credits=None) -> dic
     ``patient_credits`` – when provided, included so the frontend can update
     AuthContext without a second /api/auth/me/ round-trip.
     ``for_role`` – 'psychologist' adds private_notes to the response.
+
+    profile_picture for both patient and psychologist is returned as a Django
+    proxy URL (/api/media/<path>) so the browser never hits S3 directly.
     """
+    patient_user      = appointment.patient.user
+    psychologist_user = appointment.slot.psychologist.user
+
     data = {
         'id':            appointment.id,
         'status':        compute_status(appointment),
         'stored_status': appointment.status,
         'slot':          slot_to_dict(appointment.slot),
         'patient': {
-            'id':         appointment.patient.user.id,
-            'first_name': appointment.patient.user.first_name,
-            'last_name':  appointment.patient.user.last_name,
-            'email':      appointment.patient.user.email,
+            'id':              patient_user.id,
+            'first_name':      patient_user.first_name,
+            'last_name':       patient_user.last_name,
+            'email':           patient_user.email,
+            'profile_picture': picture_url(patient_user),
         },
         'psychologist': {
-            'id':         appointment.slot.psychologist.user.id,
-            'first_name': appointment.slot.psychologist.user.first_name,
-            'last_name':  appointment.slot.psychologist.user.last_name,
-            'email':      appointment.slot.psychologist.user.email,
+            'id':              psychologist_user.id,
+            'first_name':      psychologist_user.first_name,
+            'last_name':       psychologist_user.last_name,
+            'email':           psychologist_user.email,
+            'profile_picture': picture_url(psychologist_user),
         },
         'patient_notes': appointment.patient_notes,
         'meet_link':     appointment.meet_link,
@@ -150,24 +159,23 @@ def maybe_attach_meet_link(appt):
     Uses SELECT FOR UPDATE to prevent duplicate link generation under
     concurrent requests.
     """
-    if appt.status != Appointment.STATUS_CONFIRMED:
-        return appt
-    if appt.meet_link:
+    if appt.status != Appointment.STATUS_CONFIRMED or appt.meet_link:
         return appt
 
-    now            = timezone.now()
-    minutes_until  = (appt.slot.start_time - now).total_seconds() / 60
-    if minutes_until > MEET_LINK_WINDOW_MINUTES:
+    now   = timezone.now()
+    start = appt.slot.start_time
+    end   = start + timedelta(minutes=appt.slot.duration_minutes)
+
+    if now < start - timedelta(minutes=MEET_LINK_WINDOW_MINUTES):
+        return appt
+    if now >= end:
         return appt
 
     with transaction.atomic():
-        locked = (
-            Appointment.objects
-            .select_for_update()
-            .get(id=appt.id)
-        )
-        if locked.meet_link:
-            return locked
-        locked.meet_link = generate_meet_link()
-        locked.save(update_fields=['meet_link', 'updated_at'])
-        return locked
+        locked = Appointment.objects.select_for_update().get(pk=appt.pk)
+        if not locked.meet_link:
+            locked.meet_link = generate_meet_link()
+            locked.save(update_fields=['meet_link'])
+        appt.meet_link = locked.meet_link
+
+    return appt
