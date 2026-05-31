@@ -146,6 +146,7 @@ case $maquina in
 
         echo ""
         echo "Nodos disponibles:"
+        # Por cada nodo en el array, escribe "App + número + IP"
         for idx in "${!APP_IPS[@]}"; do
             num=$(( idx + 1 ))
             echo "  $num. App $num  (${APP_IPS[$idx]})"
