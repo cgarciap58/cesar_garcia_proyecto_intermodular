@@ -35,6 +35,9 @@ def slots_list(request):
     existing non-deleted slot for the same psychologist.  In a batch request,
     overlapping slots are silently skipped (added to ``errors``) while the
     rest are created normally.
+
+    Validation rule: only psychologists with verification_status == 'approved'
+    may create slots.  Un-validated psychologists receive a 403.
     """
     user = require_auth(request)
     if not user:
@@ -59,6 +62,14 @@ def slots_list(request):
         return JsonResponse({'slots': [slot_to_dict(s) for s in slots]})
 
     # ── POST ──────────────────────────────────────────────────────────────────
+
+    # Enforce: only validated (approved) psychologists can create slots.
+    if profile.verification_status != 'approved':
+        return JsonResponse(
+            {'error': 'Account not validated. Submit your profile data and wait for staff approval before opening slots.'},
+            status=403,
+        )
+
     try:
         payload = json.loads(request.body or '{}')
     except json.JSONDecodeError:
@@ -117,90 +128,83 @@ def slot_detail(request, slot_id):
     DELETE /api/appointments/slots/<id>/
 
     Only 'open' slots may be deleted (not 'confirmed').
-    Any pending_request appointments are auto-rejected with credit refunds.
-    Status → 'deleted' (soft delete).
+    A slot with pending appointments returns 409.
     """
     user = require_auth(request)
     if not user:
         return JsonResponse({'error': 'Not authenticated'}, status=401)
     if user.role != 'psychologist':
-        return JsonResponse({'error': 'Only psychologists can delete slots'}, status=403)
+        return JsonResponse({'error': 'Only psychologists can manage slots'}, status=403)
 
     try:
-        slot = AvailableSlot.objects.prefetch_related('appointments').get(
-            id=slot_id, psychologist=user.psychologist_profile
-        )
+        profile = user.psychologist_profile
+    except Exception:
+        return JsonResponse({'error': 'Psychologist profile not found'}, status=404)
+
+    try:
+        slot = AvailableSlot.objects.get(id=slot_id, psychologist=profile)
     except AvailableSlot.DoesNotExist:
         return JsonResponse({'error': 'Slot not found'}, status=404)
 
     if slot.status == AvailableSlot.SLOT_CONFIRMED:
+        return JsonResponse({'error': 'Cannot delete a confirmed slot. Cancel the appointment first.'}, status=409)
+
+    if slot.status == AvailableSlot.SLOT_DELETED:
+        return JsonResponse({'error': 'Slot already deleted'}, status=409)
+
+    # Check for pending appointments
+    pending = slot.appointments.filter(status=Appointment.STATUS_PENDING_REQUEST).count()
+    if pending > 0:
         return JsonResponse(
-            {'error': 'Cancel the confirmed appointment before deleting this slot.'},
+            {'error': f'Cannot delete slot with {pending} pending request(s).'},
             status=409,
         )
-    if slot.status == AvailableSlot.SLOT_DELETED:
-        return JsonResponse({'error': 'Slot is already deleted.'}, status=409)
 
-    with transaction.atomic():
-        for appt in slot.appointments.filter(status=Appointment.STATUS_PENDING_REQUEST):
-            refund(appt)
-            appt.status = Appointment.STATUS_REJECTED
-            appt.save(update_fields=['status', 'updated_at'])
-
-        slot.status = AvailableSlot.SLOT_DELETED
-        slot.save(update_fields=['status'])
-
-    return JsonResponse({'message': 'Slot deleted.'})
+    slot.status = AvailableSlot.SLOT_DELETED
+    slot.save()
+    return JsonResponse({'deleted': True})
 
 
 # ── available_slots ───────────────────────────────────────────────────────────
 
+@csrf_exempt
 @require_http_methods(['GET'])
 def available_slots(request):
     """
     GET /api/appointments/slots/available/
 
-    Patient-facing.  Returns all future open slots grouped by psychologist.
-    Pending-request count is intentionally omitted from the patient view.
-    ``end_time`` is included for display convenience.
-    ``profile_picture`` is the Django proxy URL so the patient can display
-    the psychologist's avatar on /book without hitting S3 directly.
+    Returns open slots grouped by psychologist. Only accessible to patients.
+    Excludes slots in the past.
     """
     user = require_auth(request)
     if not user:
         return JsonResponse({'error': 'Not authenticated'}, status=401)
     if user.role != 'patient':
-        return JsonResponse({'error': 'Only patients can browse available slots'}, status=403)
+        return JsonResponse({'error': 'Only patients can view available slots'}, status=403)
 
-    now   = timezone.now()
+    now = timezone.now()
     slots = (
         AvailableSlot.objects
-        .filter(status=AvailableSlot.SLOT_OPEN, start_time__gt=now)
+        .filter(status=AvailableSlot.SLOT_OPEN, start_time__gte=now)
         .select_related('psychologist__user')
-        .order_by('psychologist__id', 'start_time')
+        .order_by('psychologist_id', 'start_time')
     )
 
-    psychologists = {}
+    # Group by psychologist
+    grouped = {}
     for slot in slots:
         psych = slot.psychologist
         pid   = psych.user.id
-        if pid not in psychologists:
-            psychologists[pid] = {
-                'id':                       pid,
-                'first_name':               psych.user.first_name,
-                'last_name':                psych.user.last_name,
-                'session_price':            str(psych.session_price),
+        if pid not in grouped:
+            grouped[pid] = {
+                'id':               psych.user.id,
+                'first_name':       psych.user.first_name,
+                'last_name':        psych.user.last_name,
+                'profile_picture':  picture_url(psych.user),
                 'session_duration_minutes': psych.session_duration_minutes,
-                'is_verified':              psych.is_verified,
-                'profile_picture':          picture_url(psych.user),
-                'slots':                    [],
+                'session_price':    str(psych.session_price),
+                'slots':            [],
             }
-        end_time = slot.start_time + timedelta(minutes=slot.duration_minutes)
-        psychologists[pid]['slots'].append({
-            'id':               slot.id,
-            'start_time':       slot.start_time.isoformat(),
-            'end_time':         end_time.isoformat(),
-            'duration_minutes': slot.duration_minutes,
-        })
+        grouped[pid]['slots'].append(slot_to_dict(slot))
 
-    return JsonResponse({'psychologists': list(psychologists.values())})
+    return JsonResponse({'psychologists': list(grouped.values())})

@@ -31,6 +31,7 @@
     "showResolved":          "Show {{count}} cancelled / done",
     "hideCancelled":          "Hide cancelled & done",
     "manageSlots":            "Manage slots",
+    "slotsLockedTooltip":     "Your account must be validated by staff before you can open slots. Complete your profile (photo + licence number) to get started.",
     "sessionNotes":           "Session notes",
     "noSessionNotes":         "No notes written",
     "privateNotes":           "Private notes",

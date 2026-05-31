@@ -31,6 +31,7 @@
     "showResolved":          "Mostrar {{count}} canceladas / finalizadas",
     "hideCancelled":          "Ocultar canceladas y finalizadas",
     "manageSlots":            "Gestionar franjas",
+    "slotsLockedTooltip":     "Tu cuenta debe ser validada por el equipo antes de poder abrir franjas. Completa tu perfil (foto + número de colegiado) para empezar.",
     "sessionNotes":           "Notas de sesión",
     "noSessionNotes":         "Sin notas escritas",
     "privateNotes":           "Notas privadas",
