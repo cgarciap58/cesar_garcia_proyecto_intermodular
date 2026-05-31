@@ -193,6 +193,15 @@ else:
     MEDIA_ROOT = BASE_DIR / "media"
 
 
+# 40 MB limit in bytes
+MAX_UPLOAD_SIZE = 41943040  
+
+# The maximum size a request body can be before Django aborts it
+DATA_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_SIZE
+
+# The maximum size an upload can be before Django streams it to a temporary file on disk
+FILE_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_SIZE
+
 
 INSTALLED_APPS += [
     'core.accounts',
