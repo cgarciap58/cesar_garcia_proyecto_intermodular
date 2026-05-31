@@ -1,32 +1,36 @@
 #!/bin/bash
+# =============================================================
+# deployment/app/app_setup.sh
+# Uso: bash -s <HOSTNAME> <IP_PRIVADA>
+# =============================================================
 set -euo pipefail
-
+ 
 if [ $# -ne 2 ]; then
-    echo "Uso: $0 <numero_instancia> <ip_privada>"
+    echo "Uso: $0 <HOSTNAME> <IP_PRIVADA>"
     exit 1
 fi
-
-INSTANCIA=$1
-IP=$2
-HOSTNAME="app-$INSTANCIA"
-
-echo "===== CONFIGURANDO APP $INSTANCIA ($IP) ====="
-
+ 
+HOSTNAME="$1"
+IP="$2"
+ 
+echo "===== CONFIGURANDO APP ($HOSTNAME / $IP) ====="
+ 
 echo "[1] Hostname persistente..."
-sudo hostnamectl set-hostname $HOSTNAME
+sudo hostnamectl set-hostname "$HOSTNAME"
 sudo sed -i 's/^preserve_hostname: false/preserve_hostname: true/' /etc/cloud/cloud.cfg || true
-
-cat <<EOF | sudo tee /etc/hosts
+ 
+sudo tee /etc/hosts > /dev/null <<HOSTS
 127.0.0.1 localhost
-127.0.1.1 $HOSTNAME app-$INSTANCIA
+127.0.1.1 $HOSTNAME $HOSTNAME
 ::1 localhost ip6-localhost ip6-loopback
 ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters
-EOF
-
+HOSTS
+ 
 echo "[2] Actualizando sistema..."
 sudo apt update
 sudo DEBIAN_FRONTEND=noninteractive apt upgrade -y
+
 
 echo "[3] Instalando Docker y Docker Compose..."
 

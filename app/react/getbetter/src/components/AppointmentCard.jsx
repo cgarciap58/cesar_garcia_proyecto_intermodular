@@ -5,13 +5,13 @@ function getCounterpart(appointment, role) {
   if (role === 'patient') {
     return {
       name:     `Dr. ${appointment.psychologist.last_name}`,
-      initials: `${appointment.psychologist.first_name[0]}${appointment.psychologist.last_name[0]}`,
+      initials: `${appointment.psychologist.first_name?.[0] ?? ''}${appointment.psychologist.last_name?.[0] ?? ''}`,
       picture:  appointment.psychologist.profile_picture ?? null,
     }
   }
   return {
     name:     `${appointment.patient.first_name} ${appointment.patient.last_name}`,
-    initials: `${appointment.patient.first_name[0]}${appointment.patient.last_name[0]}`,
+    initials: `${appointment.patient.first_name?.[0] ?? ''}${appointment.patient.last_name?.[0] ?? ''}`,
     picture:  appointment.patient.profile_picture ?? null,
   }
 }

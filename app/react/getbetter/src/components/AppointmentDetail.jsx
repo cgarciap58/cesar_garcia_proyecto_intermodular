@@ -23,7 +23,8 @@ export default function AppointmentDetail({
 
   const { firstName, lastName, namePrefix, profilePicture } = counterpart
   const displayName  = [namePrefix, firstName, lastName].filter(Boolean).join(' ')
-  const initials     = `${firstName[0]}${lastName[0]}`
+  // Guard against empty/missing names — mirrors DashboardSidebar's pattern
+  const initials     = `${firstName?.[0] ?? ''}${lastName?.[0] ?? ''}`
   const style        = STATUS_STYLES[appointment.status] ?? FALLBACK_STYLE
   const badgeClass   = STATUS_BADGE[appointment.status]  ?? STATUS_BADGE.pending_request
   const canJoin      = SESSION_STATUSES.has(appointment.status)

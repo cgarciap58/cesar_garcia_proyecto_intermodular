@@ -1,25 +1,38 @@
 #!/bin/bash
+# =============================================================
+# deployment/lb/lb_setup.sh
+# Uso: bash -s <HOSTNAME> <DOMAIN> <APP_IPs_comma> [APP_PORT]
+# =============================================================
+set -euo pipefail
 
-set -e
+if [ $# -lt 3 ] || [ $# -gt 4 ]; then
+    echo "Uso: $0 <HOSTNAME> <DOMAIN> <APP_IPs_comma> [APP_PORT]"
+    exit 1
+fi
 
-HOST="lb"
-HOSTNAME="lb.getbetter.gg"
+HOSTNAME="$1"
+DOMAIN="$2"
+APP_IPS_CSV="$3"
+APP_PORT="${4:-80}"
 
-echo "===== CONFIGURANDO LOAD BALANCER ====="
+if [[ -z "$APP_IPS_CSV" ]]; then echo "ERROR: No se recibieron IPs de app"; exit 1; fi
+
+echo "===== CONFIGURANDO LOAD BALANCER ($HOSTNAME) ====="
+echo "   Dominio   : $DOMAIN"
+echo "   App nodes : $APP_IPS_CSV"
+echo "   App port  : $APP_PORT"
 
 echo "[1] Hostname persistente..."
-sudo hostnamectl set-hostname $HOSTNAME
-
+sudo hostnamectl set-hostname "$HOSTNAME"
 sudo sed -i 's/^preserve_hostname: false/preserve_hostname: true/' /etc/cloud/cloud.cfg || true
 
-cat <<EOF | sudo tee /etc/hosts
+sudo tee /etc/hosts > /dev/null <<HOSTS
 127.0.0.1 localhost
-127.0.1.1 $HOSTNAME $HOST
-
+127.0.1.1 $HOSTNAME $HOSTNAME
 ::1 localhost ip6-localhost ip6-loopback
 ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters
-EOF
+HOSTS
 
 echo "[2] Actualizando sistema..."
 sudo apt update
@@ -28,25 +41,30 @@ sudo DEBIAN_FRONTEND=noninteractive apt upgrade -y
 echo "[3] Instalando paquetes..."
 sudo apt install -y nginx certbot python3-certbot-nginx curl
 
-echo "[4] Limpiando página por defecto..."
+echo "[4] Limpiando configuración por defecto..."
 sudo rm -f /var/www/html/index.nginx-debian.html
-
-echo "[5] Configurando nginx virtualhost..."
-
 sudo rm -f /etc/nginx/sites-enabled/default
 
-cat <<EOF | sudo tee /etc/nginx/sites-available/getbetter
+echo "[5] Generando configuración nginx..."
+
+UPSTREAM_SERVERS=""
+IFS=',' read -ra IPS <<< "$APP_IPS_CSV"
+for ip in "${IPS[@]}"; do
+    ip="${ip// /}"
+    UPSTREAM_SERVERS+="    server ${ip}:${APP_PORT} max_fails=2 fail_timeout=10s;"$'\n'
+done
+
+sudo tee /etc/nginx/sites-available/getbetter > /dev/null <<NGINX
 upstream backend_app {
     least_conn;
 
-    server 10.0.0.69:80 max_fails=2 fail_timeout=10s;
-    server 10.0.0.100:80 max_fails=2 fail_timeout=10s;
+${UPSTREAM_SERVERS}
 }
 
 server {
     listen 80;
     listen [::]:80;
-    server_name getbetter.ddns.net;
+    server_name ${DOMAIN};
 
     location / {
         proxy_pass http://backend_app;
@@ -60,12 +78,10 @@ server {
         proxy_read_timeout 5s;
 
         proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
-        proxy_next_upstream_tries 2;        
-
+        proxy_next_upstream_tries 2;
     }
-
 }
-EOF
+NGINX
 
 sudo ln -sf /etc/nginx/sites-available/getbetter /etc/nginx/sites-enabled/getbetter
 
@@ -76,18 +92,21 @@ echo "[7] Reiniciando nginx..."
 sudo systemctl restart nginx
 sudo systemctl enable nginx
 
-echo "[8] Validando nginx e instalando certbot..."
-sudo nginx -t
-
+echo "[8] Instalando certificado SSL (certbot)..."
 sudo certbot --nginx \
--d getbetter.ddns.net \
---non-interactive \
---agree-tos \
--m cgarciap58@iesalbarregas.es \
---redirect
+    -d "$DOMAIN" \
+    --non-interactive \
+    --agree-tos \
+    -m cgarciap58@iesalbarregas.es \
+    --redirect
 
-echo "[9] Reiniciando nginx..."
+echo "[9] Reiniciando nginx con SSL..."
 sudo systemctl restart nginx
-sudo systemctl enable nginx
 
-
+echo ""
+echo "===== LOAD BALANCER CONFIGURADO ====="
+echo "   Nodos en upstream:"
+for ip in "${IPS[@]}"; do
+    echo "     - ${ip// /}:${APP_PORT}"
+done
+echo ""

@@ -1,22 +1,30 @@
 #!/bin/bash
+# =============================================================
+# deployment/bastion/bastion_setup.sh
+# Uso: bash -s <HOSTNAME>
+# =============================================================
+set -euo pipefail
 
-set -e
+if [ $# -ne 1 ]; then
+    echo "Uso: $0 <HOSTNAME>"
+    exit 1
+fi
 
-DOMAIN="getbetter.ddns.net"
-HOSTNAME="bastion.getbetter.gg"
+HOSTNAME="$1"
 
-echo "===== CONFIGURANDO BASTIÓN ====="
+echo "===== CONFIGURANDO BASTIÓN ($HOSTNAME) ====="
 
 echo "[1] Hostname persistente..."
-sudo hostnamectl set-hostname $HOSTNAME
-
+sudo hostnamectl set-hostname "$HOSTNAME"
 sudo sed -i 's/^preserve_hostname: false/preserve_hostname: true/' /etc/cloud/cloud.cfg || true
 
-cat <<EOF | sudo tee /etc/hosts
+sudo tee /etc/hosts > /dev/null <<EOF
 127.0.0.1 localhost
-127.0.1.1 $HOSTNAME bastion
+127.0.1.1 $HOSTNAME $HOSTNAME
 
 ::1 localhost ip6-localhost ip6-loopback
 ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters
 EOF
+
+echo "===== BASTIÓN CONFIGURADO ====="
