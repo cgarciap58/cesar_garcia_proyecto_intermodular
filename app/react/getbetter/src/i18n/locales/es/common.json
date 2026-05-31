@@ -37,21 +37,26 @@
     "hero": {
       "headline":       "Apoyo en salud mental para que te",
       "headlineAccent": "pongas bien",
-      "subtitle":       "Conecta con psicólogos colegiados y toma el control de tu bienestar emocional.",
+      "subtitle":       "Conecta con psicólogos colegiados y toma el control de tu bienestar emocional. Las sesiones se realizan por Google Meet — sin aplicaciones nuevas, sin complicaciones.",
       "cta":            "Comenzar"
     },
     "testimonials": {
       "eyebrow":  "Historias reales",
       "heading":  "Lo que dicen nuestros usuarios",
+      "lucia": {
+        "quote":  "Tras perder a mi madre no sabía por dónde empezar. Mi psicóloga me ayudó a afrontar el duelo — y también trabajamos juntas mi adicción a las redes sociales. Registrar el tiempo de pantalla fue un punto de inflexión que no esperaba.",
+        "author": "Lucía F.",
+        "role":   "Paciente · Valencia"
+      },
       "tomas": {
-        "quote":  "GetBetter le dio a mi consulta la visibilidad que merecía. Las reservas son fluidas y mis pacientes llegan ya con un vínculo de confianza.",
+        "quote":  "GetBetter le dio a mi consulta la visibilidad que merecía. Las reservas son fluidas y mis pacientes llegan a las sesiones de Google Meet ya con un vínculo de confianza.",
         "author": "Dr. Tomás Herrera",
         "role":   "Psicólogo · Valencia"
       },
-      "lucia": {
-        "quote":  "Tras perder a mi madre no sabía por dónde empezar. GetBetter me conectó con la persona adecuada en minutos. No sé cómo habría sobrevivido este año sin ella.",
-        "author": "Lucía F.",
-        "role":   "Paciente · Valencia"
+      "elena": {
+        "quote":  "Me encanta que todo esté en un mismo lugar. Abro una franja, el paciente la reserva y estamos en Google Meet — sin correos de ida y vuelta, sin caos de agenda. Mi consulta nunca ha funcionado tan bien.",
+        "author": "Dra. Elena Martínez",
+        "role":   "Psicóloga · Madrid"
       }
     },
     "footer": {

@@ -37,21 +37,26 @@
     "hero": {
       "headline":       "Mental health support that helps you",
       "headlineAccent": "get better",
-      "subtitle":       "Connect with licensed psychologists and take control of your emotional wellbeing.",
+      "subtitle":       "Connect with licensed psychologists and take control of your emotional wellbeing. Sessions run on Google Meet — no new apps, no friction.",
       "cta":            "Get started"
     },
     "testimonials": {
       "eyebrow":  "Real stories",
       "heading":  "What our users say",
+      "lucia": {
+        "quote":  "After losing my mum I didn't know where to start. My psychologist helped me face my grief — and we even worked through my social media addiction together. Tracking my screen time was a turning point I never expected.",
+        "author": "Lucía F.",
+        "role":   "Patient · Valencia"
+      },
       "tomas": {
-        "quote":  "GetBetter gave my practice the reach it deserved. Booking is seamless and my patients feel genuinely supported before they even walk in.",
+        "quote":  "GetBetter gave my practice the reach it deserved. Booking is seamless, and my patients show up to Google Meet sessions already feeling supported.",
         "author": "Dr. Tomás Herrera",
         "role":   "Psychologist · Valencia"
       },
-      "lucia": {
-        "quote":  "After losing my mum I didn't know where to start. GetBetter matched me with the right person in minutes. I can't imagine getting through this year without it.",
-        "author": "Lucía F.",
-        "role":   "Patient · Valencia"
+      "elena": {
+        "quote":  "I love that everything lives in one place. I open a slot, a patient books it, and we're on Google Meet — no back-and-forth emails, no scheduling chaos. My practice has never run more smoothly.",
+        "author": "Dra. Elena Martínez",
+        "role":   "Psychologist · Madrid"
       }
     },
     "footer": {
