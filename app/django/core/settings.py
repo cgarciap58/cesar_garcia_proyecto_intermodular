@@ -205,7 +205,6 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_SIZE
 
 INSTALLED_APPS += [
     'core.accounts',
-    'core.psychologists',
     'core.appointments'
 ]
 
