@@ -7,7 +7,7 @@ if [ "${USE_DB:-false}" = "true" ]; then
 fi
 
 if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then
-  python manage.py migrate --noinput --fake-initial
+  python manage.py migrate --noinput
 fi
 
 echo "Creating superuser if not exists..."
