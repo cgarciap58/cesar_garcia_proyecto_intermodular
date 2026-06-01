@@ -25,37 +25,6 @@
   "errors": {
     "generic": "Algo salió mal. Por favor, inténtalo de nuevo."
   },
-  "timezones": {
-    "UTC":                            "UTC",
-    "Europe/Madrid":                  "Madrid (CET/CEST)",
-    "Europe/London":                  "Londres (GMT/BST)",
-    "Europe/Paris":                   "París (CET/CEST)",
-    "Europe/Berlin":                  "Berlín (CET/CEST)",
-    "Europe/Rome":                    "Roma (CET/CEST)",
-    "Europe/Amsterdam":               "Ámsterdam (CET/CEST)",
-    "Europe/Lisbon":                  "Lisboa (WET/WEST)",
-    "Europe/Warsaw":                  "Varsovia (CET/CEST)",
-    "America/New_York":               "Nueva York (ET)",
-    "America/Chicago":                "Chicago (CT)",
-    "America/Denver":                 "Denver (MT)",
-    "America/Los_Angeles":            "Los Ángeles (PT)",
-    "America/Toronto":                "Toronto (ET)",
-    "America/Vancouver":              "Vancouver (PT)",
-    "America/Sao_Paulo":              "São Paulo (BRT)",
-    "America/Argentina/Buenos_Aires": "Buenos Aires (ART)",
-    "America/Mexico_City":            "Ciudad de México (CST/CDT)",
-    "Asia/Tokyo":                     "Tokio (JST)",
-    "Asia/Seoul":                     "Seúl (KST)",
-    "Asia/Shanghai":                  "Shanghái (CST)",
-    "Asia/Kolkata":                   "Calcuta (IST)",
-    "Asia/Dubai":                     "Dubái (GST)",
-    "Asia/Singapore":                 "Singapur (SGT)",
-    "Australia/Sydney":               "Sídney (AEST/AEDT)",
-    "Australia/Melbourne":            "Melbourne (AEST/AEDT)",
-    "Pacific/Auckland":               "Auckland (NZST/NZDT)",
-    "Africa/Cairo":                   "El Cairo (EET)",
-    "Africa/Johannesburg":            "Johannesburgo (SAST)"
-  },
   "landing": {
     "hero": {
       "headline":       "Apoyo en salud mental para que te",
