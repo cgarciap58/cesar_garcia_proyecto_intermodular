@@ -205,7 +205,8 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_SIZE
 
 INSTALLED_APPS += [
     'core.accounts',
-    'core.appointments'
+    'core.appointments',
+    'core.bugs'
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
