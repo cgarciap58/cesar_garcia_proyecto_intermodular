@@ -33,6 +33,7 @@ echo "[2] Actualizando sistema..."
 sudo apt update
 sudo DEBIAN_FRONTEND=noninteractive apt upgrade -y
 
+
 echo "[3] Instalando MariaDB..."
 sudo apt install -y mariadb-server
 unset TMPDIR
