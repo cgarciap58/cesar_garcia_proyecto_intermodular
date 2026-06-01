@@ -1,19 +1,17 @@
 #!/bin/bash
 set -euo pipefail
 
-if [ $# -ne 4 ]; then
-    echo "Uso: $0 <DJANGO_DB_USER> <DJANGO_DB_PASS> <DJANGO_DB_NAME> <DJANGO_EC2_IPs>"
+if [ $# -ne 5 ]; then
+    echo "Uso: $0 <HOSTNAME> <DJANGO_DB_USER> <DJANGO_DB_PASS> <DJANGO_DB_NAME> <DJANGO_EC2_IPs>"
     exit 1
 fi
 
-DJANGO_DB_USER="$1"
-DJANGO_DB_PASS="$2"
-DJANGO_DB_NAME="$3"
-DJANGO_EC2_IPs="$4"
+HOSTNAME="$1"
+DJANGO_DB_USER="$2"
+DJANGO_DB_PASS="$3"
+DJANGO_DB_NAME="$4"
+DJANGO_EC2_IPs="$5"
 
-
-HOST="db"
-HOSTNAME="db.getbetter.gg"
 
 echo "===== CONFIGURANDO BASE DE DATOS ====="
 
@@ -24,7 +22,7 @@ sudo sed -i 's/^preserve_hostname: false/preserve_hostname: true/' /etc/cloud/cl
 
 cat <<EOF | sudo tee /etc/hosts
 127.0.0.1 localhost
-127.0.1.1 $HOSTNAME $HOST
+127.0.1.1 $HOSTNAME $HOSTNAME
 
 ::1 localhost ip6-localhost ip6-loopback
 ff02::1 ip6-allnodes
