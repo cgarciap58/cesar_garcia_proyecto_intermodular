@@ -8,4 +8,6 @@ python3 -m venv venv
 source venv/bin/activate
 source ../.env.runtime
 pip install -r requirements.txt
-python manage.py makemigrations
+python manage.py makemigrations accounts
+python manage.py makemigrations appointments
+python manage.py makemigrations bugs
