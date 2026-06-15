@@ -176,11 +176,3 @@ echo "=== OK: backup completado ==="
 echo "   Fichero : $BACKUP_FILE"
 echo "   Tamaño  : $SIZE"
 echo ""
-echo "   Para restaurar:"
-if [[ "$MODE" == "local" ]]; then
-    echo "   gunzip -c $BACKUP_FILE | docker exec -i $( docker ps --filter 'name=mariadb' --format '{{.Names}}' | head -1 || echo '<contenedor>') mariadb -u ${DJANGO_DB_USER} -p'${DJANGO_DB_PASS}' ${DJANGO_DB_NAME}"
-else
-    echo "   gunzip -c $BACKUP_FILE > /tmp/restore.sql"
-    echo "   ./utils/run_db_query.sh cloud /tmp/restore.sql"
-fi
-echo ""
